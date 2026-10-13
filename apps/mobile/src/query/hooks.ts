@@ -121,4 +121,34 @@ export function useProgressSnapshots(userId?: string) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Learning module (A3 — lot B story A3). These hooks read through the
+// provider's `learning` read facade (created at boot from the local store).
+// NO network on mount (AD-7). Absent `learning` (tests without a boot
+// provider) → the queryFn throws, surfaced as the 5-canonical error state
+// (AD-13), never a fake data.
+// ---------------------------------------------------------------------------
+
+export function useLearningSessions(userId?: string) {
+  const { learning } = useMobileData();
+  return useQuery({
+    queryKey: qk.learning.sessions(userId),
+    queryFn: async () =>
+      learning
+        ? learning.sessions.list({ entity: 'learning_sessions' })
+        : Promise.reject(new Error('learning provider not wired')),
+  });
+}
+
+export function useLearningReviews(userId?: string) {
+  const { learning } = useMobileData();
+  return useQuery({
+    queryKey: qk.learning.reviews(userId),
+    queryFn: async () =>
+      learning
+        ? learning.reviews.list({ entity: 'reviews' })
+        : Promise.reject(new Error('learning provider not wired')),
+  });
+}
+
 export type { MobileDataProvider };

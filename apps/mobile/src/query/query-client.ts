@@ -20,6 +20,7 @@ import type { IntegrationClient } from '../lib/integrations-client';
 import type { SkillClient } from '../lib/skills-client';
 import { createProductivityRepo } from '../lib/productivity-repo';
 import { createProgressRepo } from '../lib/progress-repo';
+import { createLearningRepo } from '../lib/learning-repo';
 
 /** The injected data provider — one repository per entity family. */
 export interface MobileDataProvider {
@@ -98,6 +99,18 @@ export interface MobileDataProvider {
    * fake repos without `createAuroraDataProvider`).
    */
   progress?: ReturnType<typeof createProgressRepo>;
+  /**
+   * Learning module read facade (A3 — branchement `@aurora/learning`,
+   * lot B story A3). Built at boot by `createLearningRepo` over the
+   * `LocalStore`; exposes the `sessions` / `reviews`
+   * `LocalQueryRepository` family over the `learning_sessions` +
+   * `reviews` mirrors (03 S4.2, AD-7 local-only). The /learn page
+   * reads through this — it NEVER imports `@aurora/learning` directly
+   * (AD-7/AD-15: module → repo → hook → page, never the inverse).
+   * Absent when the boot provider has no local store (tests injecting
+   * fake repos without `createAuroraDataProvider`).
+   */
+  learning?: ReturnType<typeof createLearningRepo>;
   /** optional: reactive channel that invalidates the QueryClient on upsync. */
   onLocalChange?: (invalidate: () => void) => void;
 }
@@ -172,6 +185,19 @@ export const qk = {
     snapshots: (userId?: string) =>
       [...qk.progress.all(), 'snapshots', userId ?? 'me'] as const,
   },
+  // Learning module (A3 — lot B story A3): learning_sessions + reviews
+  // local-mirror reads (AD-7 read side, 03 S5.8). The /learn page reads
+  // through this; the FSRS / QCM / Mirror Cognitive computations are
+  // exposed via `computeFsrsNext` / `computeRecurringErrors` /
+  // `computeMirrorFindings` (the module is the SSoT, the repo is the
+  // read facade).
+  learning: {
+    all: () => ['learning'] as const,
+    sessions: (userId?: string) =>
+      [...qk.learning.all(), 'sessions', userId ?? 'me'] as const,
+    reviews: (userId?: string) =>
+      [...qk.learning.all(), 'reviews', userId ?? 'me'] as const,
+  },
 };
 
 /**
@@ -206,6 +232,9 @@ export function createMobileQueryClient(provider: MobileDataProvider): QueryClie
       // Progress module (A1, lot B): skill_states + progress_snapshots
       // mirrors invalidate on their own downstream batches (AD-7, 03 S5.8).
       client.invalidateQueries({ queryKey: qk.progress.all() });
+      // Learning module (A3, lot B): learning_sessions + reviews mirrors
+      // invalidate on their own downstream batches (AD-7, 03 S5.8).
+      client.invalidateQueries({ queryKey: qk.learning.all() });
     });
   }
 
@@ -299,6 +328,13 @@ export function mobileDataProviderFrom(
   const progress = provider.store()
     ? createProgressRepo(provider.store())
     : undefined;
+  // Learning module (A3, lot B): the read facade over the learning
+  // mirrors (`learning_sessions` + `reviews`, 03 S4.2, AD-7 local-only,
+  // 03 S8.1). Absent when the provider has no local engine (tests
+  // injecting fake repos without a boot provider).
+  const learning = provider.store()
+    ? createLearningRepo(provider.store())
+    : undefined;
   return {
     goals,
     tasks,
@@ -313,6 +349,9 @@ export function mobileDataProviderFrom(
     // Progress module (A1, lot B): the read facade over the LIMITED
     // progress mirrors (AD-7 local-only, 03 S8.1).
     progress,
+    // Learning module (A3, lot B): the read facade over the learning
+    // mirrors (AD-7 local-only, 03 S8.1).
+    learning,
     // AD-3: the publishable-scope agent client (kernel enqueue + mirror read).
     agent,
     // AD-3: the publishable-scope integrations client (Composio v3.1
@@ -352,6 +391,10 @@ export function mobileDataProviderFrom(
       // key (AD-7, 03 S5.8).
       provider.store().watch({ entity: 'skill_states' }, () => invalidate());
       provider.store().watch({ entity: 'progress_snapshots' }, () => invalidate());
+      // Learning module (A3, lot B): the learning_sessions + reviews
+      // downstream batches invalidate the learning query key (AD-7, 03 S5.8).
+      provider.store().watch({ entity: 'learning_sessions' }, () => invalidate());
+      provider.store().watch({ entity: 'reviews' }, () => invalidate());
     },
   };
 }
