@@ -62,3 +62,6 @@ third-party/
 
 
 # WDS agent session state (machine-local, not project content)
+
+*storybook.log
+storybook-static

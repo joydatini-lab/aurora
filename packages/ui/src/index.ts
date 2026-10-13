@@ -49,6 +49,20 @@ export * from "./components/ui/badge";
 export * from "./components/ui/breadcrumb";
 export * from "./components/ui/button";
 export * from "./components/ui/card";
+export {
+  AuroraCard,
+  AuroraCardHeader,
+  AuroraCardBadge,
+  AuroraCardProgress,
+  AuroraCardValue,
+  AuroraCardActions,
+  AuroraCardFooter,
+  AuroraCardCover,
+  type AuroraCardProps,
+  type CardVariant,
+  type CardState,
+  type CardSize,
+} from "./components/ui/aurora-card";
 export * from "./components/ui/checkbox";
 export * from "./components/ui/command";
 export * from "./components/ui/context-menu";
@@ -79,6 +93,42 @@ export * from "./components/ui/textarea";
 export * from "./components/ui/toast";
 export * from "./components/ui/toaster";
 export * from "./components/ui/tooltip";
+
+// --- Composants maison — catalogue UI/UX (21 modules)
+export { AppIcon, type AppIconProps, type IconKey } from "./components/ui/AppIcon";
+export { Message, MessageAttachment, type MessageProps, type MessageVariant } from "./components/ui/Message";
+export { AudioPlayer, type AudioPlayerProps } from "./components/ui/AudioPlayer";
+export {
+  TimerDisplay,
+  TimerControls,
+  useTimer,
+  formatTimerSeconds,
+  type TimerDisplayProps,
+  type TimerControlsProps,
+  type TimerMode,
+} from "./components/ui/Timer";
+export { FileDropzone, type FileDropzoneProps } from "./components/ui/FileDropzone";
+export {
+  F2ChartAdapter,
+  type F2ChartKind,
+  type MetricPoint,
+  type F2ChartAdapterProps,
+} from "./components/ui/F2ChartAdapter";
+export {
+  AgentResponseRenderer,
+  ResponseSectionHeader,
+  SummaryCard,
+  MetricGrid,
+  ComparisonTable,
+  CitationCard,
+  ToolStatusCard,
+  ApprovalCard,
+  CodeArtifactBlock,
+  WarningCallout,
+  SuggestedActionChips,
+  type AgentBlock,
+} from "./components/ui/AgentResponseRenderer";
+export { useFileUpload, type FileWithPreview, type FileUploadOptions } from "./hooks/use-file-upload";
 
 // --- Premium effects (Aceternity + Magic UI, docs/ui-libraries.md §2 s3) ---
 export * from "./components/ui/premium";
@@ -139,6 +189,599 @@ export { StatTile } from "./components/ui/StatTile";
 // data tables > 100 rows = AG Grid (virtualized, 60fps Pixel 4a).
 export { CalendarView } from "./components/ui/CalendarView";
 export { AgGridTable } from "./components/ui/AgGridTable";
+
+// --- EventCalendar (@reui, lot 2026-10-12 — moteur riche de vues calendrier)
+// Moteur complet (mois / semaine / N jours / jour / agenda / time-grid
+// ressources) — le composant de base, ses vues, sa barre de navigation et
+// ses types sont exposés ; le style rétro-adapté (mobile) se construit par
+//-dessus via `classNames` / `renderEvent`, jamais en forçant l'API.
+export {
+  EventCalendar,
+  useEventCalendar,
+  useEventCalendarNavigation,
+  useEventCalendarOccurrences,
+  useEventCalendarView,
+  useEventCalendarSettings,
+} from "./components/reui/event-calendar/event-calendar";
+export type {
+  EventCalendarApi,
+  EventCalendarProps,
+  EventCalendarRenderEventProps,
+} from "./components/reui/event-calendar/event-calendar";
+export {
+  EventCalendarContent,
+  DEFAULT_VIEW_COMPONENTS,
+} from "./components/reui/event-calendar/event-calendar-content";
+export {
+  EventCalendarNav,
+  EventCalendarToolbar,
+  EventCalendarViewSwitcher,
+  EventCalendarNavToday,
+} from "./components/reui/event-calendar/event-calendar-nav";
+export type {
+  CalendarEvent,
+  EventCalendarResource,
+  EventCalendarViewSettings,
+  EventCalendarInteractions,
+  EventCalendarOccurrence,
+  EventCalendarSegment,
+} from "./components/reui/event-calendar/event-calendar-types";
+export {
+  DEFAULT_EVENT_CALENDAR_I18N,
+  mergeEventCalendarI18n,
+} from "./components/reui/event-calendar/event-calendar-i18n";
+export type {
+  EventCalendarI18nConfig,
+  EventCalendarI18nOverrides,
+} from "./components/reui/event-calendar/event-calendar-i18n";
+export {
+  EVENT_CALENDAR_MOBILE_STYLE,
+  MOBILE_EVENT_CALENDAR_DAY_COUNT_PRESETS,
+} from "./components/reui/event-calendar/event-calendar-mobile";
+export type {
+  EventCalendarMobileStyle,
+} from "./components/reui/event-calendar/event-calendar-mobile";
+// --- EventCalendar preset DESKTOP (Phase 2, 05 §4.5.2 Notes responsive) ---
+// Miroir du preset mobile : la time-grid 64px/h (vs 48px mobile), le
+// "gutter" 4rem (vs 3rem), le "Semaine" 7 jours en vue par défaut
+// (le "3/5 jours" du mobile disparaît), le scroll = le ScrollArea reui
+// (pas le scroll natif mobile). Le contenu (la i18n FROZEN française)
+// est partagé avec le mobile — jamais un libellé anglais par défaut.
+export {
+  EVENT_CALENDAR_DESKTOP_STYLE,
+  DESKTOP_EVENT_CALENDAR_DAY_COUNT_PRESETS,
+} from "./components/reui/event-calendar/event-calendar-desktop";
+export type {
+  EventCalendarDesktopStyle,
+} from "./components/reui/event-calendar/event-calendar-desktop";
+
+// --- DateSelector & TimePicker (@reui, pickers pour formulaires)
+export {
+  DateSelector,
+  useDateSelector,
+  useDateSelectorContext,
+  formatDateValue,
+  DEFAULT_DATE_SELECTOR_I18N,
+} from "./components/reui/date-selector";
+export type {
+  DateSelectorI18nConfig,
+  DateSelectorPeriodType,
+  DateSelectorFilterType,
+  DateSelectorValue,
+  DateSelectorProps,
+} from "./components/reui/date-selector";
+
+export {
+  TimePicker,
+  TimePickerTrigger,
+  TimePickerContent,
+  TimePickerColumns,
+  TimePickerPanel,
+  TimePickerInput,
+  TimePickerValue,
+  TimePickerNow,
+  TimePickerClear,
+  TimePickerConfirm,
+  useTimePicker,
+  parseTimeInput,
+  DEFAULT_TIME_PICKER_I18N,
+} from "./components/reui/time-picker";
+export type {
+  TimePickerTime,
+  TimePickerGranularity,
+  TimePickerHourCycle,
+  TimePickerPeriod,
+  TimePickerLabels,
+  TimePickerProps,
+} from "./components/reui/time-picker";
+
+// --- Autocomplete, Rating, Stepper, Timeline, Tree, Kanban, Sortable
+export {
+  Autocomplete,
+  AutocompleteValue,
+  AutocompleteTrigger,
+  AutocompleteInput,
+  AutocompleteStatus,
+  AutocompletePortal,
+  AutocompleteContent,
+  AutocompleteList,
+  AutocompleteItem,
+} from "./components/reui/autocomplete";
+
+export { Rating } from "./components/reui/rating";
+export {
+  useStepper,
+  useStepItem,
+  Stepper,
+  StepperItem,
+  StepperTrigger,
+  StepperIndicator,
+  StepperSeparator,
+  StepperTitle,
+  StepperDescription,
+  StepperPanel,
+  StepperContent,
+  StepperNav,
+} from "./components/reui/stepper";
+export {
+  Timeline as ReuiTimeline,
+  TimelineContent as ReuiTimelineContent,
+  TimelineDate as ReuiTimelineDate,
+  TimelineHeader as ReuiTimelineHeader,
+  TimelineIndicator as ReuiTimelineIndicator,
+  TimelineItem as ReuiTimelineItem,
+  TimelineSeparator as ReuiTimelineSeparator,
+  TimelineTitle as ReuiTimelineTitle,
+} from "./components/reui/timeline";
+export {
+  Tree,
+  TreeItem,
+  TreeItemLabel,
+  TreeDragLine,
+} from "./components/reui/tree";
+export {
+  Kanban,
+  KanbanBoard,
+  KanbanColumn,
+  KanbanColumnHandle,
+  KanbanItem,
+  KanbanItemHandle,
+  KanbanColumnContent,
+  KanbanOverlay,
+} from "./components/reui/kanban";
+export {
+  Sortable,
+  SortableItem,
+  SortableItemHandle,
+  SortableOverlay,
+} from "./components/reui/sortable";
+
+// --- Icons, file-type, number-field, scrollspy
+export { IconStack, type IconStackProps } from "./components/reui/icon-stack";
+export {
+  IconTile,
+  iconTileVariants,
+  type IconTileProps,
+} from "./components/reui/icon-tile";
+export {
+  FileType,
+  getFileType,
+  getFileTypeCategory,
+  FILE_TYPE_CATEGORIES,
+  FILE_TYPE_EXTENSION_NAMES,
+  fileTypeVariants,
+  type FileTypeCategory,
+  type FileTypeName,
+  type FileTypeProps,
+  type FileTypeVariant,
+} from "./components/reui/file-type";
+export {
+  NumberField,
+  NumberFieldScrubArea,
+  NumberFieldDecrement,
+  NumberFieldIncrement,
+  NumberFieldGroup,
+  NumberFieldInput,
+} from "./components/reui/number-field";
+export { Scrollspy } from "./components/reui/scrollspy";
+
+// --- Desktop shell (@21st wensity Sidebar, ré-adapté Radix — Phase 2)
+// Le SHELL desktop de la nav principale (05 §4.5.2 Notes responsive :
+// le BottomNav mobile devient ce Sidebar ; le drawer de nav mobile =
+// l'anti-pattern interdit, 05 §3.5 l.823-828). Le composant 21st
+// d'origine passe par `@base-ui/react/use-render` : ici c'est le Radix
+// `Slot` de la stack DS (la rétro-adaptation ReUI du lot 2026-10-12,
+// même règle). Les `--primitive-*` → les tokens Aurora (AD-17) ; le
+// mouvement framer-motion est gated par `useReducedMotion` (05 §2.6).
+export {
+  Sidebar as DesktopSidebar,
+  SidebarHeader as DesktopSidebarHeader,
+  SidebarNav as DesktopSidebarNav,
+  SidebarSection as DesktopSidebarSection,
+  SidebarItem as DesktopSidebarItem,
+  SidebarNested as DesktopSidebarNested,
+  SidebarFooter as DesktopSidebarFooter,
+  SidebarToggle as DesktopSidebarToggle,
+  useSidebar as useDesktopSidebar,
+  type SidebarVariant as DesktopSidebarVariant,
+  type SidebarProps as DesktopSidebarProps,
+  type SidebarItemProps as DesktopSidebarItemProps,
+  type SidebarSectionProps as DesktopSidebarSectionProps,
+  type SidebarNestedProps as DesktopSidebarNestedProps,
+  type SidebarToggleProps as DesktopSidebarToggleProps,
+} from "./components/ui/desktop-sidebar";
+
+// --- Desktop shell (suite) : le command palette ⌘K (@21st uvain,
+// ré-adapté cmdk + Radix Dialog) — la recherche globale de la Phase 2
+// (05 §4.5.2 : le desktop a la TopBar, le command palette vit dedans).
+export {
+  CommandMenu,
+  Command as DesktopCommand,
+  CommandInput as DesktopCommandInput,
+  CommandList as DesktopCommandList,
+  CommandEmpty as DesktopCommandEmpty,
+  CommandGroup as DesktopCommandGroup,
+  CommandSeparator as DesktopCommandSeparator,
+  CommandItem as DesktopCommandItem,
+  useCommandShortcut,
+  type CommandMenuProps,
+  type CommandItemProps as DesktopCommandItemProps,
+} from "./components/ui/desktop-command-menu";
+
+// --- Alert (reui — variante enrichie du Alert shadcn)
+export {
+  Alert as ReuiAlert,
+  AlertTitle as ReuiAlertTitle,
+  AlertDescription as ReuiAlertDescription,
+  AlertAction as ReuiAlertAction,
+} from "./components/reui/alert";
+
+// --- Cascader
+export {
+  Cascader,
+  CascaderTrigger,
+  CascaderChip,
+  CascaderChips,
+  CascaderContent,
+  CascaderPanel,
+  CascaderList,
+  CascaderEmpty,
+  CascaderStatus,
+  useCascader,
+  useCascaderSelection,
+  useCascaderActions,
+  useCascaderState,
+  useCascaderHighlight,
+} from "./components/reui/cascader/cascader";
+export {
+  useCascaderLoader,
+} from "./components/reui/cascader/cascader-async";
+export type {
+  CascaderProps,
+  CascaderSingleProps,
+  CascaderMultipleProps,
+} from "./components/reui/cascader/cascader";
+
+// --- Badge (reui — variante enrichie du Badge shadcn)
+export {
+  Badge as ReuiBadge,
+  badgeVariants as reuiBadgeVariants,
+  type BadgeProps as ReuiBadgeProps,
+} from "./components/reui/badge";
+
+// --- Gantt (@reui — moteur de frise de projet : arbres WBS + barres + baseline)
+export {
+  Gantt,
+  GanttContext,
+  GanttViewConfigContext,
+  DEFAULT_ROW_ALIGN,
+  DEFAULT_SCHEDULE_MODE,
+  DEFAULT_VIEW_CONFIG,
+  resolveScheduleMode,
+  resolveTimelineLines,
+  useGantt,
+  useGanttInteractions,
+  useGanttNavigation,
+  useGanttNodeSchedules,
+  useGanttOccurrences,
+  useGanttScale,
+  useGanttSelection,
+  useGanttSelector,
+  useGanttSettings,
+  useGanttSettingsVersion,
+  useGanttState,
+  useGanttViewConfig,
+} from "./components/reui/gantt/gantt";
+export type {
+  GanttActivationConfig,
+  GanttApi,
+  GanttBaselineProps,
+  GanttCallbacks,
+  GanttClassNames,
+  GanttColumn,
+  GanttColumnContext,
+  GanttDragIndicatorProps,
+  GanttGridLine,
+  GanttInstance,
+  GanttInternals,
+  GanttMetrics,
+  GanttNodeSchedules,
+  GanttProps,
+  GanttRenderEventProps,
+  GanttResolvedLines,
+  GanttRowBaselineProps,
+  GanttScheduleHintProps,
+  GanttSettings,
+} from "./components/reui/gantt/gantt";
+
+// --- TanStack Table v9 (features du data-grid ReUI)
+// v9 = no `createReactTable`/`getCoreRowModel`/`createRowSelection` : on
+// consomme `useTable` (features déclarées up-front) + les row-models `create*`
+// importés par le bundle `dataGridFeatures`.
+export {
+  useTable,
+  createCoreRowModel,
+  createSortedRowModel,
+  createColumnHelper,
+} from "@tanstack/react-table";
+export type {
+  ColumnDef,
+  ReactTable,
+} from "@tanstack/react-table";
+
+// --- Data Grid (@reui — TanStack Table v9 : tri, filtrage, pagination, selection)
+export {
+  DataGrid,
+  DataGridContainer,
+  useDataGrid,
+  dataGridFeatures,
+  type DataGridFeatures,
+  type DataGridTableInstance,
+  getColumnHeaderLabel,
+  getDataGridHeaderSpans,
+  getDataGridCellSelectionCellAttrs,
+  dataGridCellSelectionCellClasses,
+  toDataGridDomId,
+} from "./components/reui/data-grid/data-grid";
+export type { DataGridColumnCellEdit, DataGridColumnMeta } from "./components/reui/data-grid/data-grid";
+export {
+  DataGridTable,
+  DataGridTableAddRow,
+  DataGridTableBase,
+  DataGridTableBody,
+  DataGridTableBodyRow,
+  DataGridTableBodyRowCell,
+  DataGridTableBodyRowExpandded,
+  DataGridTableRenderedRow,
+  DataGridTableBodyRowSkeleton,
+  DataGridTableBodyRowSkeletonCell,
+  DataGridTableEmpty,
+  DataGridTableFillBodyCell,
+  DataGridTableFillHeadCell,
+  DataGridTableFoot,
+  DataGridTableFootRow,
+  DataGridTableFootRowCell,
+  DataGridTableHeader,
+  DataGridTableHead,
+  DataGridTableHeadRow,
+  DataGridTableHeadRowCell,
+  DataGridTableHeadRowCellResize,
+  DataGridTableLoader,
+  DataGridTableRowExpand,
+  DataGridTableRowPin,
+  DataGridTableRowSelect,
+  DataGridTableRowSelectAll,
+  DataGridTableRowSpacer,
+  DataGridTableViewport,
+  getDataGridHeadCellResizeHeader,
+  getDataGridHeadCellSizeVar,
+  getDataGridScrollAreaViewport,
+  getDataGridTableMergedHeaderGroups,
+  renderDataGridTableHeadCellContent,
+  getPinningStyles,
+  getDataGridTableResolvedRows,
+  getDataGridTableRowSections,
+  getDataGridTreeIndentStyle,
+  hasDataGridTableRightPinnedColumns,
+  type DataGridTablePinnedBoundary,
+} from "./components/reui/data-grid/data-grid-table";
+export {
+  DataGridPagination,
+  type DataGridPaginationProps,
+} from "./components/reui/data-grid/data-grid-pagination";
+export {
+  DataGridScrollArea,
+  type DataGridScrollAreaOrientation,
+  type DataGridScrollAreaProps,
+} from "./components/reui/data-grid/data-grid-scroll-area";
+export {
+  DataGridColumnHeader,
+  type DataGridColumnHeaderProps,
+} from "./components/reui/data-grid/data-grid-column-header";
+
+// --- Filters (@reui — arbre de requête de filtres imbriquées)
+export {
+  Filters,
+  FiltersRow,
+  FiltersBuilder,
+  FiltersAdvanced,
+  FiltersAdvancedPanel,
+  FilterFieldPicker,
+  FilterValuePopover,
+  FilterOperatorPopover,
+  FilterRuleMenuItems,
+  FilterChip,
+  useFilterRuleDisplay,
+  useFilterOptions,
+  createFilterQuery,
+  createFilterRule,
+  createFilterGroup,
+  flattenFilterRules,
+  flattenFilterConditions,
+  countFilterRules,
+  isFilterQueryEmpty,
+  isFilterRuleComplete,
+  DEFAULT_FILTER_LABELS,
+} from "./components/reui/filters/filters";
+export type {
+  FiltersProps,
+  FiltersRowProps,
+  FilterQuery,
+  FilterRule,
+  FilterField,
+} from "./components/reui/filters/filters";
+
+// --- Emoji Picker (@reui — grille d'emojis + recherche + skin tones)
+export {
+  EmojiPicker,
+  useEmojiPicker,
+  EmojiPickerValue,
+  EmojiPickerTrigger,
+  EmojiPickerContent,
+  EmojiPickerPanel,
+  EmojiPickerHeader,
+  EmojiPickerSearch,
+  EmojiPickerCategories,
+  EmojiPickerList,
+  EmojiPickerFooter,
+  EmojiPickerPreview,
+  useEmojiPickerData,
+  loadEmojiPickerData,
+  searchEmojis,
+  getEmojiValue,
+  isEmojiValue,
+  findEmoji,
+  normalizeEmojibaseData,
+  EMOJI_PICKER_DATA_URL,
+  EMOJI_PICKER_CATEGORIES,
+  DEFAULT_EMOJI_PICKER_I18N,
+  mergeEmojiPickerI18n,
+  type EmojiPickerProps,
+  type EmojiPickerApi,
+  type EmojiPickerSelection,
+  type EmojiPickerEmoji,
+  type EmojiPickerCustomEmoji,
+  type EmojiPickerCustomCategory,
+  type EmojiPickerData,
+  type EmojiPickerRecentEntry,
+  type EmojiPickerCategory,
+  type EmojiPickerShortcodePreset,
+  type EmojiPickerSize,
+  type EmojiPickerI18nConfig,
+  type EmojiPickerI18nOverrides,
+} from "./components/reui/emoji-picker";
+
+// --- Color Picker (@reui — area + slider + wheel + champs hex/rgb/hsl/oklch)
+export {
+  ColorPicker,
+  useColorPicker,
+  ColorPickerSwatch,
+  ColorPickerValue,
+  ColorPickerTrigger,
+  ColorPickerInput,
+  ColorPickerContent,
+  ColorPickerPanel,
+  ColorPickerArea,
+  ColorPickerSlider,
+  ColorPickerWheel,
+  ColorPickerEyeDropper,
+  parseColor,
+  formatColor,
+  isColorInSrgb,
+  getContrastRatio,
+  getForegroundColor,
+  COLOR_PICKER_FORMATS,
+  DEFAULT_COLOR_PICKER_I18N,
+  mergeColorPickerI18n,
+  type ColorPickerProps,
+  type ColorPickerApi,
+  type ColorPickerFormat,
+  type ColorPickerColorSpace,
+  type ColorPickerChannel,
+  type ColorPickerColor,
+  type ColorPickerLabels,
+  type ColorPickerFunctions,
+  type ColorPickerI18nConfig,
+  type ColorPickerI18nOverrides,
+} from "./components/reui/color-picker";
+
+// --- Frame (@reui — coquille de panel « tool-like »)
+export {
+  Frame,
+  FramePanel,
+  FrameHeader,
+  FrameTitle,
+  FrameDescription,
+  FrameFooter,
+  frameVariants,
+} from "./components/reui/frame";
+
+// --- Code Block (@reui — Shiki : highlight, streaming, diff, folding)
+export {
+  CodeBlock,
+  CodeBlockCopyButton,
+  CodeBlockDownloadButton,
+  CodeBlockExpandButton,
+  CodeBlockHeader,
+  CodeBlockLanguage,
+  CodeBlockLineActions,
+  CodeBlockTitle,
+  CodeBlockContent,
+  CodeBlockWrapToggle,
+  useCodeBlockConfig,
+  useCodeBlockFolding,
+  useCodeBlockSelection,
+  markdownCodeProps,
+  markdownFences,
+  ansiToLines,
+  parseUnifiedDiff,
+  type CodeBlockProps,
+  type CodeBlockCopyButtonProps,
+  type CodeBlockDownloadButtonProps,
+  type CodeBlockLineActionsProps,
+  type CodeBlockLineActionsSide,
+  type CodeBlockFoldRegion,
+  type CodeBlockDiffSpec,
+  type CodeBlockHighlightOptions,
+  type CodeBlockLevelSpec,
+  type CodeBlockLine,
+  type CodeBlockLineActionsRender,
+  type CodeBlockLineSpec,
+  type CodeBlockLineState,
+  type CodeBlockPatchFile,
+  type CodeBlockThemes,
+  type CodeBlockToken,
+  type CodeBlockTransformer,
+  type CodeBlockWordSpec,
+} from "./components/reui/code-block/code-block";
+
+// --- Signature Pad (@reui — encrage pression/vitesse, undo/redo, export)
+export {
+  SignaturePad,
+  SignaturePadArea,
+  SignaturePadGuide,
+  SignaturePadPlaceholder,
+  SignaturePadControls,
+  SignaturePadClear,
+  SignaturePadUndo,
+  SignaturePadRedo,
+  SignaturePadSave,
+  SignaturePadPreview,
+  useSignaturePad,
+  getSignaturePadStrokePath,
+  type SignaturePadPoint,
+  type SignaturePadStroke,
+  type SignaturePadPointerType,
+  type SignaturePadSizing,
+  type SignaturePadFormat,
+  type SignaturePadExportOptions,
+  type SignaturePadApi,
+  type SignaturePadProps,
+  type SignaturePadAreaProps,
+} from "./components/reui/signature-pad";
+
+// --- Phone Input (@reui — sélecteur de pays + validation)
+export { PhoneInput } from "./components/reui/phone-input";
 
 // --- Utils & hooks ----------------------------------------------------------
 export { cn } from "./lib/utils";
