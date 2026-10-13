@@ -11,7 +11,6 @@
  * - Progression réelle (pas simulée) si `onProgress` est fourni
  * - Suppression individuelle
  */
-import * as React from "react";
 import { cn } from "src/lib/utils";
 import { AppIcon } from "src/components/ui/AppIcon";
 import { Button } from "src/components/ui/button";

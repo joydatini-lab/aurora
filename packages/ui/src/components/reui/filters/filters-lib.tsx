@@ -314,10 +314,10 @@ export function collapseFilterPath<V, O>(
   )
   return segments.map((segment) =>
     segment.type === "node"
-      ? { type: "field" as const, field: chain[Number(segment.node.value)] }
+      ? { type: "field" as const, field: chain[Number(segment.node.value)] as FilterField<V, O> }
       : {
           type: "ellipsis" as const,
-          hidden: segment.hidden.map((node) => chain[Number(node.value)]),
+          hidden: segment.hidden.map((node) => chain[Number(node.value)] as FilterField<V, O>),
         }
   )
 }

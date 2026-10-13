@@ -9,12 +9,11 @@ import {
   KanbanBoard,
   KanbanColumn,
   KanbanColumnContent,
-  KanbanColumnHandle,
-  KanbanItem,
+    KanbanItem,
   KanbanItemHandle,
   KanbanOverlay,
 } from "src/index";
-import { Badge, ReuiBadge } from "src/index";
+import { ReuiBadge } from "src/index";
 import { Button } from "src/index";
 import { Card, CardContent, CardHeader } from "src/index";
 import { GripVertical } from "lucide-react";

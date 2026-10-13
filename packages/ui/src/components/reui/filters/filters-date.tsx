@@ -136,7 +136,7 @@ export function parseFilterDate(
     /^(?:in )?(\d+) (day|week|month|year)s?(?: ago)?$/
   )
   if (counted) {
-    const magnitude = Number.parseInt(counted[1], 10)
+    const magnitude = Number.parseInt(counted[1]!, 10)
     const past = input.endsWith("ago")
     return {
       relative: {
@@ -149,7 +149,7 @@ export function parseFilterDate(
   // "next tuesday" / "last friday" / bare "tuesday"
   const weekday = input.match(/^(?:(next|last|this) )?([a-z]+)$/)
   if (weekday) {
-    const index = WEEKDAYS.indexOf(weekday[2])
+    const index = WEEKDAYS.indexOf(weekday[2]!)
     if (index !== -1) {
       const today = startOfDay(now)
       const current = today.getDay()

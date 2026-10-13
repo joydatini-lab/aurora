@@ -7,9 +7,7 @@ import { useState } from "react";
 import {
   Filters,
   FiltersRow,
-  FiltersBuilder,
   createFilterQuery,
-  type FiltersProps,
 } from "src/index";
 
 type Story = StoryObj;

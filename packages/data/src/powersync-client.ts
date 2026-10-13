@@ -23,7 +23,25 @@ import { PowerSyncDatabase } from '@powersync/capacitor';
 // `.js` in `@powersync/common` is `export {};` (no runtime binding), so a
 // VALUE import fails ESM instantiation. The engine only names it as a type
 // (the `connector` field / `buildConnector` param) → `import type`.
-import type { PowerSyncBackendConnector, PowerSyncCredentials, SyncStatus } from '@powersync/common';
+//
+// Engine-agnostic injection point (03 S8.1, desktop spike §32.5): the DB
+// CONSTRUCTOR is injectable so the same `PowerSyncClientEngine` logic can be
+// backed by `@powersync/web` (WASQLite, Electron renderer) instead of the
+// hardwired `@powersync/capacitor` — without importing a second engine into
+// this file (the `PowerSyncDatabase` name collision with `@powersync/web`
+// makes a 2nd value import unsafe in one module). The default stays
+// Capacitor, so the `apps/mobile` path is untouched.
+//
+// `schema` / `database` are typed as `unknown` on purpose: each vendor
+// engine (Capacitor native, Web WASQLite) wants its own *exact* schema/
+// options type — a generic `unknown` input keeps this injection point
+// assignable to both (the caller's `as PowerSyncDatabaseCtor` cast is what
+// actually narrows to the chosen engine's real option type).
+type PowerSyncDatabaseCtor = new (options: {
+  schema: unknown;
+  database?: { dbFilename?: string };
+}) => AbstractPowerSyncDatabase;
+import type { AbstractPowerSyncDatabase, PowerSyncBackendConnector, PowerSyncCredentials, SyncStatus } from '@powersync/common';
 import { AuroraPowerSyncSchema } from './powersync-schema';
 import { SupabaseBackendConnectorImpl } from './supabase-connector';
 
@@ -55,11 +73,16 @@ export interface PowerSyncClientEngineOptions {
  */
 export class PowerSyncClientEngine {
   private readonly opts: PowerSyncClientEngineOptions;
-  private db: PowerSyncDatabase | null = null;
+  private readonly dbFactory: PowerSyncDatabaseCtor;
+  private db: AbstractPowerSyncDatabase | null = null;
   private connector: PowerSyncBackendConnector | null = null;
 
-  constructor(opts: PowerSyncClientEngineOptions) {
+  constructor(
+    opts: PowerSyncClientEngineOptions,
+    dbFactory: PowerSyncDatabaseCtor = PowerSyncDatabase as unknown as PowerSyncDatabaseCtor,
+  ) {
     this.opts = opts;
+    this.dbFactory = dbFactory;
   }
 
   /** Open the store + apply the frozen mirror schema (03 S4.1 store init). */
@@ -68,7 +91,7 @@ export class PowerSyncClientEngine {
     // not through the engine options — kept for the shared `PowerSyncEngine`
     // surface (powersync.ts); `options.token` is unused when a Supabase
     // session is the credential source.
-    this.db = new PowerSyncDatabase({
+    this.db = new this.dbFactory({
       schema: AuroraPowerSyncSchema,
       database: { dbFilename: this.opts.dbFilename ?? 'aurora.db' },
     });
@@ -293,11 +316,17 @@ export class PowerSyncClientEngine {
  * Engine factory (03 S8.1): the single production construction site.
  * `createClient` MUST return a client already bound to the signed-in user
  * (Supabase session storage, AD-3 publishable key only).
+ *
+ * `dbFactory` (desktop spike, §32.5): optional alternate DB constructor —
+ * pass `PowerSyncDatabase` from `@powersync/web` (WASQLite) for Electron /
+ * the web shell. Omit it to keep the `@powersync/capacitor` default
+ * (`apps/mobile` is untouched).
  */
 export function createPowerSyncClientEngine(
   options: PowerSyncClientEngineOptions,
+  dbFactory?: PowerSyncDatabaseCtor,
 ): PowerSyncClientEngine {
-  return new PowerSyncClientEngine(options);
+  return new PowerSyncClientEngine(options, dbFactory);
 }
 
 // Kept for API-surface parity with the reference engine (powersync.ts) —
@@ -305,3 +334,4 @@ export function createPowerSyncClientEngine(
 // the Supabase session, not a static token) but exported so a shared
 // `PowerSyncEngine` union type can name it.
 export type { PowerSyncCredentials as PowerSyncClientCredentials };
+export type { PowerSyncDatabaseCtor };

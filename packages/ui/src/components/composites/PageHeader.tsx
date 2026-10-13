@@ -6,7 +6,6 @@
  * - une action principale maximum visuellement dominante
  * - autres actions dans le menu ou en style secondaire
  */
-import * as React from "react";
 import { cn } from "src/lib/utils";
 import { AppIcon, type IconKey } from "src/components/ui/AppIcon";
 import { Button } from "src/components/ui/button";
@@ -63,7 +62,7 @@ function PageHeader({
           {icon && <AppIcon name={icon} size="lg" aria-hidden />}
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
           {badges.map((b, i) => (
-            <Badge key={i} variant={b.variant} size={b.size}>
+            <Badge key={i} variant={b.variant}>
               {b.label}
             </Badge>
           ))}

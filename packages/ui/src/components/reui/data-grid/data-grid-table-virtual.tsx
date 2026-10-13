@@ -30,7 +30,7 @@ import {
   hasDataGridTableRightPinnedColumns,
   renderDataGridTableHeadCellContent,
 } from "../../../components/reui/data-grid/data-grid-table"
-import type { Column, Row, Table } from "@tanstack/react-table"
+import type { Column, Row } from "@tanstack/react-table"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import type {
   VirtualItem,

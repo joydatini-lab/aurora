@@ -103,6 +103,7 @@ function parseRRuleDate(value: string, timeZone?: string): Date {
   )
   if (!match) throw new GanttRecurrenceError(`UNTIL=${value}`)
   const [, y, m, d, hh = "23", mm = "59", ss = "59", z] = match
+  if (!y || !m || !d) throw new GanttRecurrenceError(`UNTIL=${value}`)
   // Floating (non-Z) boundaries resolve in the DISPLAY zone when known -
   // local-zone parsing would shift the series end per visitor machine.
   const date =

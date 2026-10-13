@@ -52,8 +52,8 @@ export const Onboarding: Story = {
 
           <StepperPanel>
             <div className="rounded-lg border border-border p-6 text-sm">
-              <p className="font-medium">{steps[active - 1].title}</p>
-              <p className="mt-1 text-muted-foreground">{steps[active - 1].description}</p>
+              <p className="font-medium">{steps[active - 1]?.title}</p>
+              <p className="mt-1 text-muted-foreground">{steps[active - 1]?.description}</p>
             </div>
             <div className="mt-4 flex justify-end gap-2">
               {active > 1 && (

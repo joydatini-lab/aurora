@@ -113,7 +113,7 @@ export function flattenFilterConditions<V>(
     .filter(isFilterRuleComplete)
     .map((rule) => ({
       path: rule.path,
-      field: rule.path[0],
+      field: rule.path[0] ?? "",
       operator: rule.operator,
       values:
         rule.value === undefined || rule.value === null
@@ -312,7 +312,7 @@ export function findFilterNode<V>(
     index: number
   } | null => {
     for (let i = 0; i < group.rules.length; i++) {
-      const child = group.rules[i]
+      const child = group.rules[i]!
       if (child.id === id) return { node: child, parent: group, index: i }
       if (isFilterGroup(child)) {
         const found = walk(child)
@@ -515,8 +515,8 @@ export function moveFilterNode<V>(
     (group) => group.id === found.parent!.id,
     (group) => {
       const rules = [...group.rules]
-      const [moved] = rules.splice(from, 1)
-      rules.splice(to, 0, moved)
+      const moved = rules.splice(from, 1)[0]
+      if (moved) rules.splice(to, 0, moved)
       return { ...group, rules }
     }
   ) as FilterQuery<V>
@@ -688,7 +688,7 @@ export function pruneFilterQuery<V>(query: FilterQuery<V>): FilterQuery<V> {
     }
 
     if (rules.length === 0) return null
-    if (rules.length === 1 && isFilterGroup(rules[0])) return rules[0]
+    if (rules.length === 1 && isFilterGroup(rules[0]!)) return rules[0]!
     return { ...node, rules }
   }
 

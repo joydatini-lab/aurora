@@ -246,7 +246,9 @@ function getBaselineVariance<TData>(
   return deltaMs > 0 ? "late" : deltaMs < 0 ? "early" : "on-time"
 }
 
-interface PackedPosition {
+/** PackedPosition — type de positionnement pour le paquettage de colonnes. */
+/* PackedPosition — non encore utilisé ; garder pour compat API */
+export interface PackedPosition {
   column: number
   columnCount: number
   columnSpan: number
@@ -369,7 +371,7 @@ function packTimedSegments<TData>(
     const claim = (lane: number, item: Working) => {
       while (laneIntervals.length <= lane) laneIntervals.push([])
       const interval = { from: item.startMin, to: item.effEnd }
-      laneIntervals[lane].push(interval)
+      laneIntervals[lane]!.push(interval)
       item.lane = lane
       item.interval = interval
     }

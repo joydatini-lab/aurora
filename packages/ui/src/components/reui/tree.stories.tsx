@@ -3,7 +3,7 @@
  */
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { Tree, TreeItem } from "src/index";
+import { Tree } from "src/index";
 import { Button } from "src/index";
 
 type Story = StoryObj;

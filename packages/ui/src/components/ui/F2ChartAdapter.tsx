@@ -102,7 +102,7 @@ function F2ChartAdapter({
   periodLabel,
   targetValue,
   unit,
-  color,
+  /* color,*/
   height = 200,
   isLoading = false,
   error = null,

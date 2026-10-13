@@ -2,7 +2,6 @@
  * Timer.stories.tsx — Pomodoro / Chronomètre (cat. 2.1 Focus).
  * `useTimer` utilise `Date.now()` pour éviter la dérive en arrière-plan.
  */
-import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   TimerDisplay,

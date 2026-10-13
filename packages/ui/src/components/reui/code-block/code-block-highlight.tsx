@@ -1031,7 +1031,7 @@ export function ansiToLines(text: string, startLine = 1): CodeBlockLine[] {
 
       const params = (match[1] || "0").split(";").map(Number)
       for (let i = 0; i < params.length; i += 1) {
-        const code = params[i]
+        const code = params[i]!
         if (code === 0) {
           delete style.color
           delete style.colorDark
@@ -1051,11 +1051,11 @@ export function ansiToLines(text: string, startLine = 1): CodeBlockLine[] {
         } else if (code >= 90 && code <= 97) {
           style.color = ansiVar(code - 82, ANSI_LIGHT[code - 82] ?? "#000")
           style.colorDark = ansiVar(code - 82, ANSI_DARK[code - 82] ?? "#000")
-        } else if (code === 38 && params[i + 1] === 5) {
+        } else if (code === 38 && (params[i + 1] ?? 0) === 5) {
           const hex = ansi256(params[i + 2] ?? 0)
           style.color = style.colorDark = hex
           i += 2
-        } else if (code === 38 && params[i + 1] === 2) {
+        } else if (code === 38 && (params[i + 1] ?? 0) === 2) {
           const [r, g, b] = [
             params[i + 2] ?? 0,
             params[i + 3] ?? 0,
@@ -1066,9 +1066,9 @@ export function ansiToLines(text: string, startLine = 1): CodeBlockLine[] {
           i += 4
         } else if (
           code === 48 &&
-          (params[i + 1] === 5 || params[i + 1] === 2)
+          ((params[i + 1] ?? 0) === 5 || (params[i + 1] ?? 0) === 2)
         ) {
-          i += params[i + 1] === 5 ? 2 : 4
+          i += (params[i + 1] ?? 0) === 5 ? 2 : 4
         }
         /* 40-47 / 100-107 backgrounds: consumed by falling through. */
       }
@@ -1129,8 +1129,8 @@ export function parseUnifiedDiff(patch: string): CodeBlockPatchFile[] {
     const fileHeader = raw.match(/^diff --git a\/(.+) b\/(.+)$/)
     const plusHeader = raw.match(/^\+\+\+ (?:b\/)?(.+)$/)
     if (fileHeader || plusHeader) {
-      const name = fileHeader ? fileHeader[2] : plusHeader![1]
-      if (name !== "/dev/null" && (!current || current.file !== name)) {
+      const name = (fileHeader ? fileHeader[2] : plusHeader![1]) ?? ""
+      if (name && name !== "/dev/null" && (!current || current.file !== name)) {
         current = { file: name, lines: [], added: 0, removed: 0, hunks: [] }
         files.push(current)
       }
@@ -1155,13 +1155,14 @@ export function parseUnifiedDiff(patch: string): CodeBlockPatchFile[] {
       )
       current.hunks.push({ header: raw, at: current.lines.length + 1 })
       push(
-        hunk[5].trim() || raw,
+        (hunk[5] ?? "").trim() || raw,
         { level: "info" },
         `${"·".padStart(width)} ${"·".padStart(width)}`
       )
       continue
     }
     if (!current || (!raw && files.length === 0)) continue
+
 
     if (raw.startsWith("+")) {
       push(raw.slice(1), { diff: "add" }, `${pad(null)} ${pad(newNumber)}`)

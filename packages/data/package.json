@@ -21,6 +21,7 @@
     "@aurora/domain": "workspace:*",
     "@powersync/capacitor": "^0.9.2",
     "@powersync/common": "2.3.0",
+    "@powersync/web": "2.4.1",
     "@supabase/supabase-js": "^2.117.1"
   }
 }

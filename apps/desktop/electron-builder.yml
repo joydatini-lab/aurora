@@ -1,0 +1,17 @@
+# electron-builder config — packaging only; the 4 plan checks run on the
+# PACKAGED build (check #1 = kill/relaunch of release/, not the dev server).
+appId: com.dyad.aurora.desktop
+productName: Aurora
+files:
+  - dist/**/*
+  - main.cjs
+  - preload.cjs
+  - package.json
+directories:
+  output: release
+win:
+  target: nsis
+mac:
+  target: dmg
+linux:
+  target: AppImage

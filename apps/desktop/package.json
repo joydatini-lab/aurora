@@ -1,0 +1,52 @@
+{
+  "name": "@aurora/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Aurora 2 desktop shell — Electron wrapper around the shared @aurora/data PowerSync engine (spike Phase 0, doc §32.5 voie A: @powersync/web WASQLite).",
+  "type": "module",
+  "main": "main.cjs",
+  "scripts": {
+    "dev": "concurrently -k \"vite --port 5199\" \"wait-on tcp:5199 && electron .\"",
+    "typecheck": "tsc --noEmit",
+    "build": "vite build",
+    "dist": "vite build && electron-builder"
+  },
+  "dependencies": {
+    "@aurora/data": "workspace:*",
+    "@powersync/web": "2.4.1",
+    "electron": "^31.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "concurrently": "^9.0.0",
+    "electron-builder": "^25.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.0",
+    "vite": "^5.4.0",
+    "wait-on": "^8.0.0"
+  },
+  "build": {
+    "appId": "com.dyad.aurora.desktop",
+    "productName": "Aurora",
+    "files": [
+      "dist/**/*",
+      "main.cjs",
+      "preload.cjs",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}

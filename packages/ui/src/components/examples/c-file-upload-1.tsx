@@ -52,7 +52,7 @@ export function Pattern() {
             {fileName}
           </p>{" "}
           <button
-            onClick={() => removeFile(files[0]?.id)}
+            onClick={() => { const f = files[0]; if (f) removeFile(f.id); }}
             className="text-destructive cursor-pointer font-medium hover:underline"
             aria-label={`Remove ${fileName}`}
           >
