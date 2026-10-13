@@ -10,9 +10,21 @@
 // se casse. On le sert nativement (non optimisé) pour que `new URL(...)`
 // du worker résolve.
 //
-// `build.rollupOptions.output.format` = ESM : le worker PowerSync fait du
-// code-splitting (2 chunks). L'`iife` (défaut Vite pour un build HTML
-// single-file) est incompatible → on émet du ESM multi-fichiers.
+// `worker.format = 'es'` (même que apps/mobile) : le worker PowerSync fait
+// du code-splitting (2 chunks). L'`iife` (défaut Vite pour un build HTML
+// single-file) est incompatible → le worker sort en module ES autonome
+// (dist/worker-<hash>.js), résolvable côté renderer Electron (file://)
+// comme côté Capacitor (CDN statique).
+//
+// `build.target = 'esnext'` + `build.minify = false` : Vite saute alors la
+// transpilation post-rollup par esbuild (voir `resolveEsbuildTranspileOptions`
+// de Vite : si `target === 'esnext'` ET pas de minify → le plugin
+// `vite:esbuild-transpile` rend `null` et ne s'appelle plus sur le binaire
+// esbuild natif). Sur cette machine Windows, le binaire esbuild natif
+// échoue à supprimer son propre temp-file dans %TEMP% (verrou antivirus
+// / Windows Search) à chaque `vite build` → plantage en phase "rendering
+// chunks". `esnext` = le renderer Electron 31 (Chromium 126+) supporte
+// nativement tout ce qu'on émet, donc aucun besoin de transpile post-rollup.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
@@ -35,14 +47,11 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        format: 'es',
-        // Un chunk par feature (le worker + l'app) : le code-splitting que
-        // `@powersync/web` exige.
-        manualChunks: undefined,
-      },
-    },
+    target: 'esnext',
+    minify: false,
+  },
+  worker: {
+    format: 'es',
   },
   optimizeDeps: {
     // Même qu'apps/mobile : le sync engine + sa famille restent hors
