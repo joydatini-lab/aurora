@@ -19,6 +19,7 @@ import type { CanvasClient } from '../lib/canvas-client';
 import type { IntegrationClient } from '../lib/integrations-client';
 import type { SkillClient } from '../lib/skills-client';
 import { createProductivityRepo } from '../lib/productivity-repo';
+import { createProgressRepo } from '../lib/progress-repo';
 
 /** The injected data provider — one repository per entity family. */
 export interface MobileDataProvider {
@@ -83,6 +84,20 @@ export interface MobileDataProvider {
    * local store (tests injecting fake repos without `createAuroraDataProvider`).
    */
   productivity?: ReturnType<typeof createProductivityRepo>;
+  /**
+   * Progress module read facade (A1 — branchement `@aurora/progress`,
+   * lot B story A1). Built at boot by `createProgressRepo` over the
+   * `LocalStore`; exposes the `skillStates` / `snapshots`
+   * `LocalQueryRepository` family over the LIMITED mirrors
+   * (`skill_states` + `progress_snapshots`, 03 S4.2 — the rich
+   * `progress_evidences` / `progress_events` / `progress_trends` tables
+   * are server-only, never mirrored, AD-7). The /progress page reads
+   * through this — it NEVER imports `@aurora/progress` directly
+   * (AD-7/AD-15: module → repo → hook → page, never the inverse).
+   * Absent when the boot provider has no local store (tests injecting
+   * fake repos without `createAuroraDataProvider`).
+   */
+  progress?: ReturnType<typeof createProgressRepo>;
   /** optional: reactive channel that invalidates the QueryClient on upsync. */
   onLocalChange?: (invalidate: () => void) => void;
 }
@@ -145,6 +160,18 @@ export const qk = {
     countdowns: (userId?: string) =>
       [...qk.productivity.all(), 'countdowns', userId ?? 'me'] as const,
   },
+  // Progress module (A1 — lot B story A1): skill_states + progress_snapshots
+  // local-mirror reads (AD-7 read side, 03 S5.8). The /progress page reads
+  // through this; the dashboard ChartSpec is computed via
+  // `computeDashboard` on top of the same mirrors (no dedicated query key
+  // needed for the boards — they invalidate with the mirror watches).
+  progress: {
+    all: () => ['progress'] as const,
+    skillStates: (userId?: string) =>
+      [...qk.progress.all(), 'skillStates', userId ?? 'me'] as const,
+    snapshots: (userId?: string) =>
+      [...qk.progress.all(), 'snapshots', userId ?? 'me'] as const,
+  },
 };
 
 /**
@@ -176,6 +203,9 @@ export function createMobileQueryClient(provider: MobileDataProvider): QueryClie
       // Productivity module (A2, lot B): habits / routines / countdowns
       // mirrors invalidate on their own downstream batches (AD-7, 03 S5.8).
       client.invalidateQueries({ queryKey: qk.productivity.all() });
+      // Progress module (A1, lot B): skill_states + progress_snapshots
+      // mirrors invalidate on their own downstream batches (AD-7, 03 S5.8).
+      client.invalidateQueries({ queryKey: qk.progress.all() });
     });
   }
 
@@ -262,6 +292,13 @@ export function mobileDataProviderFrom(
   const productivity = provider.store()
     ? createProductivityRepo(provider.store())
     : undefined;
+  // Progress module (A1, lot B): the read facade over the LIMITED
+  // progress mirrors (`skill_states` + `progress_snapshots`, 03 S4.2,
+  // AD-7 local-only, 03 S8.1). Absent when the provider has no local
+  // engine (tests injecting fake repos without a boot provider).
+  const progress = provider.store()
+    ? createProgressRepo(provider.store())
+    : undefined;
   return {
     goals,
     tasks,
@@ -273,6 +310,9 @@ export function mobileDataProviderFrom(
     // Productivity module (A2, lot B): the read facade over the
     // productivity mirrors (AD-7 local-only, 03 S8.1).
     productivity,
+    // Progress module (A1, lot B): the read facade over the LIMITED
+    // progress mirrors (AD-7 local-only, 03 S8.1).
+    progress,
     // AD-3: the publishable-scope agent client (kernel enqueue + mirror read).
     agent,
     // AD-3: the publishable-scope integrations client (Composio v3.1
@@ -307,6 +347,11 @@ export function mobileDataProviderFrom(
       provider.store().watch({ entity: 'habits' }, () => invalidate());
       provider.store().watch({ entity: 'routines' }, () => invalidate());
       provider.store().watch({ entity: 'countdown' }, () => invalidate());
+      // Progress module (A1, lot B): the LIMITED skill_states +
+      // progress_snapshots downstream batches invalidate the progress query
+      // key (AD-7, 03 S5.8).
+      provider.store().watch({ entity: 'skill_states' }, () => invalidate());
+      provider.store().watch({ entity: 'progress_snapshots' }, () => invalidate());
     },
   };
 }

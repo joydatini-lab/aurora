@@ -91,4 +91,34 @@ export function useCountdowns(userId?: string) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Progress module (A1 — lot B story A1). These hooks read through the
+// provider's `progress` read facade (created at boot from the local store).
+// NO network on mount (AD-7). Absent `progress` (tests without a boot
+// provider) → the queryFn throws, surfaced as the 5-canonical error state
+// (AD-13), never a fake data.
+// ---------------------------------------------------------------------------
+
+export function useSkillStates(userId?: string) {
+  const { progress } = useMobileData();
+  return useQuery({
+    queryKey: qk.progress.skillStates(userId),
+    queryFn: async () =>
+      progress
+        ? progress.skillStates.list({ entity: 'skill_states' })
+        : Promise.reject(new Error('progress provider not wired')),
+  });
+}
+
+export function useProgressSnapshots(userId?: string) {
+  const { progress } = useMobileData();
+  return useQuery({
+    queryKey: qk.progress.snapshots(userId),
+    queryFn: async () =>
+      progress
+        ? progress.snapshots.list({ entity: 'progress_snapshots' })
+        : Promise.reject(new Error('progress provider not wired')),
+  });
+}
+
 export type { MobileDataProvider };
