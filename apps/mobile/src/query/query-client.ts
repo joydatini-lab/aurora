@@ -11,13 +11,14 @@
  * vendor SDKs stay in packages/data, apps/mobile consumes the contract).
  */
 import { QueryClient } from '@tanstack/react-query';
-import type { LocalQueryRepository, LocalFilter } from '@aurora/data';
+import type { LocalQueryRepository, LocalFilter, LocalStore } from '@aurora/data';
 import type { AscentLearningIR, GoalProject, Task, Automation, VeilleVault } from '@aurora/domain';
 import { markFirstLocalReadSeen } from '../hooks/use-killed';
 import type { AgentClient } from '../lib/agent-client';
 import type { CanvasClient } from '../lib/canvas-client';
 import type { IntegrationClient } from '../lib/integrations-client';
 import type { SkillClient } from '../lib/skills-client';
+import { createProductivityRepo } from '../lib/productivity-repo';
 
 /** The injected data provider — one repository per entity family. */
 export interface MobileDataProvider {
@@ -70,7 +71,18 @@ export interface MobileDataProvider {
    * a local snapshot. Absent when the provider has no local engine (e.g.
    * tests injecting fake repos without the boot provider).
    */
-  store?: import('@aurora/data').LocalStore;
+  store?: LocalStore;
+  /**
+   * Productivity module read facade (A2 — branchement `@aurora/productivity`,
+   * lot B story A2). Built at boot by `createProductivityRepo` over the
+   * `LocalStore`; exposes the `habits` / `routines` / `countdown` / `tasks`
+   * / `goals` / `decisions` `LocalQueryRepository` family. The /reviews,
+   * /retro, /habits, /routines, /countdown pages read through this — they
+   * NEVER import `@aurora/productivity` directly (AD-7/AD-15: module → repo
+   * → hook → page, never the inverse). Absent when the boot provider has no
+   * local store (tests injecting fake repos without `createAuroraDataProvider`).
+   */
+  productivity?: ReturnType<typeof createProductivityRepo>;
   /** optional: reactive channel that invalidates the QueryClient on upsync. */
   onLocalChange?: (invalidate: () => void) => void;
 }
@@ -119,6 +131,20 @@ export const qk = {
     session: (sessionId: string) =>
       [...qk.canvas.all(), 'session', sessionId] as const,
   },
+  // Productivity module (A2 — lot B story A2): habits / routines / countdowns
+  // local-mirror reads (AD-7 read side, 03 S5.8). The /habits, /routines,
+  // /countdown pages read through this; the /reviews + /retro pages compute
+  // on top of the same store via `readProductivity` + `buildReview` (no
+  // dedicated query key needed — they invalidate with the mirror watches).
+  productivity: {
+    all: () => ['productivity'] as const,
+    habits: (userId?: string) =>
+      [...qk.productivity.all(), 'habits', userId ?? 'me'] as const,
+    routines: (userId?: string) =>
+      [...qk.productivity.all(), 'routines', userId ?? 'me'] as const,
+    countdowns: (userId?: string) =>
+      [...qk.productivity.all(), 'countdowns', userId ?? 'me'] as const,
+  },
 };
 
 /**
@@ -147,6 +173,9 @@ export function createMobileQueryClient(provider: MobileDataProvider): QueryClie
       // Discovery card (Lot 4): the programs + vaults invalidate on the
       // automations + discovery_vault watches (AD-7 local reads, 03 S5.8).
       client.invalidateQueries({ queryKey: qk.discovery.all() });
+      // Productivity module (A2, lot B): habits / routines / countdowns
+      // mirrors invalidate on their own downstream batches (AD-7, 03 S5.8).
+      client.invalidateQueries({ queryKey: qk.productivity.all() });
     });
   }
 
@@ -225,6 +254,14 @@ export function mobileDataProviderFrom(
   // degrades to its empty CTA, AD-7) — no first-local-read signal wrap.
   const discoveryVault = provider.discoveryVault;
   const automations = provider.automations;
+  // Productivity module (A2, lot B): the read facade over the productivity
+  // mirrors (habits / routines / countdown / tasks / goals / decisions).
+  // Built from the provider's `store()` (AD-7 local-only, 03 S8.1). Absent
+  // when the provider has no local engine (tests injecting fake repos
+  // without a boot provider).
+  const productivity = provider.store()
+    ? createProductivityRepo(provider.store())
+    : undefined;
   return {
     goals,
     tasks,
@@ -233,6 +270,9 @@ export function mobileDataProviderFrom(
     // Discovery card (Lot 4): expose the vault + programs read-only mirrors.
     discoveryVault,
     automations,
+    // Productivity module (A2, lot B): the read facade over the
+    // productivity mirrors (AD-7 local-only, 03 S8.1).
+    productivity,
     // AD-3: the publishable-scope agent client (kernel enqueue + mirror read).
     agent,
     // AD-3: the publishable-scope integrations client (Composio v3.1
@@ -262,6 +302,11 @@ export function mobileDataProviderFrom(
       // downstream batches invalidate the discovery query key (AD-7, 03 S5.8).
       provider.store().watch({ entity: 'discovery_vault' }, () => invalidate());
       provider.store().watch({ entity: 'automations' }, () => invalidate());
+      // Productivity module (A2, lot B): the habits / routines / countdown
+      // downstream batches invalidate the productivity query key (AD-7, 03 S5.8).
+      provider.store().watch({ entity: 'habits' }, () => invalidate());
+      provider.store().watch({ entity: 'routines' }, () => invalidate());
+      provider.store().watch({ entity: 'countdown' }, () => invalidate());
     },
   };
 }

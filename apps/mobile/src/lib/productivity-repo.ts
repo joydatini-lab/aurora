@@ -5,7 +5,8 @@
  * `buildReview`, `aggregateAnalytics`, `habitStreak`, `habitHeatmap`,
  * `quadrantBoard`. C'est **ce repo** (confiné à la couche provider, AD-15)
  * qui consomme le module et le relie au store local `LocalStore` (PowerSync
- * miroirs : `tasks`, `habits`, `decisions`, `goals`).
+ * miroirs : `tasks`, `habits`, `routines`, `decisions`, `goals` —
+ * packages/data/powersync-schema.ts).
  *
  * Pattern : le module ne fait JAMAIS de réseau (AD-7 local-first) ; il
  * reçoit les entités du `LocalStore` et produit des types SSoT
@@ -13,8 +14,8 @@
  * lit le hook React Query — elle n'importe jamais `@aurora/productivity`.
  *
  * Les miroirs PowerSync sont en snake_case ; le module attend du camelCase
- * (`Task`, `Goal`, `Decision`, `Habit` de `@aurora/domain`). Ce repo fait
- * le mapping snake→camel (pattern `ascent-repo.ts`).
+ * (`Task`, `Goal`, `Decision` de `@aurora/domain`). Ce repo fait le mapping
+ * snake→camel (pattern `ascent-repo.ts`).
  */
 import type {
   Goal,
@@ -22,8 +23,9 @@ import type {
   Decision,
   OrSetValue,
   TaskStatus,
+  Countdown,
 } from '@aurora/domain';
-import type { LocalStore } from '@aurora/data';
+import type { LocalFilter, LocalQueryRepository, LocalStore } from '@aurora/data';
 import {
   buildReview,
   aggregateAnalytics,
@@ -50,14 +52,33 @@ const str = (v: unknown): string | undefined =>
 const optStr = (v: unknown): string | undefined =>
   v === null || v === undefined ? undefined : String(v);
 
-/** JSONB-in-TEXT → array (PowerSync stores OR-Set JSONB as TEXT). */
-function orSet(value: unknown): OrSetValue[] {
-  if (value == null) return [];
-  if (Array.isArray(value)) return value as OrSetValue[];
+/**
+ * Le miroir tasks stocke les OR-Sets CRDT dans `crdt_added` /
+ * `crdt_removed` (packages/data/powersync-schema.ts). `orSetValues`
+ * (modules/productivity) produit exactement ce shape : la valeur effective =
+ * les éléments `v` qui n'ont pas encore été supprîmés. C'est la SSoT de
+ * lecture du contenu des OR-Sets à partir d'un miroir.
+ */
+const strOrSet = (v: unknown): OrSetValue[] => {
+  if (Array.isArray(v)) return v as OrSetValue[];
+  if (typeof v === 'string') {
+    try {
+      const parsed: unknown = JSON.parse(v);
+      return Array.isArray(parsed) ? (parsed as OrSetValue[]) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
+/** JSONB-in-TEXT → parsed array (PowerSync stores JSONB columns as TEXT). */
+function jsonArr(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value;
   if (typeof value === 'string') {
     try {
       const parsed: unknown = JSON.parse(value);
-      return Array.isArray(parsed) ? (parsed as OrSetValue[]) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -66,57 +87,66 @@ function orSet(value: unknown): OrSetValue[] {
 }
 
 function mapTask(row: RawRow): Task {
+  const status = (str(row.status) as TaskStatus | undefined) ?? 'todo';
+  const dueDate = optStr(row.due_date ?? row.due_at);
+  const completedAt = optStr(row.completed_at);
+  return {
+    id: str(row.id) ?? '',
+    userId: str(row.user_id) ?? '',
+    title: str(row.subject ?? row.title) ?? '',
+    description: optStr(row.description),
+    status,
+    projectId: optStr(row.project_id),
+    subjectId: optStr(row.subject_id),
+    goalId: optStr(row.goal_id),
+    // due_at absent du miroir (côté server : due_date) ; on map la colonne
+    // miroir vers le champ entité — `completed_at` sert de `updatedAt`
+    // substitut seulement quand le miroir n'a pas `updated_at`.
+    dueAt: dueDate,
+    priority:
+      typeof row.priority === 'number' ? row.priority : undefined,
+    tags: strOrSet(row.tags ?? row.crdt_added),
+    dependencies: strOrSet(row.dependencies ?? row.crdt_removed),
+    evidenceRefs: strOrSet(row.evidence_refs ?? row.evidenceRefs),
+    timeSpentSec:
+      typeof row.time_spent_sec === 'number'
+        ? row.time_spent_sec
+        : undefined,
+    recurring: row.recurring === true,
+    recurrenceRule: optStr(row.recurrence_rule),
+    createdAt: str(row.created_at) ?? '',
+    updatedAt: str(row.updated_at) ?? completedAt ?? '',
+  };
+}
+
+function mapGoal(row: RawRow): Goal {
+  const status = (str(row.status) as Goal['status'] | undefined) ?? 'active';
   return {
     id: str(row.id) ?? '',
     userId: str(row.user_id) ?? '',
     title: str(row.title) ?? '',
     description: optStr(row.description),
-    status: (str(row.status) as TaskStatus | undefined) ?? 'todo',
-    projectId: optStr(row.project_id),
-    subjectId: optStr(row.subject_id),
-    goalId: optStr(row.goal_id),
-    dueAt: optStr(row.due_at),
-    priority:
-      typeof row.priority === 'number' ? row.priority : undefined,
-    tags: orSet(row.tags),
-    dependencies: orSet(row.dependencies),
-    evidenceRefs: orSet(row.evidence_refs ?? row.evidenceRefs),
-    timeSpentSec:
-      typeof row.time_spent_sec === 'number' ? row.time_spent_sec : undefined,
-    recurring: row.recurring === true,
-    recurrenceRule: optStr(row.recurrence_rule),
+    horizon: 'short',
+    status,
+    targetDate: optStr(row.target_date),
     createdAt: str(row.created_at) ?? '',
     updatedAt: str(row.updated_at) ?? '',
   };
 }
 
-function mapGoal(row: RawRow): Goal {
-  return {
-    id: str(row.id) ?? '',
-    userId: str(row.user_id) ?? '',
-    title: str(row.title) ?? '',
-    description: optStr(row.description),
-    status: (str(row.status) as Goal['status'] | undefined) ?? 'active',
-    targetDate: optStr(row.target_date),
-    createdAt: str(row.created_at) ?? '',
-    updatedAt: str(row.updated_at) ?? '',
-  } as Goal;
-}
-
 function mapDecision(row: RawRow): Decision {
+  // Le miroir decisions a la colonne `decision` (pas `title`) — cf.
+  // powersync-schema.ts. Le `alternatives` field est absent du miroir (
+  // server-side only), pas de colonne miroir : `undefined` honnête (AD-7).
   return {
     id: str(row.id) ?? '',
     userId: str(row.user_id) ?? '',
-    title: str(row.title) ?? '',
+    title: str(row.decision ?? row.title) ?? '',
     rationale: optStr(row.rationale),
-    alternatives: Array.isArray(row.alternatives)
-      ? (row.alternatives as string[])
-      : optStr(row.alternatives)
-        ? [optStr(row.alternatives) as string]
-        : undefined,
-    decidedAt: str(row.decided_at) ?? '',
+    alternatives: undefined,
+    decidedAt: str(row.decided_at) ?? str(row.created_at) ?? '',
     context: optStr(row.context),
-    linkedTaskIds: orSet(row.linked_task_ids ?? row.linkedTaskIds),
+    linkedTaskIds: strOrSet(row.linked_task_ids ?? row.linkedTaskIds),
     createdAt: str(row.created_at) ?? '',
     updatedAt: str(row.updated_at) ?? '',
   };
@@ -124,39 +154,94 @@ function mapDecision(row: RawRow): Decision {
 
 export interface HabitRow {
   id: string;
+  title: string;
   cadence: HabitCadence;
   weekdays?: number[];
+  recurrenceRule?: string;
+  /** Ascending UTC day keys `YYYY-MM-DD` (source du streak / heatmap). */
   completions: string[];
 }
 
 function mapHabit(row: RawRow): HabitRow {
-  const frequency = row.frequency;
   let cadence: HabitCadence = 'daily';
   let weekdays: number[] | undefined;
-  if (frequency && typeof frequency === 'object') {
-    const f = frequency as Record<string, unknown>;
-    cadence = (str(f.cadence) as HabitCadence | undefined) ?? 'daily';
-    if (Array.isArray(f.weekdays)) weekdays = f.weekdays as number[];
-  }
-  let completions: string[] = [];
-  const rawCompletions = row.completions;
-  if (rawCompletions == null) {
-    completions = [];
-  } else if (Array.isArray(rawCompletions)) {
-    completions = rawCompletions.map(String);
-  } else if (typeof rawCompletions === 'string') {
-    try {
-      const parsed: unknown = JSON.parse(rawCompletions);
-      completions = Array.isArray(parsed) ? parsed.map(String) : [];
-    } catch {
-      completions = [];
+  let recurrenceRule: string | undefined;
+  const freqRaw = row.frequency;
+  if (freqRaw != null) {
+    // Le miroir habits.frequency est une colonne JSONB-in-TEXT
+    // ({ cadence, weekdays?, rule? }). Si c'est déjà un object parsé,
+    // on l'utilise directement ; sinon on JSON.parse.
+    let freq: Record<string, unknown> | undefined;
+    if (typeof freqRaw === 'object') freq = freqRaw as Record<string, unknown>;
+    else if (typeof freqRaw === 'string') {
+      try {
+        freq = JSON.parse(freqRaw) as Record<string, unknown>;
+      } catch {
+        freq = undefined;
+      }
+    }
+    if (freq) {
+      cadence = (str(freq.cadence) as HabitCadence | undefined) ?? 'daily';
+      if (Array.isArray(freq.weekdays)) weekdays = freq.weekdays as number[];
+      recurrenceRule = str(freq.rule ?? freq.recurrenceRule);
     }
   }
+  // Les completions ne sont PAS une colonne miroir (habits ne les a pas) ;
+  // elles vivent dans la table server-side des completions de habitude
+  // (règle single-writer, AD-7). On les lit honnêtement : `completions`
+  // miroir si présent (ex. un miroir étendu), sinon [] — pas d'invention.
+  const completions: string[] = jsonArr(row.completions ?? row.crdt_added).map(
+    String,
+  );
   return {
     id: str(row.id) ?? '',
+    title: str(row.title) ?? '',
     cadence,
     weekdays,
+    recurrenceRule,
     completions,
+  };
+}
+
+export interface RoutineRow {
+  id: string;
+  title: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function mapRoutine(row: RawRow): RoutineRow {
+  return {
+    id: str(row.id) ?? '',
+    title: str(row.title) ?? '',
+    description: optStr(row.description),
+    createdAt: str(row.created_at) ?? '',
+    updatedAt: str(row.updated_at) ?? '',
+  };
+}
+
+export interface CountdownRow {
+  id: string;
+  userId: string;
+  kind: Countdown['kind'];
+  title: string;
+  targetDate: string;
+  imageUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function mapCountdown(row: RawRow): CountdownRow {
+  return {
+    id: str(row.id) ?? '',
+    userId: str(row.user_id) ?? '',
+    kind: (str(row.kind) as Countdown['kind'] | undefined) ?? 'countdown',
+    title: str(row.title) ?? '',
+    targetDate: str(row.target_date ?? row.targetDate) ?? '',
+    imageUrl: optStr(row.image_url ?? row.imageUrl),
+    createdAt: str(row.created_at) ?? '',
+    updatedAt: str(row.updated_at) ?? '',
   };
 }
 
@@ -179,9 +264,15 @@ export interface ProductivityRead {
   goals: Goal[];
   decisions: Decision[];
   habits: HabitRow[];
+  routines: RoutineRow[];
+  countdowns: CountdownRow[];
 }
 
-/** Read the productivity input sets from the local store. */
+/**
+ * Read the productivity input sets from the local store (AD-7 local-only).
+ * No network — the store is a local snapshot; a stale mirror is a frozen
+ * productivity view, never an error.
+ */
 export function readProductivity(
   store: LocalStore,
   userId?: string,
@@ -191,6 +282,138 @@ export function readProductivity(
     goals: collectRows(store, 'goals', userId).map(mapGoal),
     decisions: collectRows(store, 'decisions', userId).map(mapDecision),
     habits: collectRows(store, 'habits', userId).map(mapHabit),
+    routines: collectRows(store, 'routines', userId).map(mapRoutine),
+    // `countdown` n'est PAS encore un miroir PowerSync (domain entity
+    // local-only, AD-7) ; on lit honnêtement la table miroir si elle existe,
+    // sinon un store vide rend [] — l'état vide honnête de /countdown.
+    countdowns: collectRows(store, 'countdown', userId).map(mapCountdown),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// LocalQueryRepository facade (pattern `ascent-repo.ts` /
+// `automations-repo.ts`) — the provider-layer read surface the QueryClient
+// and the /reviews, /retro, /habits, /routines, /countdown pages consume.
+//
+// One entry point per entity family the pages read. `habits` and `routines`
+// are the native mirror entities; `tasks` / `goals` / `decisions` are
+// re-exposed through this repo so the pages don't bypass the provider layer
+// and reach the raw `provider.tasks` / `provider.goals` repos directly.
+// `countdown` reads the local-only table (AD-7).
+// ---------------------------------------------------------------------------
+
+/** camelCase `where` keys → the snake_case mirror column names. */
+function toSnakeWhere(
+  where?: Record<string, unknown>,
+): Record<string, unknown> | undefined {
+  if (!where) return undefined;
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(where)) {
+    out[key.replace(/([A-Z])/g, (m) => '_' + m.toLowerCase())] = value;
+  }
+  return out;
+}
+
+function matches(
+  row: RawRow,
+  where?: Record<string, unknown>,
+): boolean {
+  return !where || Object.entries(where).every(([k, v]) => row[k] === v);
+}
+
+/**
+ * Build the productivity `LocalQueryRepository` family over the `LocalStore`
+ * mirrors (`tasks`, `habits`, `routines`, `decisions`, `countdown`).
+ * Read-only + local (AD-7): the write side lives in `@aurora/productivity`
+ * (commands) + the upsync queue; this repo is the READ path only.
+ */
+export function createProductivityRepo(
+  store: LocalStore,
+): {
+  habits: LocalQueryRepository<HabitRow>;
+  routines: LocalQueryRepository<RoutineRow>;
+  countdowns: LocalQueryRepository<CountdownRow>;
+  tasks: LocalQueryRepository<Task>;
+  goals: LocalQueryRepository<Goal>;
+  decisions: LocalQueryRepository<Decision>;
+} {
+  const listMirror =
+    <T>(
+      entity: string,
+      mapRow: (row: RawRow) => T,
+    ): ((filter: LocalFilter<T>) => Promise<T[]>) =>
+    async (filter: LocalFilter<T>) => {
+      const where = toSnakeWhere(
+        filter.where as Record<string, unknown> | undefined,
+      );
+      return (store.allRows(entity) as RawRow[])
+        .filter((row) => matches(row, where))
+        .map(mapRow);
+    };
+
+  const watchMirror =
+    <T>(
+      entity: string,
+      mapRow: (row: RawRow) => T,
+    ): ((
+      filter: LocalFilter<T>,
+      onChange: (rows: T[]) => void,
+    ) => () => void) =>
+    (filter: LocalFilter<T>, onChange: (rows: T[]) => void) => {
+      const where = toSnakeWhere(
+        filter.where as Record<string, unknown> | undefined,
+      );
+      const deliver = (rows: RawRow[]): void => {
+        onChange(rows.filter((row) => matches(row, where)).map(mapRow));
+      };
+      deliver(store.allRows(entity) as RawRow[]);
+      return store.watch(
+        { entity, where } as unknown as LocalFilter<T>,
+        (rows) => deliver(rows as RawRow[]),
+      );
+    };
+
+  const getById =
+    <T>(
+      entity: string,
+      mapRow: (row: RawRow) => T,
+    ): ((id: string) => Promise<T | undefined>) =>
+    async (id: string) => {
+      const row = store.row(entity, id) as RawRow | undefined;
+      return row === undefined ? undefined : mapRow(row);
+    };
+
+  return {
+    habits: {
+      getById: getById('habits', mapHabit),
+      list: listMirror('habits', mapHabit),
+      watch: watchMirror('habits', mapHabit),
+    },
+    routines: {
+      getById: getById('routines', mapRoutine),
+      list: listMirror('routines', mapRoutine),
+      watch: watchMirror('routines', mapRoutine),
+    },
+    countdowns: {
+      getById: getById('countdown', mapCountdown),
+      list: listMirror('countdown', mapCountdown),
+      watch: watchMirror('countdown', mapCountdown),
+    },
+    tasks: {
+      getById: getById('tasks', mapTask),
+      list: listMirror('tasks', mapTask),
+      watch: watchMirror('tasks', mapTask),
+    },
+    goals: {
+      getById: getById('goals', mapGoal),
+      list: listMirror('goals', mapGoal),
+      watch: watchMirror('goals', mapGoal),
+    },
+    decisions: {
+      getById: getById('decisions', mapDecision),
+      list: listMirror('decisions', mapDecision),
+      watch: watchMirror('decisions', mapDecision),
+    },
   };
 }
 
@@ -249,14 +472,34 @@ export function computeHabitHeatmap(
   );
 }
 
-/** Quadrant board (G-L5 explainable prioritization). */
+/** Quadrant board (G-L5 explainable prioritization, eisenhower.ts). */
 export function computeQuadrantBoard(
   store: LocalStore,
   userId?: string,
   nowMs = Date.now(),
 ): Record<Quadrant, Task[]> {
   const data = readProductivity(store, userId);
-  return quadrantBoard(data.tasks, nowMs);
+  return quadrantBoard(data.tasks, new Date(nowMs));
+}
+
+/** Days-left for a countdown row (DERIVED, AD-7 : targetDate - now). */
+export function computeCountdownDaysLeft(
+  targetDateIso: string,
+  nowMs = Date.now(),
+): number {
+  // targetDate peut être un jour simple (`YYYY-MM-DD`) OU un timestamp
+  // complet ISO 8601 (le miroir `countdown.target_date` est `column.text`
+  // — le module `@aurora/productivity` l'écrit en `toISOString()` complet).
+  // `Date.parse` gère les deux ; pas de suffixe `T00:00:00Z` ajouté quand
+  // la chaîne contient déjà une heure (sinon NaN → 0, faux résultat).
+  const hasTime = /\d{2}-\d{2}-\d{2}T/.test(targetDateIso);
+  const targetMs = Date.parse(hasTime ? targetDateIso : targetDateIso + 'T00:00:00Z');
+  if (Number.isNaN(targetMs)) return 0;
+  const todayMs = new Date(nowMs);
+  todayMs.setUTCHours(0, 0, 0, 0);
+  const targetDayMs = new Date(targetMs);
+  targetDayMs.setUTCHours(0, 0, 0, 0);
+  return Math.round((targetDayMs.getTime() - todayMs.getTime()) / 86_400_000);
 }
 
 export type {

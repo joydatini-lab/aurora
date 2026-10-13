@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.capacitor.json",
     "lint": "eslint src capacitor.config.ts --max-warnings 0",
     "dev": "vite",
-    "build:web": "vite build"
+    "build:web": "vite build",
+    "test": "node --experimental-strip-types --no-warnings --import ./test/register-resolve-hook.mjs --test test/productivity-wiring.test.ts"
   },
   "dependencies": {
     "@aurora/agent": "workspace:*",
@@ -17,6 +18,7 @@
     "@aurora/focus": "workspace:*",
     "@aurora/goal-engine": "workspace:*",
     "@aurora/platform": "workspace:*",
+    "@aurora/productivity": "workspace:*",
     "@aurora/ui": "workspace:*",
     "@capacitor/android": "^7.6.9",
     "@capacitor/core": "^7.6.9",

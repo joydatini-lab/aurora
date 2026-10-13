@@ -50,4 +50,45 @@ export function useTask(taskId: string | undefined) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Productivity module (A2 — lot B story A2). These hooks read through the
+// provider's `productivity` read facade (created at boot from the local
+// store). NO network on mount (AD-7). Absent `productivity` (tests without
+// a boot provider) → the queryFn throws, surfaced as the 5-canonical error
+// state (AD-13), never a fake data.
+// ---------------------------------------------------------------------------
+
+export function useHabits(userId?: string) {
+  const { productivity } = useMobileData();
+  return useQuery({
+    queryKey: qk.productivity.habits(userId),
+    queryFn: async () =>
+      productivity
+        ? productivity.habits.list({ entity: 'habits' })
+        : Promise.reject(new Error('productivity provider not wired')),
+  });
+}
+
+export function useRoutines(userId?: string) {
+  const { productivity } = useMobileData();
+  return useQuery({
+    queryKey: qk.productivity.routines(userId),
+    queryFn: async () =>
+      productivity
+        ? productivity.routines.list({ entity: 'routines' })
+        : Promise.reject(new Error('productivity provider not wired')),
+  });
+}
+
+export function useCountdowns(userId?: string) {
+  const { productivity } = useMobileData();
+  return useQuery({
+    queryKey: qk.productivity.countdowns(userId),
+    queryFn: async () =>
+      productivity
+        ? productivity.countdowns.list({ entity: 'countdown' })
+        : Promise.reject(new Error('productivity provider not wired')),
+  });
+}
+
 export type { MobileDataProvider };
