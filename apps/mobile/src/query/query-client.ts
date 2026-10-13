@@ -21,6 +21,7 @@ import type { SkillClient } from '../lib/skills-client';
 import { createProductivityRepo } from '../lib/productivity-repo';
 import { createProgressRepo } from '../lib/progress-repo';
 import { createLearningRepo } from '../lib/learning-repo';
+import { createDiscoveryRepo } from '../lib/discovery-repo';
 
 /** The injected data provider — one repository per entity family. */
 export interface MobileDataProvider {
@@ -111,6 +112,20 @@ export interface MobileDataProvider {
    * fake repos without `createAuroraDataProvider`).
    */
   learning?: ReturnType<typeof createLearningRepo>;
+  /**
+   * Discovery module read facade (A4 — branchement `@aurora/discovery`,
+   * lot B story A4). Built at boot by `createDiscoveryRepo` over the
+   * `LocalStore`; exposes the `items` / `gaps`
+   * `LocalQueryRepository` family over the `discovery_items` +
+   * `gaps` mirrors (03 S4.2, AD-7 local-only). The /discovery page
+   * reads through this — it NEVER imports `@aurora/discovery` directly
+   * (AD-7/AD-15: module → repo → hook → page, never the inverse).
+   * The search itself is SERVER-ONLY (AD-12/F-09) via `fn-research`
+   * EF — the device reads the mirrored results (`discovery_items`).
+   * Absent when the boot provider has no local store (tests injecting
+   * fake repos without `createAuroraDataProvider`).
+   */
+  discovery?: ReturnType<typeof createDiscoveryRepo>;
   /** optional: reactive channel that invalidates the QueryClient on upsync. */
   onLocalChange?: (invalidate: () => void) => void;
 }
@@ -198,6 +213,19 @@ export const qk = {
     reviews: (userId?: string) =>
       [...qk.learning.all(), 'reviews', userId ?? 'me'] as const,
   },
+  // Discovery module (A4 — lot B story A4): discovery_items + gaps
+  // local-mirror reads (AD-7 read side, 03 S5.8). The /discovery page
+  // reads through this; the search is SERVER-ONLY (AD-12/F-09) via
+  // `fn-research` EF — the device reads the mirrored results.
+  // Reuses the `qk.discovery` namespace (already declared above for the
+  // Lot 4 `programs` + `vaults`); adds the `items` + `gaps` entries.
+  discoveryItems: {
+    all: () => ['discoveryItems'] as const,
+    items: (userId?: string) =>
+      [...qk.discoveryItems.all(), 'items', userId ?? 'me'] as const,
+    gaps: (userId?: string) =>
+      [...qk.discoveryItems.all(), 'gaps', userId ?? 'me'] as const,
+  },
 };
 
 /**
@@ -235,6 +263,9 @@ export function createMobileQueryClient(provider: MobileDataProvider): QueryClie
       // Learning module (A3, lot B): learning_sessions + reviews mirrors
       // invalidate on their own downstream batches (AD-7, 03 S5.8).
       client.invalidateQueries({ queryKey: qk.learning.all() });
+      // Discovery module (A4, lot B): discovery_items + gaps mirrors
+      // invalidate on their own downstream batches (AD-7, 03 S5.8).
+      client.invalidateQueries({ queryKey: qk.discoveryItems.all() });
     });
   }
 
@@ -335,6 +366,13 @@ export function mobileDataProviderFrom(
   const learning = provider.store()
     ? createLearningRepo(provider.store())
     : undefined;
+  // Discovery module (A4, lot B): the read facade over the discovery
+  // mirrors (`discovery_items` + `gaps`, 03 S4.2, AD-7 local-only,
+  // 03 S8.1). Absent when the provider has no local engine (tests
+  // injecting fake repos without a boot provider).
+  const discovery = provider.store()
+    ? createDiscoveryRepo(provider.store())
+    : undefined;
   return {
     goals,
     tasks,
@@ -352,6 +390,9 @@ export function mobileDataProviderFrom(
     // Learning module (A3, lot B): the read facade over the learning
     // mirrors (AD-7 local-only, 03 S8.1).
     learning,
+    // Discovery module (A4, lot B): the read facade over the discovery
+    // mirrors (AD-7 local-only, 03 S8.1).
+    discovery,
     // AD-3: the publishable-scope agent client (kernel enqueue + mirror read).
     agent,
     // AD-3: the publishable-scope integrations client (Composio v3.1
@@ -395,6 +436,11 @@ export function mobileDataProviderFrom(
       // downstream batches invalidate the learning query key (AD-7, 03 S5.8).
       provider.store().watch({ entity: 'learning_sessions' }, () => invalidate());
       provider.store().watch({ entity: 'reviews' }, () => invalidate());
+      // Discovery module (A4, lot B): the discovery_items + gaps
+      // downstream batches invalidate the discoveryItems query key
+      // (AD-7, 03 S5.8).
+      provider.store().watch({ entity: 'discovery_items' }, () => invalidate());
+      provider.store().watch({ entity: 'gaps' }, () => invalidate());
     },
   };
 }

@@ -151,4 +151,36 @@ export function useLearningReviews(userId?: string) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Discovery module (A4 — lot B story A4). These hooks read through the
+// provider's `discovery` read facade (created at boot from the local store).
+// NO network on mount (AD-7). The search is SERVER-ONLY (AD-12/F-09) via
+// `fn-research` EF — the device reads the mirrored results
+// (`discovery_items` + `gaps`). Absent `discovery` (tests without a boot
+// provider) → the queryFn throws, surfaced as the 5-canonical error state
+// (AD-13), never a fake data.
+// ---------------------------------------------------------------------------
+
+export function useDiscoveryItems(userId?: string) {
+  const { discovery } = useMobileData();
+  return useQuery({
+    queryKey: qk.discoveryItems.items(userId),
+    queryFn: async () =>
+      discovery
+        ? discovery.items.list({ entity: 'discovery_items' })
+        : Promise.reject(new Error('discovery provider not wired')),
+  });
+}
+
+export function useDiscoveryGaps(userId?: string) {
+  const { discovery } = useMobileData();
+  return useQuery({
+    queryKey: qk.discoveryItems.gaps(userId),
+    queryFn: async () =>
+      discovery
+        ? discovery.gaps.list({ entity: 'gaps' })
+        : Promise.reject(new Error('discovery provider not wired')),
+  });
+}
+
 export type { MobileDataProvider };

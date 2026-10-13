@@ -82,6 +82,9 @@ importers:
       '@aurora/data':
         specifier: workspace:*
         version: link:../../packages/data
+      '@aurora/discovery':
+        specifier: workspace:*
+        version: link:../../packages/discovery
       '@aurora/domain':
         specifier: workspace:*
         version: link:../../packages/domain
