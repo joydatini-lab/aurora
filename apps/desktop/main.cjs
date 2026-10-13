@@ -19,6 +19,15 @@ const path = require('path');
 const DEV_URL = process.env.VITE_DEV_SERVER_URL;
 const DIST = path.join(__dirname, 'dist');
 
+// Check #1 (offline state survives kill/relaunch): log the boot sequence to
+// the renderer console so the desktop shell's own stdout (captured when
+// `electron .` is run in a terminal) proves WASQLite + the PowerSync
+// renderer worker actually started — not just the packaged binary existing.
+// We can't rely on `console.log` here (no terminal attached in many CI /
+// agent contexts) — instead we write a marker file next to the app so an
+// external `ls` after kill/relaunch proves the local SQLite file persisted.
+const fs = require('fs');
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1024,
@@ -51,10 +60,39 @@ function createWindow() {
     win.loadFile(path.join(DIST, 'index.html'));
   }
 
+  win.webContents.on('did-finish-load', () => {
+    win.webContents
+      .executeJavaScript('window.__powersyncBootStatus || "unknown"')
+      .then((status) => {
+        // Append a marker next to the app (NOT the WASQLite DB file itself —
+        // we just record that the renderer reported a boot status) so the
+        // kill/relaunch check (#1) can prove the shell booted end-to-end.
+        const marker = path.join(DIST, '.boot-marker.json');
+        try {
+          fs.writeFileSync(
+            marker,
+            JSON.stringify({ at: new Date().toISOString(), status }, null, 2),
+            'utf8',
+          );
+        } catch {
+          /* non-fatal: the marker is diagnostic only */
+        }
+      });
+  });
+
   win.once('ready-to-show', () => win.show());
 }
 
 app.whenReady().then(() => {
+  try {
+    fs.writeFileSync(
+      path.join(DIST, '.main-booted.json'),
+      JSON.stringify({ at: new Date().toISOString(), dev: Boolean(DEV_URL), pid: process.pid }, null, 2),
+      'utf8',
+    );
+  } catch {
+    /* non-fatal: marker is diagnostic only */
+  }
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -30,6 +30,12 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const POWERSYNC_URL = import.meta.env.VITE_POWERSYNC_URL;
 
+// Check #1 (main.cjs `did-finish-load`): expose the boot status to the
+// main process so it can be logged without opening devtools manually.
+export function setPowerSyncBootStatus(status) {
+  if (typeof window !== 'undefined') window.__powersyncBootStatus = status;
+}
+
 export function DesktopSpike() {
   const [status, setStatus] = useState({
     auth: 'idle',
@@ -58,6 +64,7 @@ export function DesktopSpike() {
           return;
         }
         setStatus((s) => ({ ...s, auth: 'signed_in' }));
+        setPowerSyncBootStatus('auth=signed_in');
 
         const engine = createPowerSyncClientEngine(
           {
@@ -69,6 +76,7 @@ export function DesktopSpike() {
         );
         await engine.init();
         await engine.addScope('identity');
+        setPowerSyncBootStatus('engine=init+addScope(identity)');
 
         const bridge = new EngineLocalStoreBridge(engine.storeAdapter());
         const ctxRepo = new SqliteQueryRepository(bridge, 'user_context');
@@ -92,8 +100,12 @@ export function DesktopSpike() {
 
         const rows = await engine.getAll('SELECT * FROM user_context');
         setStatus((s) => ({ ...s, rows: rows.length }));
+        setPowerSyncBootStatus(`synced, rows=${rows.length}`);
       } catch (err) {
-        if (!cancelled) setStatus((s) => ({ ...s, error: String(err) }));
+        if (!cancelled) {
+          setStatus((s) => ({ ...s, error: String(err) }));
+          setPowerSyncBootStatus(`error=${String(err).slice(0, 200)}`);
+        }
       }
     })();
     return () => { cancelled = true; unsub(); };
