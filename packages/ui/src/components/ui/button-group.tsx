@@ -18,8 +18,6 @@
 // `@radix-ui/react-primitives`, non présent dans `packages/ui`).
 
 import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-
 import { cn } from "src/lib/utils"
 
 /**

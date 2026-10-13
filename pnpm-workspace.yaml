@@ -5,6 +5,9 @@ packages:
   - "tests/*"
 minimumReleaseAge: 1440
 
+minimumReleaseAgeExclude:
+  - "@assistant-ui/*"
+
 allowBuilds:
   # dyad-default-allow-builds begin
   # dyad-default-allow-builds-schema=v1
