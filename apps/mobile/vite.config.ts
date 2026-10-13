@@ -24,7 +24,28 @@ import react from '@vitejs/plugin-react';
  * resolve in the mobile build, so any `src/...` import is routed back to
  * `packages/ui/src/...`. Only `packages/ui` uses this form (verified), and
  * mobile's own code never does, so it is safe to route globally.
+ *
+ * esbuild fix (2026-10-13, same machine incident as apps/desktop): this
+ * host's global esbuild (v0.28.2, hoisted under `C:\Users\joyda\node_modules`)
+ * cannot delete its own temp-file in `%TEMP%` (antivirus/indexer lock —
+ * "Accès refusé" at every `vite build` post-rollup transpile). The fix is to
+ * make Vite's own module-resolution start from the workspace root so it
+ * always binds the *workspace* esbuild (v0.21.5, `node_modules/.pnpm`,
+ * verified working via `transformSync` above), never the global one. This
+ * runs at config-load time, BEFORE Vite is imported — hence the
+ * `vite.config.cjs`-style re-require pattern: the main `vite.config.ts` is
+ * transpiled + executed by Vite's own loader, which has already `require()`'d
+ * the global esbuild. `preload-esbuild.mjs` runs first (a tiny, explicit
+ * `node --import` hook wired in the package.json `build` script below) and
+ * pins `require('esbuild')` resolution to the pnpm store.
  */
+
+// See `preload-esbuild.mjs` + `apps/mobile/package.json` `build` script for
+// the actual mechanism — this file intentionally does NOT try to patch
+// Node's module cache here: Vite's config loader (this very file) has already
+// imported Vite, which has already imported esbuild by the time any code in
+// this file runs. The only way to intercept is *before* Vite loads — i.e. in
+// a separate module that Node's `--import` preloads first.
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pkgSrc = (name: string) => path.resolve(here, `../../packages/${name}/src`);
 
@@ -100,7 +121,20 @@ export default defineConfig({
     // `webDir` in capacitor.config.ts = 'dist' — Capacitor ships this dir.
     outDir: 'dist',
     sourcemap: true,
-    target: 'es2020',
+    // `esnext` (pas `es2020`): le bundle mobile n'est pas servi à de vieux
+    // webviews — les Capacitor webviews courantes (iOS 16+ / Android 12+,
+    // 2026) supportent nativement ES2022/23. Avec `esnext` ET `minify: false`,
+    // Vite saute la transpilation post-rollup par esbuild (`vite:esbuild-transpile`
+    // rend `null` — voir `resolveEsbuildTranspileOptions`) : sur cette machine
+    // Windows, le binaire esbuild natif échoue à supprimer son propre
+    // temp-file dans %TEMP% ("Accès refusé", verrou antivirus/indexer —
+    // même incident qu'apps/desktop, fix 2026-10-13 commité comme 7c8cc8b).
+    // Le code source `.ts/.tsx` est transpilé par esbuild via le pipeline
+    // d'optimisation des dépendances + plugins (qui fonctionne
+    // correctement, vérifié via `transformSync`) ; seul le post-transpile
+    // du chunk final saute.
+    target: 'esnext',
+    minify: false,
     // PowerSync ships a Web Worker (`@powersync/web/lib/worker/client.js`
     // calls `new Worker(new URL('./worker.js', import.meta.url))`). Vite's
     // dep optimizer inlines the worker file in DEV (the `optimizeDeps.exclude`
