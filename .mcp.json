@@ -6,7 +6,18 @@
     },
     "maestro": {
       "command": "C:\\maestro\\bin\\maestro.bat",
-      "args": ["mcp", "--no-viewer"]
+      "args": [
+        "mcp",
+        "--no-viewer"
+      ]
+    },
+    "storybook-mcp": {
+      "url": "http://localhost:6006/mcp",
+      "type": "http"
+    },
+    "reui": {
+      "type": "http",
+      "url": "https://mcp.reui.io/api/mcp"
     }
   }
 }

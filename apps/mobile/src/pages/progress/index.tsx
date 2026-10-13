@@ -10,6 +10,8 @@
  * fake numbers, 05 §4). Full 6 UX states + killed (AD-13, G-M2).
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
+import { BrainCircuit, RotateCcw } from 'lucide-react';
+import { AuroraCard } from '@aurora/ui';
 import { useParams } from 'react-router-dom';
 import { useUiStateStore } from '../../state/ui-state';
 import { UxStates, type UxStateFlags } from '../../ux-states';
@@ -70,13 +72,25 @@ export function ProgressPage() {
             label="Progrès"
           >
             <div data-progress-empty>
-              <div className="stat-tile">
-                <p className="stat-label">Maîtrise moyenne</p>
-                <p className="stat-value">—</p>
-              </div>
-              <div className="stat-tile">
-                <p className="stat-label">Révisions faites</p>
-                <p className="stat-value">—</p>
+              {/* lot 2026-10 : KPI-tile = `AuroraCard` variant `kpi`
+                  (image #7/#8 du brief : icône + titre + description,
+                  séparateur, grand chiffre mono, barre de progression,
+                  CTA). L'état vide reste honnête (AD-7, 05 §4). */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <AuroraCard
+                  variant="kpi"
+                  title="Maîtrise moyenne"
+                  subtitle="Toutes les compétences"
+                  icon={<BrainCircuit size={14} aria-hidden />}
+                  iconTone="accent"
+                />
+                <AuroraCard
+                  variant="kpi"
+                  title="Révisions faites"
+                  subtitle="Cette période"
+                  icon={<RotateCcw size={14} aria-hidden />}
+                  iconTone="success"
+                />
               </div>
               <div data-chart-mount>
                 <p className="stat-label">

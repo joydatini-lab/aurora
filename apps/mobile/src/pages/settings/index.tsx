@@ -110,13 +110,14 @@ function swatchBackground(
   const theme = t as AuroraTheme;
   const gradient = gradientCSS(theme.gradient);
   if (gradient) return gradient;
-  // No declared gradient → the flat palette: primary → secondary (or a
-  // single primary) — never a borrow from another theme (AD-13).
-  const stops = [theme.colors.primary, theme.colors.secondary]
-    .filter((s): s is string => Boolean(s));
-  return stops.length >= 2
-    ? `linear-gradient(120deg, ${stops.join(', ')})`
-    : stops[0] ?? theme.colors.primary;
+  // POLICE DE L'UI (2026-10-10) : pas de gradient déclaré → la vignette
+  // est la COULEUR PLATE `primary` (la section « Couleurs unies » ne
+  // doit JAMAIS afficher un dégradé). On ne mélange plus la couleur
+  // unie avec un dégradé (le bug signalé : les couleurs simples et les
+  // dégradés étaient mélangés sur la même vignette). La couleur plate
+  // est `theme.colors.primary` (le SSoT JSON, AD-15), jamais un
+  // `linear-gradient` inventé.
+  return theme.colors.primary ?? theme.colors.secondary ?? '#3678f6';
 }
 
 /** The 8 G-M7 module rows (same ids as GATED_FEATURES / FEATURE_MODULES). */
@@ -231,79 +232,106 @@ export function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="theme-grid" role="radiogroup" aria-label="Thème — dégradés">
-                {(Object.keys(THEMES) as ExpressiveThemeName[]).filter((n) =>
-                  GRADIENT_FAMILY.includes(n),
-                ).map((name) => (
-                  <button
-                    key={name}
-                    type="button"
-                    role="radio"
-                    aria-checked={auroraTheme === name}
-                    className="theme-swatch"
-                    data-pressed={auroraTheme === name}
-                    onClick={() => setAuroraTheme(name)}
-                  >
-                    <span
-                      className="theme-swatch-dot"
-                      style={{ background: swatchBackground(THEMES[name]) }}
-                      aria-hidden
-                    />
-                    <span className="theme-swatch-name">
-                      {name.charAt(0).toUpperCase() + name.slice(1)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <div className="theme-grid" role="radiogroup" aria-label="Thème — couleurs unies">
-                {(Object.keys(THEMES) as ExpressiveThemeName[]).filter(
-                  (n) => !GRADIENT_FAMILY.includes(n),
-                ).map((name) => (
-                  <button
-                    key={name}
-                    type="button"
-                    role="radio"
-                    aria-checked={auroraTheme === name}
-                    className="theme-swatch"
-                    data-pressed={auroraTheme === name}
-                    onClick={() => setAuroraTheme(name)}
-                  >
-                    <span
-                      className="theme-swatch-dot"
-                      style={{ background: swatchBackground(THEMES[name]) }}
-                      aria-hidden
-                    />
-                    <span className="theme-swatch-name">
-                      {name.charAt(0).toUpperCase() + name.slice(1)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <div className="theme-grid" role="radiogroup" aria-label="Presets techniques">
-                {presets.map((name) => (
-                  <button
-                    key={name}
-                    type="button"
-                    role="radio"
-                    aria-checked={auroraTheme === name}
-                    className="theme-swatch"
-                    data-pressed={auroraTheme === name}
-                    onClick={() => setAuroraTheme(name)}
-                  >
-                    <span
-                      className="theme-swatch-dot"
-                      style={{
-                        background: swatchBackground(PRESETS[name]),
+              {/* 2 sections EXCLUSIVES (police de l'UI, 2026-10-10) :
+                · « Couleurs unies » = les thèmes sans gradient (le JSON
+                    porte `colors` mais pas `gradient`) → la vignette est
+                    la COULEUR PLATE (primary), jamais un dégradé ;
+                · « Dégradés » = les thèmes avec `gradient` (le JSON porte
+                    des `stops[]`) → la vignette est le DÉGRADÉ du thème.
+                Choisir UN thème couleur passe l'image à 'none' (exclusif,
+                AD-17 : 1 seul SSoT de couleur à la fois). L'inverse :
+                choisir une image passe le thème couleur à 'auto'. */}
+              <div className="theme-section">
+                <div className="theme-section-label">Couleurs unies</div>
+                <div className="theme-grid" role="radiogroup" aria-label="Thème — couleurs unies">
+                  {(Object.keys(THEMES) as ExpressiveThemeName[]).filter(
+                    (n) => !GRADIENT_FAMILY.includes(n),
+                  ).map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      role="radio"
+                      aria-checked={auroraTheme === name}
+                      className="theme-swatch theme-swatch--flat"
+                      data-pressed={auroraTheme === name}
+                      onClick={() => {
+                        setAuroraTheme(name);
+                        setAuroraImageTheme('none'); // exclusif
                       }}
-                      aria-hidden
-                    />
-                    <span className="theme-swatch-name">
-                      {name === 'high-contrast'
-                        ? 'High-contrast'
-                        : name.charAt(0).toUpperCase() + name.slice(1)}
-                    </span>
-                  </button>
-                ))}
+                    >
+                      <span
+                        className="theme-swatch-dot"
+                        style={{ background: swatchBackground(THEMES[name]) }}
+                        aria-hidden
+                      />
+                      <span className="theme-swatch-name">
+                        {name.charAt(0).toUpperCase() + name.slice(1)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="theme-section">
+                <div className="theme-section-label">Dégradés</div>
+                <div className="theme-grid" role="radiogroup" aria-label="Thème — dégradés">
+                  {(Object.keys(THEMES) as ExpressiveThemeName[]).filter((n) =>
+                    GRADIENT_FAMILY.includes(n),
+                  ).map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      role="radio"
+                      aria-checked={auroraTheme === name}
+                      className="theme-swatch theme-swatch--gradient"
+                      data-pressed={auroraTheme === name}
+                      onClick={() => {
+                        setAuroraTheme(name);
+                        setAuroraImageTheme('none'); // exclusif
+                      }}
+                    >
+                      <span
+                        className="theme-swatch-dot"
+                        style={{ background: swatchBackground(THEMES[name]) }}
+                        aria-hidden
+                      />
+                      <span className="theme-swatch-name">
+                        {name.charAt(0).toUpperCase() + name.slice(1)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="theme-section">
+                <div className="theme-section-label">Presets techniques</div>
+                <div className="theme-grid" role="radiogroup" aria-label="Thème — presets techniques">
+                  {presets.map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      role="radio"
+                      aria-checked={auroraTheme === name}
+                      className="theme-swatch theme-swatch--preset"
+                      data-pressed={auroraTheme === name}
+                      onClick={() => {
+                        setAuroraTheme(name);
+                        setAuroraImageTheme('none'); // exclusif
+                      }}
+                    >
+                      <span
+                        className="theme-swatch-dot"
+                        style={{
+                          background: swatchBackground(PRESETS[name]),
+                        }}
+                        aria-hidden
+                      />
+                      <span className="theme-swatch-name">
+                        {name === 'high-contrast'
+                          ? 'High-contrast'
+                          : name.charAt(0).toUpperCase() + name.slice(1)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -355,7 +383,16 @@ export function SettingsPage() {
                       aria-checked={active}
                       className="image-theme-tile"
                       data-pressed={active}
-                      onClick={() => setAuroraImageTheme(t.slug)}
+                      onClick={() => {
+                        setAuroraImageTheme(t.slug);
+                        // EXCLUSIF (police de l'UI, 2026-10-10) : choisir
+                        // une image remet le thème couleur à 'auto' (le
+                        // par défaut) — l'image devient le SSoT de couleur.
+                        // Le thème couleur est dé-selectionné visuellement
+                        // (sa vignette redevient inactive car
+                        // auroraTheme === 'auto' ≠ un nom de thème).
+                        setAuroraTheme('auto');
+                      }}
                     >
                       <span className="image-theme-thumb">
                         <img

@@ -11,29 +11,20 @@
  * passe par `YearView`, le mois par `MonthView`, la semaine/
  * 3 jours par `MultiDayView`, le jour par `DayView`).
  *
- * DYNAMIC THEMING (10-09) : l'utilisateur choisit une image de fond
- * parmi le catalogue (`/themes/<file>.png`), le hook `useDynamicTheme`
- * extrait la couleur dominante de cette image (l'URL du catalogue,
- * même origine que l'app → le canvas reste non-tainted) et le
- * composant injecte les variables CSS correspondantes sur
- * `document.documentElement` via `useEffect` — le cœur du système,
- * AUCUNE classe de thème prédéfinie (pas de `.theme-ocean` /
- * `.theme-prairie`), AUCUNE couleur en dur :
- *   · `--dynamic-accent` : la couleur extraite (FAB, dates actives,
- *     points, icônes actives) ;
- *   · `--ion-color-primary` : l'alias Ionic, re-pointé sur la couleur
- *     extraite (le FAB suit donc l'image automatiquement) ;
- *   · `--text-main` / `--text-muted` : le contraste est résolu par la
- *     FORMULE DE LUMINANCE `(0.299R + 0.587G + 0.114B) / 255` du hook
- *     — un fond clair → texte noir, un fond sombre → texte blanc ;
- *   · `--glass-bg` / `--glass-border` : le fond « verre » des cartes
- *     (translucide clair/sombre selon le contraste résolu).
+ * DYNAMIC THEMING (10-09 → globalisé 2026-10-10) : le thème image
+ * n'est PLUS propre à cette page — c'est le <ImageThemeLayer /> global
+ * (monté dans main.tsx) qui lit `auroraImageTheme` du store ui-state et
+ * injecte les variables CSS (`--dynamic-accent`, `--ion-color-primary`,
+ * `--text-main`, `--text-muted`, `--glass-bg`, `--glass-border`) sur
+ * `document.documentElement` : le fond image + l'accent s'appliquent à
+ * TOUTE l'app, le calendrier n'y applique plus rien de local (le
+ * switch « Changer l'image » de cette page est supprimé, le choix se
+ * fait depuis /settings → « Thème de fond »).
  *
- * Quand aucune image n'est sélectionnée, le hook retourne `rgb: null`
- * et aucune variable n'est injectée : le calendrier retombe sur les
- * fallback `--ion-*` / `--aurora-*` canoniques (AD-13 honest
- * degradation, la grille et la timeline restent lisibles en thème
- * neutre).
+ * Quand aucun thème image n'est actif, les variables ne sont pas posées
+ * : le calendrier retombe sur les fallback `--ion-*` / `--aurora-*`
+ * canoniques (AD-13 honest degradation, la grille et la timeline
+ * restent lisibles en thème neutre).
  *
  * La structure (10-09, 100 % div standards, jamais IonList/IonItem/
  * IonGrid — leurs styles par défaut cassent le design) :
@@ -49,10 +40,19 @@
  *     Shell reste inchangé, cette barre est la couche propre à la
  *     page calendrier.
  */
-import { IonContent, IonFab, IonFabButton, IonHeader, IonTitle } from "@ionic/react";
-import { useState, useEffect } from "react";
+import { IonContent, IonHeader, IonTitle } from "@ionic/react";
+import { useState } from "react";
 import type { CalendarViewName, RenderCalendarEvent } from "@aurora/ui";
-import { Plus } from "lucide-react";
+import { AuroraCard, AuroraCardBadge, resolveImageThemeFile } from "@aurora/ui";
+import {
+  AlignStartVertical,
+  CalendarDays,
+  CalendarRange,
+  List,
+} from "lucide-react";
+// Les icônes du menu « ⋮ » (ref_045 : icône 16px couleur par item) —
+// le composant PageOptionsMenu les reçoit via la prop `icon` (Lucide).
+// Les teintes sont les états FROZEN (05 §5.1, AD-17 : jamais une valeur brute).
 import { UxStates, type UxStateFlags } from "../../ux-states";
 import { useOnlineStatus } from "../../hooks/use-online";
 import { useUiStateStore } from "../../state/ui-state";
@@ -61,11 +61,6 @@ import {
   settingsItem,
   type PageOptionItem,
 } from "../../ux/page-options-menu";
-import {
-  useDynamicTheme,
-  applyDynamicThemeVariables,
-  clearDynamicThemeVariables,
-} from "../../hooks/useDynamicTheme";
 import { DayView } from "./views/DayView";
 import { MultiDayView } from "./views/MultiDayView";
 import { MonthView } from "./views/MonthView";
@@ -109,30 +104,9 @@ const TL_TONE: Record<string, "blue" | "green" | "orange" | "red" | "purple"> = 
 
 const TL_TONE_FALLBACK: "blue" | "green" | "orange" | "red" | "purple" = "blue";
 
-/** Le catalogue d'images disponibles (servies via `/themes/<file>.png`,
- *  même origine que l'app — le canvas reste non-tainted, l'extraction
- *  fonctionne). Trame minimale de 4 saisons (portrait, le batch
- *  2026-10-B du catalogue `public/themes/`). */
-const AVAILABLE_IMAGES: readonly string[] = [
-  "/themes/ete_portrait.png",
-  "/themes/automne_portrait.png",
-  "/themes/hiver_portrait.png",
-  "/themes/printemps_portrait.png",
-];
 
-/** Les 4 onglets de la bottom nav LOCALE du calendrier (le chrome
- *  global du Shell reste inchangé — cette barre est la couche propre à
- *  la page calendrier, c'est elle qui adopte le fond « verre » du
- *  Dynamic Theming, jamais le ShellTabBar global qui suit le thème
- *  canonique `--aurora-surface-bg`). */
-const LOCAL_TABS = [
-  { id: "calendar", label: "Calendrier" },
-  { id: "tasks", label: "Tâches" },
-  { id: "timeline", label: "Chronologie" },
-  { id: "settings", label: "Réglages" },
-] as const;
 
-type LocalTabId = (typeof LOCAL_TABS)[number]["id"];
+
 
 export function CalendarPage() {
   const [view, setView] = useState<CalendarPageView>("dayGridMonth");
@@ -155,24 +129,32 @@ export function CalendarPage() {
     {
       id: "tri-echeance",
       label: "Trier par échéance",
+      icon: CalendarRange,
+      iconTone: "info",
       active: eventSort === "echeance",
       onClick: () => setEventSort("echeance"),
     },
     {
       id: "tri-titre",
       label: "Trier par titre",
+      icon: AlignStartVertical,
+      iconTone: "accent",
       active: eventSort === "titre",
       onClick: () => setEventSort("titre"),
     },
     {
       id: "vue-liste",
       label: "Liste des tâches",
+      icon: List,
+      iconTone: "success",
       active: taskMode === "liste",
       onClick: () => setTaskMode("liste"),
     },
     {
       id: "vue-chrono",
       label: "Chronologie des tâches",
+      icon: CalendarDays,
+      iconTone: "warning",
       active: taskMode === "chronologie",
       onClick: () => setTaskMode("chronologie"),
     },
@@ -182,37 +164,26 @@ export function CalendarPage() {
   // AD-7: events come from the calendar mirror (not yet wired → empty).
   const events: RenderCalendarEvent[] = [];
 
-  // DYNAMIC THEMING (10-09) : l'image sélectionnée (l'état local de la
-  // page — le switch du header met à jour cet état, le hook s'exécute
-  // sur le changement de l'URL), l'extraction (le hook) et l'injection
-  // des variables CSS sur <html> (le cœur du système, jamais du code
-  // en dur dans le composant lui-même).
-  const [imageIndex, setImageIndex] = useState(0);
-  const selectedImage = AVAILABLE_IMAGES[imageIndex] ?? null;
-  const dynamicTheme = useDynamicTheme(selectedImage);
-  useEffect(() => {
-    if (dynamicTheme.rgb) {
-      applyDynamicThemeVariables(dynamicTheme);
-      return () => clearDynamicThemeVariables();
-    }
-    clearDynamicThemeVariables();
-  }, [dynamicTheme]);
+  // DYNAMIC THEMING (10-09 → globalisé 2026-10-10) : le thème image
+  // n'est PLUS propre à cette page — c'est le <ImageThemeLayer />
+  // global (monté dans main.tsx) qui lit `auroraImageTheme` du store
+  // ui-state et injecte les variables CSS sur `document.documentElement`.
+  // Le calendrier ne fait que CONSOMMER les variables (le fond image
+  // respire derrière le « verre » des cartes et de la grille).
+  const imageTheme = useUiStateStore((s) => s.auroraImageTheme);
 
-  /** Le switch du header : on avance d'UNE image (le cycle, jamais un
-   *  choix aléatoire — l'UX attend un cycle prévisible). Le store global
-   *  (ui-state) n'est PAS touché ici : le Dynamic Theming du calendrier
-   *  est un état LOCAL à la page (la spéc le définit comme tel —
-   *  « l'utilisateur choisit une image de fond parmi plusieurs », c'est
-   *  la page qui porte ce choix, pas tout le shell). Le hook est piloté
-   *  par l'URL, jamais par l'index — le contrat est réversible si un
-   *  deep-link ou un paramètre global doit reprendre la main plus tard. */
-  const handleCycleImage = () => {
-    setImageIndex((i) => (i + 1) % AVAILABLE_IMAGES.length);
-  };
+  /* L'image en fond (le SSoT `resolveImageThemeFile` du DS, le fichier
+     est servi depuis `/themes/` — le catalog SSoT est `IMAGE_THEME_FILES`,
+     AD-17, la page ne construit PAS le chemin en dur).
+     Absente ('none') = thème neutre, le fond reste le canvas. */
+  const selectedImage =
+    imageTheme !== "none"
+      ? `/themes/${resolveImageThemeFile(imageTheme, "portrait") ?? ""}`
+      : null;
 
   // L'onglet actif de la bottom nav locale (l'état est conservé, la page
   // n'est PAS repoussée — le switch d'onglet est local, 05 §3.4).
-  const [activeLocalTab, setActiveLocalTab] = useState<LocalTabId>("calendar");
+
 
   /* Le mois courant en français (ref_007 : « octobre », jamais un numéro
    * nu) — dérivé de la date du jour, jamais inventé. */
@@ -263,22 +234,17 @@ export function CalendarPage() {
           <UxStates state={{ status: "success", data: null }} flags={flags} label="Calendrier">
           <div data-calendar="true" data-calendar-sort={eventSort === "echeance" ? "échéance" : "titre"} className="cal-page space-y-2">
 
-            {/* Le header de section (le mois courant + le switch) — le
-                titre du mois est celui de la page, jamais un numéro nu
-                (ref_007). */}
+            {/* Le header de section (le mois courant) — le titre du
+                mois est celui de la page, jamais un numéro nu
+                (ref_007). Le switch « Changer l'image » est SUPPRIMÉ
+                (DYNAMIC THEMING globalisé 10-10) : le choix de l'image
+                se fait depuis /settings → « Thème de fond », le fond
+                image + l'accent s'appliquent à toute l'app via
+                <ImageThemeLayer /> (main.tsx). */}
             <header className="cal-dynamic-header">
               <p className="cal-dynamic-month" aria-label={`Calendrier — ${currentMonthLabel}`}>
                 {currentMonthLabel}
               </p>
-              <button
-                type="button"
-                className="cal-dynamic-switch"
-                onClick={handleCycleImage}
-                aria-label="Changer l'image de fond"
-              >
-                <span aria-hidden>🖼</span>
-                <span>Changer</span>
-              </button>
             </header>
 
             <p className="page-purpose">
@@ -366,40 +332,45 @@ export function CalendarPage() {
                       {events.length === 0 ? (
                         <div className="tl-item">
                           <div className="tl-card">
-                            <div className="tl-card-title">Aucun événement aujourd'hui</div>
-                            <div className="tl-card-desc">Planifie un bloc ou une tâche avec le bouton « + ».</div>
+                            <AuroraCard
+                              variant="entity"
+                              title="Aucun événement aujourd'hui"
+                              subtitle="Planifie un bloc ou une tâche avec le bouton « + »."
+                            />
                           </div>
                         </div>
                       ) : (
                         events.map((ev) => {
                           const tone = TL_TONE[ev.blockType ?? ""] ?? TL_TONE_FALLBACK;
                           const start = new Date(ev.start);
+                          /* lot 2026-10 : la carte d'événement est un
+                             `AuroraCard` (variant `entity`, C1) — le
+                             « verre » (`.tl-card`, CALENDAR_CSS) reste
+                             l'enveloppe du calendrier, le contenu
+                             (titre, heure, tags) est le SSoT du DS. */
                           return (
                             <div key={ev.id} className="tl-item">
                               <div className={`tl-dot tl-dot-${tone}`} aria-hidden />
                               <div className="tl-card">
-                                <div className="tl-card-head">
-                                  <span className="tl-card-title">{ev.title}</span>
-                                  <span className="tl-card-time">
-                                    {start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-                                  </span>
-                                </div>
-                                {ev.end && (
-                                  <div className="tl-card-desc">
-                                    Fin à{" "}
-                                    {new Date(ev.end).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-                                  </div>
-                                )}
-                                {ev.conflicting && (
-                                  <div className="tl-card-tags">
-                                    <span className="tl-tag warn">Conflit</span>
-                                  </div>
-                                )}
-                                {ev.focusSession && (
-                                  <div className="tl-card-tags">
-                                    <span className="tl-tag done">Focus</span>
-                                  </div>
-                                )}
+                                <AuroraCard
+                                  variant="entity"
+                                  title={ev.title}
+                                  subtitle={
+                                    ev.end
+                                      ? `Fin à ${new Date(ev.end).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`
+                                      : start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+                                  }
+                                  badges={
+                                    <>
+                                      {ev.conflicting && (
+                                        <AuroraCardBadge label="Conflit" tone="danger" />
+                                      )}
+                                      {ev.focusSession && (
+                                        <AuroraCardBadge label="Focus" tone="success" />
+                                      )}
+                                    </>
+                                  }
+                                />
                               </div>
                             </div>
                           );
@@ -422,43 +393,17 @@ export function CalendarPage() {
               </div>
             )}
 
-            {/* Le FAB « + » : le composant Ionic consomme
-                `--ion-color-primary` (re-pointée par le hook sur la
-                couleur extraite de l'image — le FAB suit donc l'image
-                automatiquement, jamais une classe de thème prédéfinie).
-                Toujours positionné au-dessus de la bottom nav locale
-                (le `bottom: 88px` du CSS dédié). */}
-            <IonFab slot="end">
-              <IonFabButton color="primary" aria-label="Ajouter un bloc ou une tâche">
-                <Plus size={24} />
-              </IonFabButton>
-            </IonFab>
+            {/* T5 (police de l'UI, 2026-10-10) : le FAB inerte et la
+                bottom nav LOCALE (`.cal-dynamic-tabbar`, 4 onglets inactifs
+                sans icône ni navigation) sont SUPPRIMÉS — le chrome de
+                navigation est le ShellTabBar global du Shell (02 §6.1 :
+                1 seule barre, les détails s'ouvrent au-dessus de l'onglet
+                courant, jamais 2 barres). Le « Chronologie » de la nav
+                locale est déjà la vue `listWeek` du menu ⋮ ; les 4 onglets
+                ne naviguaient nulle part (chrome fantôme). Le FAB de
+                création (le bloc) reste dans /agent. */}
 
-            {/* La bottom nav LOCALE (le fond « verre » qui suit la couleur
-                de l'image choisie — l'icône active = l'accent dynamique,
-                `var(--dynamic-accent)`, jamais une valeur brute). Le
-                ShellTabBar global du Shell reste inchangé : cette barre
-                est propre à la page calendrier, c'est elle (et elle
-                seule) qui adopte le fond « verre » du Dynamic Theming. */}
-            <nav
-              className="cal-dynamic-tabbar"
-              role="tablist"
-              aria-label="Navigation locale du calendrier"
-            >
-              {LOCAL_TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeLocalTab === tab.id}
-                  className="cal-dynamic-tab"
-                  data-active={activeLocalTab === tab.id || undefined}
-                  onClick={() => setActiveLocalTab(tab.id)}
-                >
-                  <span className="cal-dynamic-tab-label">{tab.label}</span>
-                </button>
-              ))}
-            </nav>
+
 
             {/* Le CSS dédié de la grille + la timeline (100 % div
                 standards, 100 % variables de thème, semi-transparents

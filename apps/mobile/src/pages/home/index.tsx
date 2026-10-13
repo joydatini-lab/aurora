@@ -92,6 +92,7 @@ export function HomePage() {
   const tasks = useTasks();
   const online = useOnlineStatus();
   const killed = useKilledDetection(() => refetch());
+  const goalsList = goals ?? [];
 
   const flags: UxStateFlags = {
     offline: !online,
@@ -102,16 +103,16 @@ export function HomePage() {
   // Première session (zéro donnée) : le slot greeting devient une
   // invitation explicite à créer le 1er objectif (CTA pré-bound agent) —
   // l'app ne "part" jamais en screen vide inexplicable.
-  const firstRun = !isPending && goals.length === 0 && (tasks.data?.length ?? 0) === 0;
+  const firstRun = !isPending && goalsList.length === 0 && (tasks.data?.length ?? 0) === 0;
 
   // AD-14 slot 2: critical-progress = active GoalProject cards.
   const goalState = isError
     ? ({ status: 'error', error: { code: 'goal/load_failed', message: 'Objectifs indisponibles' } as AppError } as const)
     : isPending
       ? ({ status: 'loading' } as const)
-      : goals.length === 0
+      : goalsList.length === 0
         ? ({ status: 'empty' } as const)
-        : ({ status: 'success', data: goals } as const);
+        : ({ status: 'success', data: goalsList } as const);
 
   // AD-14 slot 7: next-actions = the most urgent active tasks (AD-7 local).
   const activeTasks: Task[] =
@@ -175,7 +176,7 @@ export function HomePage() {
           skeleton={<GoalCardSkeleton />}
         >
           <div className="goal-cards">
-            {goals?.map((g: GoalProject) => (
+            {goalsList.map((g: GoalProject) => (
               <GoalProjectCard key={g.id} goal={g} />
             ))}
           </div>

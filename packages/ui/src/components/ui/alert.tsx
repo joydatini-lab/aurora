@@ -19,6 +19,12 @@ const alertVariants = cva(
   }
 )
 
+/**
+ * Conteneur de message statut (info, succès, erreur).
+ * Porte `role="alert"` pour les lecteurs d'écran.
+ *
+ * @summary message statut
+ */
 const Alert = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>
@@ -31,6 +37,9 @@ const Alert = React.forwardRef<
   />
 ))
 Alert.displayName = "Alert"
+
+/** Variantes visuelles de l'alerte (source unique pour les controls CVA). */
+export const ALERT_VARIANTS = ["default", "destructive"] as const;
 
 const AlertTitle = React.forwardRef<
   HTMLParagraphElement,

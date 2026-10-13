@@ -22,6 +22,7 @@ import { IonContent, IonHeader, IonTitle } from '@ionic/react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import type { AscentLearningIR, AppError, AsyncState } from '@aurora/domain';
+import { AuroraCard, AuroraCardBadge } from '@aurora/ui';
 import type { MobileDataProvider } from '../../query/query-client';
 import { useMobileData } from '../../query/context';
 import { qk } from '../../query/query-client';
@@ -143,6 +144,7 @@ export function SlideAscentPage({
 }: AscentPageProps) {
   const provider = useMobileData();
   const online = useOnlineStatus();
+  const navigate = useNavigate();
   const { data, status, error, refetch } = useQuery<AscentLearningIR | undefined, Error>({
     queryKey: qk.ascent.list(userId),
     queryFn: () => currentPathFromMirror(provider, userId),
@@ -203,12 +205,41 @@ export function SlideAscentPage({
         <UxStates state={ux} flags={flags} label="Chemin d'ascension">
           {isReady && l1 && (
             <>
-              {/* Level 1: current + next only (S11, never the full path) */}
-              <header data-ascent-level={1}>
-                <div data-ascent-goal>{ux.data!.goal}</div>
-                {l1.current && <div data-ascent-current>{l1.current.label}</div>}
-                {l1.next && <div data-ascent-next>Suivant — {l1.next.label}</div>}
-              </header>
+              {/* Level-1 header (S11) — lot 2026-10 : le `AuroraCard`
+                  (variant `object`) porte le Z2 (l'objectif + le niveau)
+                  + le Z5 (l'étape courante, l'étape suivante, le CTA
+                  "Je bloque"). Image #6 du brief : la strip verte de
+                  streak + le CTA vert restent à l'intérieur de la
+                  carte, jamais un écran vide mort (AD-7). */}
+              <AuroraCard
+                variant="object"
+                title={ux.data!.goal}
+                subtitle={l1.current?.label}
+                iconTone="accent"
+                badges={
+                  l1.current ? (
+                    <AuroraCardBadge
+                      label={`${l1.current.label} → ${l1.next?.label ?? 'fin'}`}
+                      tone="success"
+                    />
+                  ) : undefined
+                }
+                actions={
+                  l1.current ? (
+                    <button
+                      type="button"
+                      data-ascent-je-bloque
+                      onClick={() =>
+                        navigate(
+                          `/agent?intent=${encodeURIComponent(activeReadingIntent('stuck', l1.current!))}`,
+                        )
+                      }
+                    >
+                      Je bloque
+                    </button>
+                  ) : undefined
+                }
+              />
               <section data-ascent-slides>
                 {currentSlides(ux.data!, l1).map((s) => (
                   <SlideCard key={s.id} slide={s} availability={availability} />
@@ -282,33 +313,65 @@ export function SlideCard({
 }) {
   const isAnalogy = slide.type === 'analogy';
   const navigate = useNavigate();
+  /* lot 2026-10 : la carte de slide est désormais un `AuroraCard`
+     (variant `object`, C2) — le shell (l'enveloppe, le titre, le badge)
+     est le SSoT du design system, le contenu (le label de step + les
+     5 actions Active-Reading) reste le même. Les états AD-13 vivent
+     dans la carte (le `state`), jamais une carte factice. */
   return (
-    <article
+    <AuroraCard
+      variant="object"
+      className="data-slide-card"
       data-slide-type={slide.type}
       data-slide-id={slide.id}
       data-disclosure={slide.disclosure}
       data-analogy={isAnalogy ? 'true' : 'false'}
       data-depth={slide.depth?.level}
       data-source-level={slide.source?.level}
-    >
-      {isAnalogy && <span data-analogy-label>analogie, pas un fait</span>}
-      {slide.source?.conflict && <span data-source-conflict>{slide.source.conflict}</span>}
-      <div data-slide-label>{slide.step.label}</div>
-      <div data-active-reading>
-        {(Object.keys(ACTION_LABELS) as ActiveReadingAction[])
-          .filter((a) => availability[a])
-          .map((a) => (
-            <button
-              key={a}
-              type="button"
-              onClick={() =>
-                navigate(`/agent?intent=${encodeURIComponent(activeReadingIntent(a, slide.step))}`)
-              }
-            >
-              {ACTION_LABELS[a]}
-            </button>
-          ))}
-      </div>
-    </article>
+      title={slide.step.label}
+      subtitle={slide.depth?.rationale}
+      iconTone={isAnalogy ? 'warning' : 'accent'}
+      badges={
+        <>
+          {isAnalogy && (
+            <AuroraCardBadge label="analogie, pas un fait" tone="warning" />
+          )}
+          {slide.source?.conflict && (
+            <AuroraCardBadge label={slide.source.conflict} tone="danger" />
+          )}
+          {slide.depth && (
+            <AuroraCardBadge
+              label={`Profondeur · ${slide.depth.level}`}
+              tone="neutral"
+            />
+          )}
+          {slide.source && (
+            <AuroraCardBadge
+              label={`Source ${slide.source.level}`}
+              tone={slide.source.level === 'A' ? 'accent' : 'neutral'}
+            />
+          )}
+        </>
+      }
+      actions={
+        <div data-active-reading>
+          {(Object.keys(ACTION_LABELS) as ActiveReadingAction[])
+            .filter((a) => availability[a])
+            .map((a) => (
+              <button
+                key={a}
+                type="button"
+                onClick={() =>
+                  navigate(
+                    `/agent?intent=${encodeURIComponent(activeReadingIntent(a, slide.step))}`,
+                  )
+                }
+              >
+                {ACTION_LABELS[a]}
+              </button>
+            ))}
+        </div>
+      }
+    />
   );
 }

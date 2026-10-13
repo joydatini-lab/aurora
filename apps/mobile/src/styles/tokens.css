@@ -84,6 +84,23 @@
   --aurora-accent-focus-ring: #3678f6;
   --aurora-accent-surface: #b8dfff;
 
+  /* T1 (police de l'UI, 2026-10-10) : le fallback GLOBAL des 6 variables
+   * du thème image. Aujourd'hui ces 6 n'existent QUE dans le bloc
+   * `.cal-dynamic` de `dynamic-theme.css` (le thème image était propre
+   * à la page calendrier). Le refactor 10-10 a globalisé le thème
+   * (`<ImageThemeLayer />` dans main.tsx injecte ces variables sur
+   * `document.documentElement`), mais le FALLBACK (le cas où le layer
+   * n'a rien posé) reste orphelin. Le déclarer sur `:root` (le SSoT)
+   * garantit que TOUTE l'app a un `--dynamic-accent` / `--glass-bg`
+   * résolu, pas seulement le calendrier. Le layer `ImageThemeLayer`
+   * écrase ces valeurs à runtime (inline style sur <html>), le SSoT
+   * est le fallback light neutral. */
+  --dynamic-accent: var(--aurora-accent-primary);
+  --glass-bg: var(--aurora-surface-bg, var(--aurora-surface));
+  --glass-border: var(--aurora-border);
+  --text-main: var(--aurora-text-primary);
+  --text-muted: var(--aurora-text-muted);
+
   /* Theme-owned gradient (05 §5.4) — sedimented from
      packages/ui/src/themes/aurora.json `gradient.stops` (SSoT, AD-15).
      Consumable by the swatch preview + decorative surfaces; the runtime
@@ -94,6 +111,12 @@
   /* Geometry (DS convention 05 §3: border radius capped 0.5rem = 8px) */
   --radius: 0.5rem;
   --aurora-radius: 0.5rem;
+  /* T1 (police de l'UI, 2026-10-10) : le radius large — référencé partout
+   * avec un fallback `var(--aurora-radius-lg, 0.75rem)` mais JAMAIS
+   * déclaré dans le SSoT (l'orphanie signalée à l'audit). Le déclarer
+   * ici supprime le fallback : le token devient canonique (le fallback
+   * des sites de consommation peut être nettoyé ensuite). */
+  --aurora-radius-lg: 0.75rem;
 
   /* Geometry overrides a preset may carry (05 §5.5) — defaults */
   --aurora-focus-ring-width: 2px;

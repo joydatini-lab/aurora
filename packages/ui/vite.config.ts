@@ -1,20 +1,20 @@
 import path from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import tailwindcss from "tailwindcss";
-import autoprefixer from "autoprefixer";
 
-// @ts-expect-error — Vite's plugin-init signature differs from tailwind's;
-// cast only, runtime is standard (shadcn/Vite template, docs/ui-libraries.md §2).
-function tailwind(): import("vite").Plugin {
-  return tailwindcss() as unknown as import("vite").Plugin;
-}
-
+// NOTE (SB 10.6 install): `autoprefixer` was previously listed here as a
+// Vite plugin, but it is a PostCSS plugin — passing it to `plugins[]`
+// crashes Storybook's builder-vite with Rollup error
+// "Error running plugin hook options for plugin undefined". Tailwind's
+// own CSS pipeline already handles vendor prefixes; remove it entirely.
 export default defineConfig({
-  plugins: [react(), tailwind(), autoprefixer()],
+  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // L'app et les composants importent `src/lib/utils` — Vite résout
+      // depuis la racine du monorepo, donc on pointe vers le vrai fichier.
+      "src": path.resolve(__dirname, "./src"),
     },
   },
 });

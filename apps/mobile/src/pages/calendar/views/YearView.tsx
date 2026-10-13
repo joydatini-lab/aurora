@@ -6,8 +6,8 @@
  *
  * 100 % div/span standards (interdiction IonGrid/IonRow/IonCol/IonList/
  * IonItem/IonCard, 10-09), les couleurs 100 % variables du thème
- * dynamique (`useDynamicTheme` est branché par le parent
- * `CalendarPage` sur `<html>` — ce composant n'est qu'un `<div>`,
+ * dynamique (`ImageThemeLayer` est branché globalement dans `main.tsx`
+ * sur `<html>` — ce composant n'est qu'un `<div>`,
  * jamais de `IonPage`/`IonContent` imbriqués).
  *
  * La structure (le prompt 10-09, le grid classique — JAMAIS un flex
@@ -266,7 +266,7 @@ export const YEAR_VIEW_CSS = `
    autorisée par la règle « pastilles pastel des événements »,
    jamais un hex opaque en dur). */
 .cal-y-day.has-ev {
-  background: rgba(10, 132, 255, 0.35);
+  background: color-mix(in srgb, var(--dynamic-accent, var(--ion-color-primary)) 35%, transparent);
   color: var(--dynamic-accent);
   font-weight: 700;
 }

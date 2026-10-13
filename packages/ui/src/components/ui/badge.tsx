@@ -23,9 +23,21 @@ const badgeVariants = cva(
   }
 )
 
+/**
+ * Badge de mention (statut, catégorie, état passif).
+ * Fond et bordure via les variantes CVA ; jamais de texte de contenu
+ * impératif (le badge est un support, pas un message).
+ *
+ * @summary mention de statut
+ */
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof badgeVariants> {}
+
+/** Variantes visuelles du badge (source unique pour les controls CVA). */
+export const BADGE_VARIANTS = [
+  "default", "secondary", "destructive", "outline",
+] as const;
 
 function Badge({ className, variant, ...props }: BadgeProps) {
   return (

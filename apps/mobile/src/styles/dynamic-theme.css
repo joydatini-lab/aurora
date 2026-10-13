@@ -3,9 +3,9 @@
 
    Système dynamique de theming : AUCUNE classe de thème prédéfinie
    (pas de .theme-ocean, .theme-prairie…). Tout est piloté par les
-   variables CSS injectées dynamiquement par le hook `useDynamicTheme`
-   (apps/mobile/src/hooks/useDynamicTheme.ts) via
-   `document.documentElement.style.setProperty` :
+   variables CSS injectées dynamiquement par le layer global
+   <ImageThemeLayer /> (apps/mobile/src/ux/image-theme.tsx, monté dans
+   main.tsx) via `document.documentElement.style.setProperty` :
 
      --dynamic-accent   : la couleur dominante extraite de l'image
                           (FAB, dates actives, points, icône active)

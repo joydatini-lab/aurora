@@ -23,7 +23,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    className={cn("relative flex flex-col space-y-1.5 p-6", className)}
     {...props}
   />
 ))
@@ -73,4 +73,30 @@ const CardFooter = React.forwardRef<
 ))
 CardFooter.displayName = "CardFooter"
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+/**
+ * CardAction — zone d'action en surimpression du CardHeader (droite).
+ * Sert aux patterns "KPI + refresh" type c-data-grid-25 / c-card-15 :
+ * le header garde son titre à gauche, l'action (button, select, etc.)
+ * s'aligne à droite sans restructurer la grille.
+ */
+const CardAction = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex items-center gap-2", className)}
+    {...props}
+  />
+))
+CardAction.displayName = "CardAction"
+
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardAction,
+}

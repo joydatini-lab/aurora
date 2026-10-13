@@ -28,10 +28,17 @@
  * fallbacks `--aurora-*` canons restent lisibles en thème neutre).
  */
 import type { ProjectCard } from "../shared";
+import { AuroraCardBadge } from "@aurora/ui";
 
 /* ── L'item partagé (le SEUL endroit où la carte vit — la Plate
  *   ListView et la Groupée TimelineView le réutilisent, ZÉRO
- *   duplication, PHASE 3 du prompt) ── */
+ *   duplication, PHASE 3 du prompt) ──
+ *   lot 2026-10 : la morphologie Z0–Z7 de la carte est portée par
+ *   `AuroraCard` (variant `entity` = ligne compacte) — le point
+ *   `.tl-dot` et le séparateur de groupe `.tl-group` restent dans le
+ *   conteneur `div` du calendrier (la SEMANTIQUE du point, FROZEN
+ *   05 §5.1, AD-17), le contenu (titre, %, jalon, tag) est dans la
+ *   carte SSoT du design system, jamais une classe ad-hoc. */
 export function TLItem({
   card,
   showDateSeparator = false,
@@ -48,10 +55,14 @@ export function TLItem({
    * mort, le jalon manqué reste le rouge danger dans la carte
    * elle-même, jamais le point). */
   const dotTone = card.status === "termine" ? "green" : card.status === "bloque" ? "orange" : "blue";
+  /* lot 2026-10 : la morphologie Z0–Z7 est portée par `AuroraCard`
+     (variant `entity`) — le contenu (titre, %, jalon, tag) est dans
+     la carte SSoT du design system ; le point `.tl-dot` et le séparateur
+     de groupe restent dans le conteneur `div` du calendrier. */
   return (
     <div className={`tl-item${showDateSeparator ? " is-date-separator" : ""}`}>
       <div className={`tl-dot tl-dot-${dotTone}`} aria-hidden />
-      <div className="tl-card">
+      <div className="tl-card" data-aurora-card>
         <div className="tl-card-head">
           <span className="tl-card-title">{card.title}</span>
           <span className="tl-card-time mono">{card.percent}%</span>
@@ -63,7 +74,11 @@ export function TLItem({
             : null}
         </div>
         <div className="tl-card-tags">
-          <span className={`tl-tag tl-tag-${dotTone}`}>{statusLabel}</span>
+          <AuroraCardBadge
+            label={statusLabel}
+            tone={card.status === "termine" ? "success" : card.status === "bloque" ? "danger" : "accent"}
+            className="tl-tag"
+          />
         </div>
       </div>
     </div>

@@ -51,10 +51,10 @@ export function dayEventTone(ev: RenderCalendarEvent): EventTone {
  *  « pastilles pastel des événements » — translucides 0.18, le fond
  *  « verre » respire derrière). */
 export const EV_PASTEL_CSS = `
-.ev-tan    { background: rgba(210, 170, 110, 0.18); }
-.ev-blue   { background: rgba(10, 132, 255, 0.18); }
-.ev-pink   { background: rgba(255, 120, 190, 0.18); }
-.ev-purple { background: rgba(160, 100, 255, 0.18); }
-.ev-gray   { background: rgba(120, 120, 130, 0.18); }
-.ev-green  { background: rgba(48, 209, 88, 0.18); }
+.ev-tan    { background: color-mix(in srgb, var(--ion-color-warning) 18%, transparent); }
+.ev-blue   { background: color-mix(in srgb, var(--ion-color-primary) 18%, transparent); }
+.ev-pink   { background: color-mix(in srgb, var(--ion-color-tertiary) 18%, transparent); }
+.ev-purple { background: color-mix(in srgb, var(--ion-color-tertiary) 18%, transparent); }
+.ev-gray   { background: color-mix(in srgb, var(--ion-color-medium) 18%, transparent); }
+.ev-green  { background: color-mix(in srgb, var(--ion-color-success) 18%, transparent); }
 `;

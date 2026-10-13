@@ -644,6 +644,47 @@
   color: var(--aurora-text-secondary);
 }
 
+/* Police de l'UI (2026-10-10) : le sélecteur de thème COULEUR se découpe
+   en 3 SECTIONS distinctes (« Couleurs unies », « Dégradés », « Presets
+   techniques ») — la couleur plate n'est JAMAIS rendue en dégradé et
+   l'inverse (AD-10 : on sépare les familles, la vignette reflète le
+   type réel du thème, 05 §5.4). La section = 1 label + sa grille. */
+.theme-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--aurora-border);
+}
+.theme-section:last-child {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: none;
+}
+.theme-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--aurora-text-muted);
+}
+/* La vignette est pleine largeur (28px de haut) — la couleur plate
+   (`.theme-swatch--flat`) rend la couleur UNIE (le `background` est
+   une couleur simple, jamais un `linear-gradient`), la vignette
+   dégradé (`.theme-swatch--gradient`) rend le `linear-gradient` du
+   thème, le preset (`.theme-swatch--preset`) rend la couleur propre
+   au preset (slate = dégradé 2 stops, nocturne = noir,
+   high-contrast = split noir/blanc). La variante est portée par la
+   classe, le fond vient de `swatchBackground` (le SSoT JSON, AD-15). */
+.theme-swatch--flat .theme-swatch-dot {
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+.theme-swatch--gradient .theme-swatch-dot {
+  background-size: cover;
+}
+
 /* Image-theme grid (05 §5.4-annexe, 10-07): 26 thumbnails + "Aucun".
  * Each tile = the portrait variant (lazy) + the "chromatic anchor" dot.
  * Tokens only, radius ≤ 8 px, tap ≥ 44 px. */
@@ -2474,20 +2515,57 @@ ion-content [data-artifact-id] {
    `prefers-reduced-motion` fige les transitions du panneau + du menu.
    ========================================================================== */
 
-/* ---- Page header : IonTitle + menu « ⋮ » (05 §3.5, IC-02) ------------
- * `.projects-header` replace le default IonHeader layout on /projects :
- * le titre aligné à gauche, le menu ancré à droite (05 §3.5 l.845-847). */
-.projects-header {
+/* ---- Pattern header unifié (police de l'UI, 2026-10-10, T2) --------
+ * `.aurora-page-header` = le SSoT de l'en-tête de page (IonTitle + menu
+ * « ⋮ », 05 §3.5 l.843-854). Fond « verre » (thème image global, AD-17)
+ * : `--glass-bg` + `backdrop-filter` + `--glass-border` — la surface du
+ * header laisse le fond image respirer derrière (05 §5.4-annexe), jamais
+ * un fond opaque qui « écrase » la carte. Les 4 headers de famille
+ * (`.projects-header` / `.tasks-header` / `.cal-header` /
+ * `.habits-header`) sont des ALIAS de ce SSoT (la règle de duplication
+ * signalée à l'audit, T2) — la page consomme `.aurora-page-header`
+ * (ou son alias de famille), le chrome de bascule reste le menu ⋮. */
+.aurora-page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  gap: 8px;
   min-height: 56px;
+  padding: 0 12px;
+  background: var(--glass-bg, var(--aurora-surface-bg, var(--aurora-surface)));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--glass-border, var(--aurora-border));
 }
 /* Le menu se positionne dans le flux de la row (pas absolute) — l'Item
    « Paramètres » est le débordement global (le réglage lié à la page,
    05 §3.5 l.852-854 : « le dernier item … renvoie vers le réglage »). */
-.projects-header .page-options-menu {
+.aurora-page-header .page-options-menu {
+  position: static;
+  z-index: auto;
+}
+/* Les 4 alias de famille : mêmes règles (la famille se distingue par le
+   contenu du menu, jamais par le chrome — la police, T2). Déclarés en
+   sélecteur supplémentaire pour ne casser aucun `.x-header` existant. */
+.projects-header,
+.tasks-header,
+.cal-header,
+.habits-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 56px;
+  padding: 0 12px;
+  background: var(--glass-bg, var(--aurora-surface-bg, var(--aurora-surface)));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--glass-border, var(--aurora-border));
+}
+.projects-header .page-options-menu,
+.tasks-header .page-options-menu,
+.cal-header .page-options-menu,
+.habits-header .page-options-menu {
   position: static;
   z-index: auto;
 }
@@ -3282,20 +3360,13 @@ ion-content [data-artifact-id] {
    `prefers-reduced-motion` fige les transitions du panneau + du menu.
    ========================================================================== */
 
-/* Le header de la page (titre + menu ⋮, 05 §3.5 l.843-854) — le
-   pattern `.projects-header` du C5, renommé pour le contexte tasks. */
-.tasks-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 56px;
-  padding: 0 12px;
-}
-.tasks-header .page-options-menu {
-  position: static;
-  z-index: auto;
-}
+/* Le header de la page (titre + menu ⋮) — le pattern unifié
+   `.aurora-page-header` du T2 (police de l'UI, 2026-10-10) : le
+   chrome de famille (`.tasks-header`) est l'alias du SSoT, le
+   bloc `.aurora-page-header` + les 4 aliases (`.projects-header` /
+   `.tasks-header` / `.cal-header` / `.habits-header`) est déclaré
+   PLUS HAUT dans ce fichier (le SSoT est l'unique source de
+   vérité du chrome, T2). */
 
 /* Le glissement horizontal (05 §3.6.15 l.1402-1411, le pattern C5.3) :
    la surface glisse en `translateX(-Xpx)` au pointeur, le panneau
@@ -3417,20 +3488,11 @@ ion-content [data-artifact-id] {
    s'y applique PAS. Seuls le menu + le pattern header sont repris.
    ========================================================================== */
 
-/* Le header de la page (titre + menu ⋮, 05 §3.5 l.843-854) — le
-   pattern `.tasks-header` du C5.4 /tasks, repris pour le contexte calendar. */
-.cal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 56px;
-  padding: 0 12px;
-}
-.cal-header .page-options-menu {
-  position: static;
-  z-index: auto;
-}
+/* Le header de la page (titre + menu ⋮) — le pattern unifié
+   `.aurora-page-header` du T2 (police de l'UI, 2026-10-10) : le
+   chrome de famille (`.cal-header`) est l'alias du SSoT, le bloc
+   `.aurora-page-header` + les 4 aliases est déclaré PLUS HAUT dans
+   ce fichier (le SSoT est l'unique source de vérité du chrome, T2). */
 
 /* La carte calendrier (lot C5.5, 10-08 → 10-09 lisage global) : la carte
    consomme le token unifié `--aurora-surface-bg` (opaque par défaut,
@@ -3540,20 +3602,11 @@ html[data-aurora-image-theme] .cal-header {
    caché révélé par le glissement.
    ========================================================================== */
 
-/* Le header de la page (titre + menu ⋮, 05 §3.5 l.843-854) — le
-   pattern `.tasks-header` du C5.4 /tasks, repris pour le contexte habits. */
-.habits-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 56px;
-  padding: 0 12px;
-}
-.habits-header .page-options-menu {
-  position: static;
-  z-index: auto;
-}
+/* Le header de la page (titre + menu ⋮) — le pattern unifié
+   `.aurora-page-header` du T2 (police de l'UI, 2026-10-10) : le
+   chrome de famille (`.habits-header`) est l'alias du SSoT, le bloc
+   `.aurora-page-header` + les 4 aliases est déclaré PLUS HAUT dans
+   ce fichier (le SSoT est l'unique source de vérité du chrome, T2). */
 
 /* Le glissement horizontal (05 §3.6.15 l.1402-1411, le pattern C5.3) :
    la surface glisse en `translateX(-Xpx)` au pointeur, le panneau

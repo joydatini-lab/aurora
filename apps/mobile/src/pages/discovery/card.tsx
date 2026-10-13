@@ -1,15 +1,16 @@
 /**
  * VeilleProgramCard — la carte d'un programme de veille (discovery-vault
- * plan 2026-10-10, Lot 4).
+ * plan 2026-10-10, Lot 4 → lot 2026-10, variante `object` de la famille
+ * `AuroraCard`).
  *
  * Une carte = UN programme de veille (une `Automation` `jobKind:'research'`),
  * pas un résultat ponctuel :
- *   titre    = automation.name
+ *   titre      = automation.name
  *   sous-titre = automation.action (le sujet/prompt configuré à la création)
- *   count    = sources du dernier run (manifest append-only, `discovery_vault`)
- *   delta     = "ce jour" — le delta du dernier run vs le précédent
- *   pertinence = verdict du dernier run (`relevance`, 0..1)
- *   menu 3 points = Modifier (G2) / Supprimer (G3, DESTRUCTIF → confirmation)
+ *   count      = sources du dernier run (manifest append-only, `discovery_vault`)
+ *   delta       = "ce jour" — le delta du dernier run vs le précédent
+ *   pertinence  = verdict du dernier run (`relevance`, 0..1)
+ *   menu 3 pts  = Modifier (G2) / Supprimer (G3, DESTRUCTIF → confirmation)
  *
  * AD-7 : le menu N'ÉCRIT JAMAIS `automations` directement — il émet les
  * commandes typées du kernel (`update_automation` G2 / `delete_automation`
@@ -21,15 +22,19 @@
  * Lot 4.1 : le SSoT `vaultMd` (VAULT.md) est rendu « style Notion »
  * DANS la carte (le document évolutif que l'élève consulte page par
  * page) via `VaultMdView` (TipTap lecture + `markdownToHtml` AD-16b).
+ *
+ * Design (lot 2026-10) : la morphologie Z0–Z7 est portée par
+ * `AuroraCard` (variant `object`, radius 8px) — le contenu (le vault,
+ * les stats, le menu) reste le même, l'enveloppe est désormais le SSoT
+ * du design system, jamais une classe ad-hoc.
  */
 import {
   Ellipsis,
   Pencil,
   Trash2,
   Files,
-  TrendingUp,
-  TrendingDown,
   Minus,
+  Compass,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -39,13 +44,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@aurora/ui';
+import {
+  AuroraCard,
+  AuroraCardBadge,
+  AuroraCardFooter,
+} from '@aurora/ui';
 import type { VeilleProgram } from '../../hooks/use-veille-programs';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { VaultMdView } from '../../components/vault/VaultMdView';
 
 /** Format the 0..1 relevance verdict into the card chip (plain French). */
-function relevanceLabel(relevance: number | null): { text: string; tone: string } {
+function relevanceLabel(
+  relevance: number | null,
+): { text: string; tone: 'high' | 'mid' | 'low' | 'muted' } {
   if (relevance === null) return { text: 'Premier run…', tone: 'muted' };
   const pct = Math.round(relevance * 100);
   if (relevance >= 0.7) return { text: `Pertinence élevée · ${pct}%`, tone: 'high' };
@@ -53,24 +65,32 @@ function relevanceLabel(relevance: number | null): { text: string; tone: string 
   return { text: `Pertinence faible · ${pct}%`, tone: 'low' };
 }
 
+/** Maps the plain `relevanceLabel` tone onto the design-system `tone`. */
+const TONE_MAP = {
+  high: 'success',
+  mid: 'neutral',
+  low: 'warning',
+  muted: 'neutral',
+} as const;
+
 /** The "ce jour" delta chip (the last run vs the previous one). */
 function deltaChip(delta: number) {
   if (delta > 0)
     return (
-      <span className="veille-card-delta veille-card-delta--up" data-delta={delta}>
-        <TrendingUp size={12} aria-hidden /> +{delta}
-      </span>
+      <AuroraCardBadge label={`+${delta}`} tone="success" />
     );
   if (delta < 0)
-    return (
-      <span className="veille-card-delta veille-card-delta--down" data-delta={delta}>
-        <TrendingDown size={12} aria-hidden />{delta}
-      </span>
-    );
+    return <AuroraCardBadge label={`${delta}`} tone="warning" />;
   return (
-    <span className="veille-card-delta veille-card-delta--flat">
-      <Minus size={12} aria-hidden /> aucun
-    </span>
+    <AuroraCardBadge
+      label={
+        <span className="inline-flex items-center gap-1">
+          <Minus size={11} aria-hidden />
+          aucun
+        </span>
+      }
+      tone="neutral"
+    />
   );
 }
 
@@ -86,19 +106,21 @@ function ProgramMenu({ program }: { program: VeilleProgram }) {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="veille-card-menu aurora-tap"
+          className="aurora-tap rounded-md p-1.5 text-muted-foreground hover:bg-muted/60"
           aria-label={`Options du programme ${label}`}
         >
           <Ellipsis size={16} aria-hidden />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="veille-card-menu-pop">
+      <DropdownMenuContent align="end">
         <DropdownMenuLabel>Programme de veille</DropdownMenuLabel>
         {/* G2 (AD-7) : modifier le programme → l'agent, pré-bound au nom du
             programme (le module Integrations écrit `automations`, pas ici). */}
         <DropdownMenuItem
           onSelect={() =>
-            navigate(`/agent?intent=${encodeURIComponent(`Modifie mon programme de veille "${a.name}"`)}`)
+            navigate(
+              `/agent?intent=${encodeURIComponent(`Modifie mon programme de veille "${a.name}"`)}`,
+            )
           }
         >
           <Pencil size={14} aria-hidden />
@@ -110,10 +132,12 @@ function ProgramMenu({ program }: { program: VeilleProgram }) {
             `delete_automation` et le module Discovery archive le vault. */}
         {confirming ? (
           <DropdownMenuItem
-            className="veille-card-menu-destructive"
+            className="text-destructive"
             onSelect={() =>
               navigate(
-                `/agent?intent=${encodeURIComponent(`Supprime mon programme de veille "${a.name}" (le vault d'archivage est conservé)`)}`,
+                `/agent?intent=${encodeURIComponent(
+                  `Supprime mon programme de veille "${a.name}" (le vault d'archivage est conservé)`,
+                )}`,
               )
             }
           >
@@ -121,7 +145,10 @@ function ProgramMenu({ program }: { program: VeilleProgram }) {
             Confirmer la suppression ?
           </DropdownMenuItem>
         ) : (
-          <DropdownMenuItem className="veille-card-menu-destructive" onSelect={() => setConfirming(true)}>
+          <DropdownMenuItem
+            className="text-destructive"
+            onSelect={() => setConfirming(true)}
+          >
             <Trash2 size={14} aria-hidden />
             Supprimer
           </DropdownMenuItem>
@@ -139,40 +166,58 @@ export function VeilleProgramCard({ program }: { program: VeilleProgram }) {
   const domaine = program.vault?.domaine ?? a.id;
 
   return (
-    <article
-      className="veille-program-card"
+    <AuroraCard
+      variant="object"
+      title={a.name}
+      subtitle={a.action || undefined}
+      icon={<Compass size={15} aria-hidden />}
+      iconTone="accent"
+      badges={
+        <>
+          <AuroraCardBadge
+            label={
+              <span className="inline-flex items-center gap-1">
+                <Files size={11} aria-hidden />
+                {last
+                  ? `${last.newSources} source${last.newSources > 1 ? 's' : ''}`
+                  : 'En attente du 1er run'}
+              </span>
+            }
+            tone="neutral"
+          />
+          {deltaChip(program.delta)}
+          <AuroraCardBadge
+            label={relevance.text}
+            tone={TONE_MAP[relevance.tone]}
+          />
+          <ProgramMenu program={program} />
+        </>
+      }
+      footer={
+        <AuroraCardFooter>
+          <span className="inline-flex items-center gap-1.5">
+            <Files size={11} aria-hidden />
+            {program.totalSources} source
+            {program.totalSources > 1 ? 's' : ''} au total
+          </span>
+          <span className="font-mono text-[10px] tabular-nums">
+            {last?.date ?? '—'}
+          </span>
+        </AuroraCardFooter>
+      }
       data-veille-program={a.id}
       aria-label={`Programme de veille ${a.name}`}
     >
-      <header className="veille-card-head">
-        <div className="veille-card-titles">
-          <h3 className="veille-card-title">{a.name}</h3>
-          {a.action ? <p className="veille-card-subtitle">{a.action}</p> : null}
-        </div>
-        <ProgramMenu program={program} />
-      </header>
-
-      <div className="veille-card-stats" data-vault-domaine={a.id}>
-        <span className="veille-card-stat" data-count={last?.newSources ?? 0}>
-          <Files size={13} aria-hidden />
-          {last ? `${last.newSources} source${last.newSources > 1 ? 's' : ''}` : 'En attente du 1er run'}
-        </span>
-        <span className="veille-card-stat">{deltaChip(program.delta)}</span>
-        <span className={`veille-card-stat veille-card-relevance--${relevance.tone}`}>
-          {relevance.text}
-        </span>
-      </div>
-
       {/* Le SSoT du programme : le VAULT.md est rendu « style Notion »
           DANS la carte (Lot 4.1) — c'est le document unique évolutif
           que l'élève consulte, PAS un lien externe vers l'agent. */}
-      <div className="vault-md-view" data-vault-view={domaine}>
+      <div data-vault-view={domaine} className="rounded-md bg-muted/40 p-2.5">
         <VaultMdView
           vaultMd={vaultMd}
           domaine={domaine}
           ariaLabel={`Document de synthèse du programme ${a.name}`}
         />
       </div>
-    </article>
+    </AuroraCard>
   );
 }

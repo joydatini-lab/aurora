@@ -17,6 +17,15 @@
  * served from `apps/mobile/public/themes/` (52 files, batch 2026-10-B);
  * orientation is tracked live (landscape → `paysage` variant, fallback
  * portrait — resolveImageThemeFile, catalog-only rule).
+ *
+ * POLICE DE L'UI (2026-10-10) : le thème COULEUR et le thème IMAGE sont
+ * EXCLUSIFS — l'utilisateur n'en a qu'UN actif à la fois (1 SSoT).
+ * Quand `auroraTheme !== 'auto'` (un thème couleur est explicitement
+ * choisi), le thème image est inactif : le <AuroraThemeProvider> du
+ * main.tsx pilote les accents, l'image ne les surécrit plus (le fond
+ * image reste affiché tant que le store le porte, mais les accents
+ * suivent le thème couleur). Le layer image n'est actif que si
+ * `auroraTheme === 'auto'` (le thème couleur est le par défaut).
  */
 import { useEffect, useState } from 'react';
 import {
@@ -39,9 +48,23 @@ const LAYER_VARS = [
 
 export function ImageThemeLayer() {
   const imageTheme = useUiStateStore((s) => s.auroraImageTheme);
+  const colorTheme = useUiStateStore((s) => s.auroraTheme);
   const rawStyle = useUiStateStore((s) => s.theme);
   // A7 (main.tsx): DARK only when explicitly chosen — 'auto' = light.
   const style = rawStyle === 'dark' ? 'dark' : 'light';
+
+  // POLICE DE L'UI (2026-10-10) : le thème COULEUR et le thème IMAGE sont
+  // EXCLUSIFS (1 seul SSoT à la fois). Quand l'utilisateur a choisi un
+  // thème couleur explicite (≠ 'auto'), c'est LA couleur qui pilote les
+  // accents — le thème image, même s'il est encore sélectionné dans le
+  // store, ne doit PLUS écraser l'accent du thème couleur. La condition
+  // ci-dessous : le thème image n'est actif QUE si :
+  //   1. le store porte une image (≠ 'none'), ET
+  //   2. l'utilisateur n'a PAS choisi de thème couleur explicite.
+  // Le fond image reste affiché (le body), mais les accents passent au
+  // thème couleur (le <AuroraThemeProvider> du main.tsx écrit les
+  // --aurora-accent-*, l'image ne les surécrivra plus ici).
+  const imageActive = imageTheme !== 'none' && colorTheme === 'auto';
 
   const [landscape, setLandscape] = useState(
     () =>
@@ -58,12 +81,17 @@ export function ImageThemeLayer() {
   useEffect(() => {
     const doc = document.documentElement;
     const orientation = landscape ? 'landscape' : 'portrait';
-    const entry = imageTheme !== 'none' ? getImageTheme(imageTheme) : undefined;
+    const entry = imageActive ? getImageTheme(imageTheme) : undefined;
     const file = entry ? resolveImageThemeFile(entry.slug, orientation) : undefined;
 
     if (!entry || !file) {
-      // 'none' / unknown slug: the color theme regains full control.
+      // 'none' / unknown slug / thème couleur actif : le thème couleur
+      // reprend le plein contrôle des accents (AD-17, police UI 10-10 :
+      // les deux systèmes sont exclusifs). On retire toutes les overrides
+      // du layer image (pas seulement les 6 accent : la `--aurora-bg-image`
+      // aussi, sinon le fond image resterait affiché).
       for (const v of LAYER_VARS) doc.style.removeProperty(v);
+      doc.style.removeProperty('--aurora-bg-image');
       delete doc.dataset.auroraImageTheme;
       return;
     }
@@ -96,9 +124,10 @@ export function ImageThemeLayer() {
 
     return () => {
       for (const v of LAYER_VARS) doc.style.removeProperty(v);
+      doc.style.removeProperty('--aurora-bg-image');
       delete doc.dataset.auroraImageTheme;
     };
-  }, [imageTheme, landscape, style]);
+  }, [imageTheme, imageActive, landscape, style, colorTheme]);
 
   // Headless: the layer writes CSS variables / body background only.
   return null;

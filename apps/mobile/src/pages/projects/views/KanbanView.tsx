@@ -33,6 +33,7 @@
  * inventée ailleurs, PHASE 8 du prompt).
  */
 import { useState } from "react";
+import { AuroraCard, AuroraCardBadge } from "@aurora/ui";
 import type { ProjectCard } from "../shared";
 
 /* ── Les 4 colonnes (le même contenu que l'ancienne vue Kanban,
@@ -82,22 +83,24 @@ const KB_HEADER_CLASS: Record<string, string> = {
 export function KbCard({ card }: { card: ProjectCard }) {
   const statusLabel =
     card.status === "termine" ? "Terminé" : card.status === "bloque" ? "Bloqué" : "En cours";
+  /* lot 2026-10 : la morphologie Z0–Z7 est portée par `AuroraCard`
+     (variant `entity`) — les niveaux de gris monochromes du prompt
+     (AD-17 : jamais une couleur de priorité) sont conservés via
+     `className` (les variables du zoom, les hex fixés par le prompt
+     ne changent pas, l'enveloppe est désormais le SSoT du DS). */
+  const tone = card.status === "termine" ? "success" : card.status === "bloque" ? "danger" : "neutral";
   return (
-    <div className="kb-card">
-      <span className="kb-card-title">{card.title}</span>
-      <div className="kb-card-labels">
-        <span className="kb-card-label">{statusLabel}</span>
-        <span className="kb-card-label">Jalon · {card.nextMilestone}</span>
-      </div>
-      <div className="kb-card-progress" aria-hidden>
-        <div className="kb-card-progress-fill" style={{ width: `${card.percent}%` }} />
-      </div>
-      <div className="kb-card-foot">
-        <span className="kb-card-av" aria-hidden>
-          {card.title.slice(0, 2).toUpperCase()}
-        </span>
-      </div>
-    </div>
+    <AuroraCard
+      variant="entity"
+      className="kb-card"
+      data-aurora-variant="entity"
+      title={card.title}
+      badges={
+        <AuroraCardBadge label={statusLabel} tone={tone} className="kb-card-label" />
+      }
+      subtitle={`Jalon · ${card.nextMilestone}`}
+      progress={card.percent}
+    />
   );
 }
 
@@ -309,7 +312,11 @@ export const KANBAN_VIEW_CSS = `
 /* La CARTE MONOCHROME (PHASE 4 du prompt) : le fond + la
    bordure + le padding suivent le zoom (calc(8px +
    var(--zoom) * 3px) / calc(9px + var(--zoom) * 3px)), les
-   niveaux de gris sont fixés par le prompt, ZÉRO couleur. */
+   niveaux de gris sont fixés par le prompt, ZÉRO couleur.
+   lot 2026-10 : le contenu est désormais un AuroraCard (variant
+   entity) — le titre, le badge et la barre de progression
+   héritent des styles AuroraCard, la sur-couche .kb-card-*
+   n'est plus nécessaire. */
 .kb-card {
   background: #1c1c1c;
   border: 1px solid #262626;
@@ -318,8 +325,10 @@ export const KANBAN_VIEW_CSS = `
   display: flex;
   flex-direction: column;
   gap: 6px;
+  box-shadow: none;
 }
-.kb-card-title {
+/* Le titre : la taille suit le zoom, le contenu reste celui du prompt. */
+.kb-card [data-card-title] {
   font-size: calc(10.5px + var(--zoom, 0) * 2px);
   color: #eee;
   font-weight: 600;
@@ -328,53 +337,35 @@ export const KANBAN_VIEW_CSS = `
 /* Les labels (le fond + la couleur du prompt, la taille 7.5px
    fixe, jamais le zoom) : le statut + le jalon, le label est le
    badge (pas une couleur de priorité, le contenu). */
-.kb-card-labels {
+.kb-card [data-card-badges] {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
 }
-.kb-card-label {
-  background: #2a2a2a;
-  color: #aaa;
+.kb-card [data-card-badge] {
+  background: #2a2a2a !important;
+  color: #aaa !important;
+  border: none !important;
   font-size: 7.5px;
   padding: 1.5px 6px;
   border-radius: 3px;
   font-weight: 700;
+  border-radius: 3px;
 }
 /* La barre de progression (PHASE 4 du prompt) : le fond #262626
    (la piste), le fill #6a6a6a (l'avancement, la donnée), la
    hauteur 3px fixe (le zoom n'agrandit PAS la barre, c'est le
    contour de la carte qui grandit). */
-.kb-card-progress {
+.kb-card [data-card-progress] {
   height: 3px;
   background: #262626;
   border-radius: 2px;
   overflow: hidden;
 }
-.kb-card-progress-fill {
+.kb-card [data-card-progress] > div {
   height: 100%;
   background: #6a6a6a;
   transition: width 0.3s ease;
-}
-/* L'avatar (PHASE 4 du prompt) : le fond #333, la couleur
-   #bbb, la taille 16px, la font 7px (les initiales du projet,
-   le contenu réel, jamais une teinte de couleur). */
-.kb-card-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.kb-card-av {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #333;
-  color: #bbb;
-  font-size: 7px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* PHASE 5 du prompt — le slider de zoom (la barre fixe en bas,

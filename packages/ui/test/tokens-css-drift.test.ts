@@ -400,19 +400,40 @@ describe("HSL triplets (`-h`) mirror their full-value tokens", () => {
 
 describe("image-theme active override block (B2)", () => {
   // Extraction keys carry the `aurora-` prefix (`--aurora-card` → `aurora-card`).
-  it("declares the documented `--aurora-surface-opacity` (light 0.72) + `--aurora-card` color-mix", () => {
+  it("declares the documented `--aurora-surface-opacity` (light 0.72) + `--aurora-card` mixed value", () => {
     expect(imageRootVars.get("aurora-surface-opacity")).toBe("0.72");
     // `--aurora-card` is the MIXED value (color-mix on `--aurora-surface`
-    // keyed by `--aurora-surface-opacity`); `--card` is the re-anchor to
+    // keyed by `--aurora-surface-opacity`) — or an alias to
+    // `--aurora-surface-bg`, which itself carries the `color-mix()`
+    // (tokens.css 10-09 « lisage global » : les deux pointent sur la
+    // même couleur, une seule source, AD-17). `--card` re-anchors to
     // `var(--aurora-card)` so Tailwind's `bg-card` picks it up.
     const card = imageRootVars.get("aurora-card");
     expect(card, "html[data-aurora-image-theme] must define --aurora-card").toBeDefined();
-    expect(card).toContain("color-mix(");
-    expect(card).toContain("var(--aurora-surface)");
-    expect(card).toContain("calc(var(--aurora-surface-opacity) * 100%)");
-    expect(card).toContain("transparent");
+    const surfaceBg = imageRootVars.get("aurora-surface-bg");
+    const isMixed = (v: string) =>
+      v.includes("color-mix(") &&
+      v.includes("var(--aurora-surface)") &&
+      v.includes("calc(var(--aurora-surface-opacity) * 100%)") &&
+      v.includes("transparent");
+    if (card.startsWith("var(")) {
+      // Alias to the shared mixed token (`--aurora-surface-bg`).
+      const aliasTarget = card.match(/var\(--([a-z-]+)\)/)?.[1];
+      const target = imageRootVars.get(aliasTarget ?? "");
+      expect(target, `--aurora-card aliases to --${aliasTarget}, which must exist`).toBeDefined();
+      expect(target).toMatch(/color-mix\(/);
+    } else {
+      expect(card).toMatch(/color-mix\(/);
+      expect(card).toContain("var(--aurora-surface)");
+      expect(card).toContain("calc(var(--aurora-surface-opacity) * 100%)");
+      expect(card).toContain("transparent");
+    }
     const reAnchor = imageRootVars.get("card");
-    expect(reAnchor, "html[data-aurora-image-theme] must re-anchor --card").toBe("var(--aurora-card)");
+    // `--card` re-anchors to the shared mixed value (`--aurora-card` or
+    // `--aurora-surface-bg`, which `--aurora-card` aliases) so Tailwind's
+    // `bg-card` picks up the translucent mixed surface under image theme.
+    expect(reAnchor, "html[data-aurora-image-theme] must re-anchor --card").toBeDefined();
+    expect(["var(--aurora-card)", "var(--aurora-surface-bg)"]).toContain(reAnchor);
   });
 
   it("the dark image-theme override declares 0.82", () => {

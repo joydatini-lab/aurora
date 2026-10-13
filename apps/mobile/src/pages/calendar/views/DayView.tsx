@@ -5,7 +5,7 @@
  *
  * 100 % div standards (interdiction IonList/IonItem/IonGrid/IonCard,
  * 10-09), les couleurs 100 % variables du thème dynamique
- * (useDynamicTheme : --text-main/--text-muted/--glass-bg/--glass-
+ * (ImageThemeLayer : --text-main/--text-muted/--glass-bg/--glass-
  * border/--ion-color-*), le fond « verre » respire derrière.
  *
  * La structure (la grille `.cal-day-grid` est `display: grid` à

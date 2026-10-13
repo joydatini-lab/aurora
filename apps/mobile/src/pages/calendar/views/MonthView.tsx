@@ -6,8 +6,8 @@
  *
  * 100 % div standards (interdiction IonGrid/IonRow/IonCol/IonList/
  * IonItem/IonCard, 10-09), les couleurs 100 % variables du thème
- * dynamique (`useDynamicTheme` est branché par le parent
- * `CalendarPage` sur `<html>` — ce composant n'est qu'un `<div>`,
+ * dynamique (`ImageThemeLayer` est branché globalement dans `main.tsx`
+ * sur `<html>` — ce composant n'est qu'un `<div>`,
  * jamais de `IonPage`/`IonContent` imbriqués).
  *
  * La structure (le prompt 10-09, le grid classique — JAMAIS un
