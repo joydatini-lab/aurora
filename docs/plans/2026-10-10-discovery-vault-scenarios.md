@@ -1,6 +1,9 @@
 # Scénarios de validation — Discovery Vault (10 scénarios génie civil)
 
 > **Date** : 2026-10-10
+> **Statut : VALIDÉ + GELÉ le 2026-10-14** (revue avec Joy, lot B) — les 3 décisions
+> du § « Décisions à figeler » sont figelées ci-dessous ; le document sert de
+> référence SSoT pour la feature Discovery (vault + carte UI + agentique).
 > **Contexte** : l'étudiante en génie civil qui monte en grade vers un poste d'ingénieur sol/structures utilise Aurora pour se maintenir à jour. Chaque programme de veille = une `Automation` (jobKind: 'research') + un vault Markdown (`VAULT.md`) + les run PNGs dans Supabase Storage.
 > **Objectif de validation** : montrer que le vault **évolue** au fil des runs (sections « Ce que je sais » / « Ce qui a changé » / « Sources ») et que le run N+1 **avec mémoire** ne refait pas les recherches des runs précédents — il lit le vault, décide appuier/ajouter/améliorer/consolider/comparer/supprimer, et n'ajoute que le **delta** (les nouveautés).
 
@@ -329,11 +332,24 @@ Le vault est écrit **uniquement** par le job `research` (AD-7 single-writer). L
 
 ## Décisions à figeler (avec Joy)
 
+> **VALIDÉES le 2026-10-14 (revue lot B, Joy + agent).** Les 3 décisions
+> ci-dessous sont figelées ; le document passe de « à réviser » à SSoT de
+> référence pour la feature Discovery.
+
 Avant de valider ces 10 scénarios comme preuve de la feature Discovery (vault + carte UI + agentique) :
 1. **Le delta du run N+1 est bien le critère de validation** : c'est la preuve que le vault fonctionne comme cache (il ne refait pas les recherches). Si le delta est trop faible (le run N+1 ne trouve presque rien de nouveau), le vault est « figé » — il ne s'évolue plus. Si le delta est trop élevé (le run N+1 re-recherche tout), le cache ne fonctionne pas.
+   - **Décision figelée** : on mesure par le **taux de doublons** du run N+1 (fraction des sources retrouvées déjà présentes dans le vault).
+     - avec cache (le run lit le vault) : **0–10 %** de doublons (le run ne cherche que le delta).
+     - sans cache (le run ne lit pas le vault) : **80–100 %** de doublons (le run re-trouve tout).
+     - **Seuil de validation : taux de doublons (avec mémoire) ≤ 20 %** → le cache préserve le run. C'est le critère de validation de la feature.
 2. **La pertinence du run N+1 (le verdict 0..1)** : elle doit être cohérente avec le delta (un delta élevé = une pertinence élevée, si le run a trouvé des sources pertinentes ; un delta faible = une pertinence faible, si le run n'a presque rien de nouveau).
+   - **Décision figelée** : la pertinence SSoT du run N+1 est **dérivée du delta** (fct(delta), pas indépendante). C'est déjà le comportement du SSoT `@aurora/discovery` : `qualifyDiscoveryItem` marque l'uncertainty de l'item quand le delta est faible. Pas de changement de SSoT — la décision confirme le comportement existant.
 3. **L'intersection entre les scénarios** : le run N+1 du scénario 2 (géosynthétiques) cherche « composites + géosynthétiques » — c'est l'intersection avec le scénario 10 (composites). Les vaults de chaque programme sont séparés (le vault du programme Eurocode 7 2026 est distinct du vault du programme géosynthétiques), mais le **chat-agent** peut croiser les vaults (il lit les 10 vaults, il propose des synthèses globales). C'est le SSoT du SSoT (le document de synthèse des vaults, la bannière de la page `/discovery`).
+   - **Décision figelée** :
+     - **1 vault par programme** (single-writer AD-7 : le run le commite ; le chat-agent n'a QUE le droit de lire, via l'outil READ-ONLY `discovery_vault_read` livré au L3).
+     - **Le chat-agent croise les 10 vaults en READ-ONLY** (il lit, il propose des synthèses ; il ne write JAMAIS dans le vault d'un autre programme).
+     - **La bannière `/discovery` (synthèse des vaults)** = feature **séparée** (à part, post-ReUI, lot suivant) ; elle est **hors périmètre du lot B** (data-layer) et du L5 (scénarios). C'est la prochaine étape de la feature Discovery UI.
 
 ---
 
-**Prochaine étape** : revue avec Joy (le 10-10-2026, au moment du planning).
+**Statut** : VALIDÉ + GELÉ le 2026-10-14 (revue avec Joy, lot B). Les 10 scénarios sont la référence SSoT de validation de la feature Discovery (vault + cache + agentique). Prochaine étape = la bannière de synthèse `/discovery` (feature séparée, hors lot B).

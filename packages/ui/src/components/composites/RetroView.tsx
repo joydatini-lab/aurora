@@ -185,9 +185,6 @@ export function RetroHeader({
     </div>
   );
 }
-    </div>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* MissedMilestoneList                                                */
