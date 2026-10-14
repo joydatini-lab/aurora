@@ -24,6 +24,21 @@ import { createLearningRepo } from '../lib/learning-repo';
 import { createDiscoveryRepo } from '../lib/discovery-repo';
 import { createAscentEngine } from '../lib/ascent-engine-repo';
 import type { AscentEngine } from '../lib/ascent-engine-repo';
+import {
+  readIntegrations,
+  createResearchProviderRepo,
+  createIntegrationProviderRepo,
+  createOneSignalServerClientRepo,
+  computeFilterAvailableTools,
+  computeDecideChannel,
+  computeIsWithinQuietHours,
+  computeAssertNoDoublePush,
+  computeAutomationDedupKey,
+  computeCronInsertSql,
+  computeBuildAutomationJobPayload,
+  type IntegrationsStateRow,
+  type AutomationRow,
+} from '../lib/integrations-module-repo';
 
 /** The injected data provider — one repository per entity family. */
 export interface MobileDataProvider {
@@ -146,6 +161,38 @@ export interface MobileDataProvider {
    * `createAuroraDataProvider`).
    */
   ascentEngine?: AscentEngine;
+  /**
+   * Integrations module read facade (A6 — branchement
+   * `@aurora/integrations`, lot B story A6). Built at boot from the
+   * `LocalStore` ; expose le module SSoT server-side (AD-1 vendors
+   * only in adapter packages, AD-7 single-writer) : les 4
+   * sous-modules (research-provider / composio / notifications /
+   * automations) + les miroirs `integrations_state` + `automations`.
+   * The /integrations page reads through this — elle n'importe JAMAIS
+   * `@aurora/integrations` directement (AD-7/AD-15 : module → repo →
+   * hook → page, jamais l'inverse). Les adapters vendor (Exa/Tavily/
+   * You.com / Composio / OneSignal) courent sur l'EF (AD-12 server-only,
+   * AD-3 publishable scope only, zero provider keys on device) ; ce
+   * repo expose le CONTRACT + les calculs SSoT (filterAvailableTools,
+   * decideChannel, automationDedupKey, …) pour la page + les tests.
+   * Absent when the boot provider has no local store (tests injecting
+   * fake repos without `createAuroraDataProvider`).
+   */
+  integrationsModule?: {
+    store: LocalStore;
+    states: IntegrationsStateRow[];
+    automations: AutomationRow[];
+    filterAvailableTools: typeof computeFilterAvailableTools;
+    decideChannel: typeof computeDecideChannel;
+    isWithinQuietHours: typeof computeIsWithinQuietHours;
+    assertNoDoublePush: typeof computeAssertNoDoublePush;
+    automationDedupKey: typeof computeAutomationDedupKey;
+    cronInsertSql: typeof computeCronInsertSql;
+    buildAutomationJobPayload: typeof computeBuildAutomationJobPayload;
+    createResearchProvider: typeof createResearchProviderRepo;
+    createIntegrationProvider: typeof createIntegrationProviderRepo;
+    createOneSignalServerClient: typeof createOneSignalServerClientRepo;
+  };
   /** optional: reactive channel that invalidates the QueryClient on upsync. */
   onLocalChange?: (invalidate: () => void) => void;
 }
@@ -400,6 +447,33 @@ export function mobileDataProviderFrom(
   const ascentEngine = provider.store()
     ? createAscentEngine(provider.store())
     : undefined;
+  // Integrations module (A6, lot B): the read facade over the
+  // integrations mirrors (`integrations_state` + `automations`, 03 S4.2,
+  // AD-7 local-only, 03 S8.1) + the module SSoT compute surface
+  // (research-provider / composio / notifications / automations sub-modules).
+  // Absent when the provider has no local engine (tests injecting fake
+  // repos without a boot provider).
+  const integrationsModule = provider.store()
+    ? (() => {
+        const store = provider.store()!;
+        const read = readIntegrations(store);
+        return {
+          store,
+          states: read.integrationsStates,
+          automations: read.automations,
+          filterAvailableTools: computeFilterAvailableTools,
+          decideChannel: computeDecideChannel,
+          isWithinQuietHours: computeIsWithinQuietHours,
+          assertNoDoublePush: computeAssertNoDoublePush,
+          automationDedupKey: computeAutomationDedupKey,
+          cronInsertSql: computeCronInsertSql,
+          buildAutomationJobPayload: computeBuildAutomationJobPayload,
+          createResearchProvider: createResearchProviderRepo,
+          createIntegrationProvider: createIntegrationProviderRepo,
+          createOneSignalServerClient: createOneSignalServerClientRepo,
+        };
+      })()
+    : undefined;
   return {
     goals,
     tasks,
@@ -423,6 +497,10 @@ export function mobileDataProviderFrom(
     // Ascent engine (A5, lot B): the pedagogical engine facade
     // (module AD-12, SSoT, AD-7 local-only, 03 S8.1).
     ascentEngine,
+    // Integrations module (A6, lot B): the read facade over the
+    // integrations mirrors + the module SSoT compute surface
+    // (research / composio / notifications / automations, AD-12 server-side).
+    integrationsModule,
     // AD-3: the publishable-scope agent client (kernel enqueue + mirror read).
     agent,
     // AD-3: the publishable-scope integrations client (Composio v3.1
@@ -471,6 +549,12 @@ export function mobileDataProviderFrom(
       // (AD-7, 03 S5.8).
       provider.store().watch({ entity: 'discovery_items' }, () => invalidate());
       provider.store().watch({ entity: 'gaps' }, () => invalidate());
+      // Integrations module (A6, lot B): the integrations_state +
+      // automations downstream batches invalidate the integrationsModule
+      // query key (AD-7, 03 S5.8). `automations` est déjà watché
+      // ci-dessus (discovery card, L490) — on ajoute seulement le
+      // miroir `integrations_state` ici.
+      provider.store().watch({ entity: 'integrations_state' }, () => invalidate());
     },
   };
 }

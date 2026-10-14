@@ -9,7 +9,7 @@
     "lint": "eslint src capacitor.config.ts --max-warnings 0",
     "dev": "vite",
     "build:web": "vite build",
-    "test": "node --experimental-strip-types --no-warnings --import ./test/register-resolve-hook.mjs --test test/productivity-wiring.test.ts test/progress-wiring.test.ts test/learning-wiring.test.ts test/discovery-wiring.test.ts test/ascent-engine-wiring.test.ts"
+    "test": "node --experimental-strip-types --no-warnings --import ./test/register-resolve-hook.mjs --test test/productivity-wiring.test.ts test/progress-wiring.test.ts test/learning-wiring.test.ts test/discovery-wiring.test.ts test/ascent-engine-wiring.test.ts test/integrations-module-wiring.test.ts"
   },
   "dependencies": {
     "@aurora/agent": "workspace:*",
@@ -23,6 +23,7 @@
     "@aurora/learning": "workspace:*",
     "@aurora/discovery": "workspace:*",
     "@aurora/ascent": "workspace:*",
+    "@aurora/integrations": "workspace:*",
     "@aurora/ui": "workspace:*",
     "@capacitor/android": "^7.6.9",
     "@capacitor/core": "^7.6.9",
