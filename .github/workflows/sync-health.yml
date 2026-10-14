@@ -100,7 +100,7 @@ jobs:
       # Phase 6 A6 du plan, non le CI).
       - name: "Gate 4b — PowerSync relay reachability (instance prod)"
         run: |
-          RELAY="https://6a9dd96302481fb31b945823.powersync.journeyapps.com"
+          RELAY="https://6ab1612f02481fb31b986822.powersync.journeyapps.com"
           # Le relay ne renvoie PAS 200 sur les routes inconnues (404 + le
           # body PSYNC_S2002 "RouteNotFound" prouve que le TLS + la route
           # existent). Le 204/301/401/404/5xx sont tous "le relay répond" ;

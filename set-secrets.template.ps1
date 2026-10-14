@@ -79,7 +79,7 @@ $secrets = @(
   # Replication) : le mot de passe courant de la base prod (= la
   # SUPABASE_SECRET_KEY du projet prod, à vérifier) pour que le slot
   # de réplication s'établit (le même Blocker n°1 que le dev instance).
-  @("PS_INSTANCE_ID_PROD",      "6a9dd96302481fb31b945823")
+  @("PS_INSTANCE_ID_PROD",      "6ab1612f02481fb31b986822")
 )
 foreach ($s in $secrets) {
   $name = $s[0]; $val = $s[1]
