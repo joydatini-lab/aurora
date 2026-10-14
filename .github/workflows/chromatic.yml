@@ -63,7 +63,7 @@ jobs:
         # Il détecte le script `build-storybook` du package.json racine
         # (ajouté pour le monorepo) et `chromatic.config.js`
         # (storybookBuildDir: packages/ui/storybook-static).
-        uses: chromaui/action@v11
+        uses: chromaui/action@v18.12.1
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           # Monorepo : le site Storybook est public via GitHub Pages
