@@ -76,6 +76,17 @@ jobs:
       - name: "Product modes + command palette (feature-registry S7/S4)"
         run: node --experimental-strip-types --no-warnings --test apps/mobile/test/product-modes.test.ts
 
+      # Lot déploiement (plan 2026-10-14, Phase 7) : le test de wiring
+      # sync-config (le SSoT des 11 streams PowerSync, le guard de
+      # dérive du lot B story A3) — le release ne peut pas tourner si le
+      # device boot ne couvre pas les 11 streams.
+      - name: "Sync-config wiring gate (le SSoT SYNC_STREAMS + les 2 boot sites, AD-7/AD-15)"
+        run: |
+          cd apps/mobile
+          node --experimental-strip-types --no-warnings \
+            --import ./test/register-resolve-hook.mjs \
+            --test test/sync-config-wiring.test.ts
+
   # ------------------------------------------------------------------
   # 2. Build (APK) + notes + release
   # ------------------------------------------------------------------
@@ -155,6 +166,11 @@ jobs:
       # Read from the GitHub Secrets registry (AD-3, never in the repo).
       SUPABASE_URL_DEV: ${{ secrets.SUPABASE_URL_DEV }}
       CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      R2_BUCKET_PROD: ${{ secrets.R2_BUCKET_PROD }}
+      R2_S3_ENDPOINT: ${{ secrets.R2_S3_ENDPOINT }}
+      PS_ADMIN_TOKEN: ${{ secrets.PS_ADMIN_TOKEN }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -172,6 +188,63 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+
+      # ----------------------------------------------------------------
+      # Lot déploiement (plan 2026-10-14, Phase 7) : le deploy EF +
+      # PowerSync + R2 (actuellement DRY-RUN — le job parent est
+      # `if: false` tant que OQ-03 n'est pas ratifié).
+      # ----------------------------------------------------------------
+      - name: "Deploy Edge Functions (supabase functions deploy × 7)"
+        # Les 7 EF (fn-agent-run, fn-canvas, fn-import-course,
+        # fn-integrations, fn-job-dispatcher, fn-notifications,
+        # fn-skills) — jamais fn-dev-auth (DEV-only, P6-6). Le
+        # SUPABASE_ACCESS_TOKEN (le GitHub secret) auth le link.
+        # Les secrets EF (SERVICE_ROLE_KEY, INTERNAL_FN_SECRET, les
+        # provider keys) sont posés dans le dashboard Supabase (le
+        # set-secrets.ps1) — le deploy ré-engage les EF avec les
+        # secrets déjà provisionnés.
+        run: |
+          echo "EF deploy (DRY-RUN, OQ-03 gate):"
+          echo "  supabase link ${SUPABASE_URL_DEV} (SUPABASE_ACCESS_TOKEN)"
+          echo "  supabase functions deploy fn-agent-run fn-canvas"
+          echo "    fn-import-course fn-integrations fn-job-dispatcher"
+          echo "    fn-notifications fn-skills   # × 7, jamais fn-dev-auth"
+          # Le réel (quand OQ-03 est ratifié) :
+          #   supabase link ${SUPABASE_URL_DEV} --access-token ${SUPABASE_ACCESS_TOKEN}
+          #   for fn in fn-agent-run fn-canvas fn-import-course fn-integrations \
+          #             fn-job-dispatcher fn-notifications fn-skills; do
+          #     supabase functions deploy "$fn"
+          #   done
+
+      - name: "Deploy PowerSync sync-config (powersync deploy, le SSoT des 11 streams)"
+        # Le sync-config.yaml (11 streams, le SSoT du plan Phase 2) est
+        # déployé via le CLI PowerSync (le PS_ADMIN_TOKEN = le secret
+        # GitHub registry). Le relay.sql (le SSoT des 11 vues v_*_scope)
+        # est appliqué en amont (la migration 0026, le back-fill
+        # additif live, le plan Phase 1) — le deploy sync-config ne
+        # touche QUE le stream config, pas le DB.
+        run: |
+          echo "PowerSync deploy (DRY-RUN, OQ-03 gate):"
+          echo "  cd powersync && powersync login \$PS_ADMIN_TOKEN"
+          echo "  powersync deploy sync-config   # les 11 streams -> le relay cloud"
+          # Le réel (quand OQ-03 est ratifié + le relay est healthy
+          # (Blocker n°1 résolu = le password Supabase re-posé dans
+          # le dashboard PowerSync Cloud) :
+          #   cd powersync
+          #   powersync login "$PS_ADMIN_TOKEN"
+          #   powersync deploy sync-config
+
+      - name: "R2 artefact round-trip (scripts/r2-roundtrip.mjs, AD-16)"
+        # La preuve que les artefacts atterrissent dans Cloudflare R2
+        # (pas Supabase Storage) — le test du lot B Phase 4. Le
+        # bucket R2_BUCKET_PROD (aurora-artifacts-prod, le SSoT
+        # opérationnel du OQ-03 dérive) + le R2_S3_ENDPOINT + le
+        # CF_API_TOKEN viennent du GitHub Secrets registry (AD-3).
+        run: |
+          echo "R2 round-trip (DRY-RUN, OQ-03 gate):"
+          echo "  node scripts/r2-roundtrip.mjs   # PUT + GET + DELETE un artefact de test"
+          # Le réel (quand OQ-03 est ratifié) :
+          #   node scripts/r2-roundtrip.mjs
 
       - name: "Deploy staging (Supabase + CF Workers + R2, DRY-RUN)"
         run: |

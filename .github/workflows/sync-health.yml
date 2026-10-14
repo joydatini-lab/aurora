@@ -1,0 +1,98 @@
+# Aurora — Sync + R2 health check (nightly, main)
+#
+# Le guard de régression du lot déploiement (plan 2026-10-14, Phase 7) :
+# les 3 gates statiques (check-rls / check-boundaries / check-view-joins)
+# + le test de wiring sync-config (le SSoT des 11 streams, le
+# sync-config-wiring.test.ts du lot B) + le round-trip R2 (le
+# scripts/r2-roundtrip.mjs — la preuve que les artefacts atterrissent
+# dans Cloudflare R2, pas Supabase Storage, AD-16).
+#
+# Nightly sur main (le SSoT de la "la sync + R2 marche encore", la
+# régression). Les secrets (CF_API_TOKEN + R2_BUCKET_PROD + R2_S3_ENDPOINT
+# + le SUPABASE_PUBLISHABLE_KEY pour les 3 gates statiques) viennent
+# du GitHub Secrets registry (AD-3 : jamais dans le repo).
+#
+# Le round-trip R2 SKIP-AND-REASON (le bucket n'est pas joignable
+# sans les secrets) est un FAIL du job (le SSoT du test, jamais un
+# faux succès) — le job échoue si les secrets ne sont pas posés.
+
+name: Sync + R2 health check
+
+on:
+  schedule:
+    # 03:00 UTC (le slot du night, après le heartbeat keep_alive 00:00
+    # du cron.live, 0018) — le guard court quand le system est au
+    # repos, pas en pleine de charge.
+    - cron: '0 3 * * *'
+  # Le trigger manuel (le re-run après un deploiement EF / une mise à
+  # jour du sync-config, sans attendre le next night).
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PNPM_VERSION: "10.28.0"
+  NODE_VERSION: "22"
+
+jobs:
+  sync-r2-health:
+    runs-on: ubuntu-latest
+    env:
+      # Les secrets du GitHub registry (AD-3, jamais dans le repo).
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      R2_BUCKET_PROD: ${{ secrets.R2_BUCKET_PROD }}
+      R2_S3_ENDPOINT: ${{ secrets.R2_S3_ENDPOINT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # --------------------------------------------------------------
+      # 1. Les 3 gates statiques (le SSoT de la structure, AD-2/AD-7)
+      # --------------------------------------------------------------
+      - name: "Gate 1 — RLS scan (check-rls.sh, 01 S2.2)"
+        run: sh scripts/check-rls.sh
+
+      - name: "Gate 2 — boundary greps G1-G4 (check-boundaries.sh)"
+        run: sh scripts/check-boundaries.sh all
+
+      - name: "Gate 3 — no cross-module JOIN (check-view-joins.ts, 03 S5.4/F-03)"
+        run: node --experimental-strip-types --no-warnings scripts/check-view-joins.ts
+
+      # --------------------------------------------------------------
+      # 2. Le test de wiring sync-config (le SSoT des 11 streams,
+      #    le guard de dérive du lot B story A3)
+      # --------------------------------------------------------------
+      - name: "Gate 4 — sync-config wiring (le SSoT SYNC_STREAMS + les 2 boot sites)"
+        run: |
+          cd apps/mobile
+          node --experimental-strip-types --no-warnings \
+            --import ./test/register-resolve-hook.mjs \
+            --test test/sync-config-wiring.test.ts
+
+      # --------------------------------------------------------------
+      # 3. Le round-trip R2 (la preuve que les artefacts atterrissent
+      #    dans Cloudflare, le SSoT du plan Phase 4)
+      # --------------------------------------------------------------
+      - name: "Gate 5 — R2 round-trip (scripts/r2-roundtrip.mjs, AD-16)"
+        run: |
+          if [ -z "$CF_API_TOKEN" ] || [ -z "$R2_S3_ENDPOINT" ]; then
+            echo "::error::CF_API_TOKEN / R2_S3_ENDPOINT absents du GitHub Secrets registry (AD-3) — le guard ne peut pas tourner."
+            exit 1
+          fi
+          node scripts/r2-roundtrip.mjs
