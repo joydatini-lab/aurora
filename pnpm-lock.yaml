@@ -115,6 +115,9 @@ importers:
       '@aurora/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@aurora/workflows':
+        specifier: workspace:*
+        version: link:../../packages/workflows
       '@capacitor/android':
         specifier: ^7.6.9
         version: 7.6.9(@capacitor/core@7.6.9)
