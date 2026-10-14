@@ -191,11 +191,12 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main' && github.repository_owner == 'joynagassi-cyber'
     runs-on: ubuntu-latest
+    # L'environnement `github-pages` est auto-créé par GitHub quand on
+    # active la publication Pages via GitHub Actions (Settings → Pages →
+    # Source = "GitHub Actions"). Un environnement `pages` custom peut
+    # exister mais n'est pas utilisé par le système Pages interne.
     environment:
-      # L'environnement `pages` doit exister dans Settings → Environments
-      # avant le premier run (création automatique au premier push, ou
-      # manuellement dans Settings → Environments → "Add environment").
-      name: pages
+      name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download build artifact
