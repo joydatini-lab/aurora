@@ -197,6 +197,13 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main' && github.repository_owner == 'joynagassi-cyber'
     runs-on: ubuntu-latest
+    environment:
+      # Obligatoire pour actions/deploy-pages@v4/v5 : l'environnement
+      # `github-pages` est auto-créé par GitHub quand Settings → Pages →
+      # Source = "GitHub Actions". Sans ce bloc, le step Deploy échoue
+      # (le site Pages n'est pas associé à l'environnement de publication).
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -224,4 +231,4 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
