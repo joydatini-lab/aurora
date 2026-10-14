@@ -220,6 +220,29 @@ jobs:
         run: node --experimental-strip-types --no-warnings --test apps/mobile/test/product-modes.test.ts
         continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
+      # ---- Lot déploiement 2026-10-14 (plan A3, guard de dérive) ----
+      # Le SSoT SYNC_STREAMS (packages/data) + les 2 boot sites
+      # (apps/mobile boot-data.ts + apps/desktop renderer.jsx) couvrent
+      # tous les 11 streams du sync-config.yaml (le registry du lot B
+      # story A3) — le CI passe pas si un stream est ajouté au
+      # sync-config.yaml sans mise à jour du device boot (AD-7).
+      - name: "Sync-config wiring (le SSoT des 11 streams, AD-15/F-03)"
+        if: ${{ hashFiles('apps/mobile/test/sync-config-wiring.test.ts') != '' }}
+        run: |
+          cd apps/mobile
+          node --experimental-strip-types --no-warnings \
+            --import ./test/register-resolve-hook.mjs \
+            --test test/sync-config-wiring.test.ts
+        continue-on-error: ${{ !exists('packages/domain/package.json') }}
+
+      - name: "R2 storage adapter (le presign SigV4, AD-16, lot A4)"
+        if: ${{ hashFiles('packages/integrations/test/r2-storage.test.ts') != '' }}
+        run: |
+          cd packages/integrations
+          node --experimental-strip-types --no-warnings \
+            --test test/r2-storage.test.ts
+        continue-on-error: ${{ !exists('packages/domain/package.json') }}
+
       - name: Gate summary
         run: |
           echo "CI gate (main buildable) — wave 0:"
