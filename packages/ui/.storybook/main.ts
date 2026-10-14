@@ -6,11 +6,12 @@ import type { StorybookConfig } from "@storybook/react-vite";
 // c'est fait dans `postcss.config.cjs` du package (plugin v4 objet
 // `@tailwindcss/postcss`). Ici on n'ajoute rien de plus.
 //
-// NOTE — Controls & Viewport : aucune version 10.x des packages
-// `@storybook/addon-controls` / `@storybook/addon-viewport` n'est
-// publiée (dernière : 9.0.8). Les modules Essentials restent portés par
-// le runtime de storybook@10.6.1 ; les paramètres (controls.matchers,
-// viewport.options/initialGlobals) sont déclarés dans `preview.tsx`.
+// NOTE — Controls & Viewport sont intégrés au core storybook@10 (AD-17).
+// Les packages `@storybook/addon-controls` / `@storybook/addon-viewport`
+// (dernière : 9.0.8) cassent le manager (blank canvas) quand déclarés —
+// ils jettent « no longer exists in Storybook 9.0 and above ». Les
+// paramètres (controls.matchers, viewport.options/initialGlobals) restent
+// portés par `preview.tsx`.
 const config: StorybookConfig = {
   "stories": [
     "../src/**/*.mdx",
@@ -21,8 +22,11 @@ const config: StorybookConfig = {
     "@storybook/addon-vitest",
     "@storybook/addon-a11y",
     "@storybook/addon-docs",
-    "@storybook/addon-controls",
-    "@storybook/addon-viewport",
+    // NOTE (SB 10) — Controls & Viewport sont intégrés au core de
+    // storybook@10 : les packages @storybook/addon-controls /
+    // @storybook/addon-viewport (dernière : v9.0.8) ne sont plus
+    // nécessaires et cassent le manager (blank canvas) quand déclarés.
+    // Les paramètres restent déclarés dans `preview.tsx`.
     "@storybook/addon-mcp"
   ],
   "features": {
