@@ -19,11 +19,20 @@
 #     1. dashboard.render.com → New+ → Static Site
 #     2. Lien au repo GitHub `joynagassi-cyber/aurora`, branch `main`
 #     3. Render détecte `render.yaml` et propose le service `aurora-storybook`
-#        (rootDir packages/ui, buildCommand pnpm install + storybook build)
+#        (rootDir packages/ui, buildCommand pnpm install + storybook build,
+#         publishDir storybook-static)
 #     4. Chaque push sur main = rebuild + republish auto.
 #   Ce workflow GitHub reste utile pour : valider le build en PR (artefact
 #   `storybook-static` téléchargeable), et forcer un deploy manuel via
 #   RENDER_API_KEY / RENDER_SERVICE_ID (job `deploy`, noop si secrets absents).
+#
+# NOTE (diagnostic 2026-10-14) : le `rootDir: packages/ui` dans render.yaml
+# est crucial. Les services créés via le MCP Render (sans rootDir, rootDir="")
+# n'exposent pas ce paramètre : leur `publishPath` relatif ne publie alors
+# que le preview Storybook (iframe.html + assets/*), pas le manager
+# (index.html, sb-manager/, favicon*) — d'où une sidebar affichée mais aucun
+# composant rendu. Réparation à la main dans le dashboard : Root Directory
+# = packages/ui, Publish Path = storybook-static.
 
 name: Storybook Deploy
 

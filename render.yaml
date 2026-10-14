@@ -10,8 +10,8 @@
         "branch": "main",
         "rootDir": "packages/ui"
       },
-      "buildCommand": "pnpm install --frozen-lockfile && cd packages/ui && pnpm exec storybook build --output-dir storybook-static",
-      "publishDir": "packages/ui/storybook-static",
+      "buildCommand": "corepack enable; corepack prepare pnpm@10.28.0 --activate; pnpm install --frozen-lockfile --config.minimum-release-age=0; pnpm exec storybook build --output-dir storybook-static",
+      "publishDir": "storybook-static",
       "envs": [],
       "headers": [
         {
