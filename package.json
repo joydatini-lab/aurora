@@ -13,7 +13,8 @@
     "dev": "pnpm -F @aurora/mobile dev",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "build-storybook-ui": "pnpm --filter @aurora/ui build-storybook"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
