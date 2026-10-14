@@ -97,6 +97,9 @@ importers:
       '@aurora/goal-engine':
         specifier: workspace:*
         version: link:../../packages/goal-engine
+      '@aurora/integrations':
+        specifier: workspace:*
+        version: link:../../packages/integrations
       '@aurora/learning':
         specifier: workspace:*
         version: link:../../packages/learning

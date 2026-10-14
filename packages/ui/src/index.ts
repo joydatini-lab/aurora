@@ -720,6 +720,26 @@ export { StatTile } from "./components/ui/StatTile";
 export { CalendarView } from "./components/ui/CalendarView";
 export { AgGridTable } from "./components/ui/AgGridTable";
 
+// --- Untitled UI v8 ports (option B, 2026-10-14) — composants bureau -------
+// `date-range-picker` : le seul vrai morceau React-Aria du lot, ré-adapté
+// sur Radix `Popover` + le `Calendar` (react-day-picker v10) de la batterie.
+// `carousel-base` : moteur Embla autonome, déposé tel quel (zéro React-Aria).
+// `empty-state` : variante riche de `empty.tsx` (état vide "honnête" AD-7),
+// présentationnelle, zéro dépendance Untitled UI.
+export {
+  DateRangePicker,
+  type DateRangePickerProps,
+  type DateRangePickerValue,
+  type DateRangePreset,
+} from "./components/ui/date-range-picker";
+export {
+  Carousel,
+  useCarousel,
+  CarouselContext,
+} from "./components/ui/carousel-base";
+export { EmptyState, type EmptyAvatar } from "./components/ui/empty-state";
+
+
 // --- EventCalendar (@reui, lot 2026-10-12 — moteur riche de vues calendrier)
 // Moteur complet (mois / semaine / N jours / jour / agenda / time-grid
 // ressources) — le composant de base, ses vues, sa barre de navigation et
