@@ -19,6 +19,10 @@
 #             | GROQ_API_KEY                | GROQ_API_KEY
 #             | OPENROUTER_API_KEY          | OPENROUTER_API_KEY
 #   F (CF)    | CF_API_WORKERS_AI_TOKEN     | CF_API_WORKERS_AI_TOKEN
+#             | CF_API_TOKEN (R2 scope)     | CF_API_TOKEN (r2-roundtrip.mjs
+#                                                + R2 presigning, AD-16 — le
+#                                                Bearer token du S3 endpoint
+#                                                R2, jamais un SigV4 signatory)
 #   C (res)   | EXA_API_KEY / TAVILY_API_KEY / YOU_API_KEY | same
 #   D (intg)  | COMPOSIO_API_KEY            | COMPOSIO_API_KEY
 #   E (vision)| GEMINI_API_KEY / MISTRAL_API_KEY (optional, OQ-03)
@@ -60,8 +64,22 @@ $secrets = @(
   @("SENTRY_DSN",               "FILL_IN_FROM_KEY_VAULT"),
   @("SENTRY_AUTH_TOKEN",        "FILL_IN_FROM_KEY_VAULT"),
   @("POSTHOG_API_KEY",          "FILL_IN_FROM_KEY_VAULT"),
+  # Normalisé 2026-10-14 : le .env.local local porte POSTHOG_API_TOKEN
+  # (phx_...) — la valeur ci-dessus = la même. Le dashboard Supabase (EF)
+  # lit POSTHOG_API_KEY ; le script local lit POSTHOG_API_TOKEN. Le template
+  # est le SSoT du nom CI ; le .env.local est le SSoT du nom script.
   @("POSTHOG_HOST",            "https://eu.i.posthog.com"),
-  @("POSTHOG_PROJECT_ID",       "FILL_IN_FROM_KEY_VAULT")
+  @("POSTHOG_PROJECT_ID",       "FILL_IN_FROM_KEY_VAULT"),
+  # OQ-03 (2026-10-14) — la production PowerSync est provisionnée : le
+  # relay passe de l'instance Development (6ab1612e…) à l'instance
+  # Production (6a9dd963…). Le POWERSYNC_URL ci-dessus = la valeur prod
+  # (apps/mobile/.env.local + apps/desktop/.env.local sont le SSoT
+  # device-facing ; ce template = le nom CI / GitHub Actions).
+  # À poser dans le dashboard PowerSync Cloud (Instances → Production →
+  # Replication) : le mot de passe courant de la base prod (= la
+  # SUPABASE_SECRET_KEY du projet prod, à vérifier) pour que le slot
+  # de réplication s'établit (le même Blocker n°1 que le dev instance).
+  @("PS_INSTANCE_ID_PROD",      "6a9dd96302481fb31b945823")
 )
 foreach ($s in $secrets) {
   $name = $s[0]; $val = $s[1]

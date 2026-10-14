@@ -86,6 +86,33 @@ jobs:
             --test test/sync-config-wiring.test.ts
 
       # --------------------------------------------------------------
+      # 2b. Le reachability probe du relay PowerSync (l'instance
+      #     production `6a9dd963…`, le SSoT des apps — OQ-03 2026-10-14)
+      # --------------------------------------------------------------
+      # Le relay lit les 11 vues `v_*_scope` du SSoT `powersync/relay.sql`
+      # sous le `service_role` (FORCE RLS, AD-16) de la base prod. Le
+      # secret du slot de réplication (= le mot de passe DB courant du
+      # projet Supabase prod) est à saisir dans le dashboard PowerSync
+      # Cloud (Instances → Production → Replication) — le même Blocker
+      # n°1 que l'instance dev. Ce probe = un GET `health` public sur le
+      # relay : il échoue si l'instance n'est pas provisionnée/joignable
+      # (le round-trip de données complet est out-of-scope, c'est la
+      # Phase 6 A6 du plan, non le CI).
+      - name: "Gate 4b — PowerSync relay reachability (instance prod)"
+        run: |
+          RELAY="https://6a9dd96302481fb31b945823.powersync.journeyapps.com"
+          # Le relay ne renvoie PAS 200 sur les routes inconnues (404 + le
+          # body PSYNC_S2002 "RouteNotFound" prouve que le TLS + la route
+          # existent). Le 204/301/401/404/5xx sont tous "le relay répond" ;
+          # le 000 (timeout / connrefused) = le relay est DOWN → FAIL.
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$RELAY/")
+          echo "relay $RELAY/ → HTTP $code"
+          if [ "$code" = "000" ]; then
+            echo "::error::PowerSync relay prod non joignable (timeout) — le provisionnement est incomplet (Blocker n°1 : le secret du dashboard PowerSync à re-saisir)."
+            exit 1
+          fi
+
+      # --------------------------------------------------------------
       # 3. Le round-trip R2 (la preuve que les artefacts atterrissent
       #    dans Cloudflare, le SSoT du plan Phase 4)
       # --------------------------------------------------------------
