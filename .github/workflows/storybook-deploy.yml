@@ -227,7 +227,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: storybook-static
-          artifact_name: github-pages
+          name: github-pages
 
       - name: Deploy to GitHub Pages
         id: deployment
