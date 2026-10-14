@@ -204,10 +204,23 @@ jobs:
           name: storybook-static
           path: storybook-static
 
-      - name: Upload Pages artifact
+      - name: Upload Pages artifact (github-pages — convention attendue par
+          Settings → Pages → Source = "Static HTML / GitHub Actions")
+        # Le workflow GitHub Pages fourni par GitHub ("Static HTML - GitHub
+        # Actions") attend un artefact nommé `github-pages` (via
+        # actions/upload-pages-artifact). Le contenu du dossier
+        # `storybook-static/` (build Storybook complet : index.html, iframe.html,
+        # sb-manager/, manifests/, assets/) est uploadé tel quel — ce qui
+        # corrigera aussi le problème de publication partielle de Render
+        # (seul iframe.html + assets/* étaient servis).
+        #
+        # `base: "/aurora/"` (main.ts viteFinal) fait que les asset URL dans
+        # index.html pointent vers /aurora/assets/... — cohérent avec l'URL
+        # github.io/aurora/ (site de repo, pas de user).
         uses: actions/upload-pages-artifact@v3
         with:
           path: storybook-static
+          artifact_name: github-pages
 
       - name: Deploy to GitHub Pages
         id: deployment
