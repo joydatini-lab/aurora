@@ -22,6 +22,8 @@ import { createProductivityRepo } from '../lib/productivity-repo';
 import { createProgressRepo } from '../lib/progress-repo';
 import { createLearningRepo } from '../lib/learning-repo';
 import { createDiscoveryRepo } from '../lib/discovery-repo';
+import { createAscentEngine } from '../lib/ascent-engine-repo';
+import type { AscentEngine } from '../lib/ascent-engine-repo';
 
 /** The injected data provider — one repository per entity family. */
 export interface MobileDataProvider {
@@ -126,6 +128,24 @@ export interface MobileDataProvider {
    * fake repos without `createAuroraDataProvider`).
    */
   discovery?: ReturnType<typeof createDiscoveryRepo>;
+  /**
+   * Ascent engine facade (A5 — branchement `@aurora/ascent`,
+   * lot B story A5). Built at boot by `createAscentEngine` over the
+   * `LocalStore` ; expose le moteur pédagogique PUR (module AD-12,
+   * server-side, pas de 2e LLM) : `computeLearnerBaseline` (S6.2),
+   * `selectDepth` / `hoursUntil` (S13), `buildPath` (S10/S13),
+   * `reactTo` / `remediateBlocker` (AD-9), `ascentSessionContext` /
+   * `collectLearningCommands` / `currentLearningCommands` (kernel
+   * integration S5/S7). The /goals/:id/ascent page reads through this
+   * — elle n'importe JAMAIS `@aurora/ascent` directement (AD-7/AD-15 :
+   * module → repo → hook → page, jamais l'inverse). LE BUILD DU CHEMIN
+   * (Agent Kernel) court SERVER-SIDE (AD-12) — le device lit le
+   * `ascent_paths` miroité (frozen path) ; ce repo expose le CALCUL
+   * local pour la prévisualisation + les tests. Absent when the boot
+   * provider has no local store (tests injecting fake repos without
+   * `createAuroraDataProvider`).
+   */
+  ascentEngine?: AscentEngine;
   /** optional: reactive channel that invalidates the QueryClient on upsync. */
   onLocalChange?: (invalidate: () => void) => void;
 }
@@ -373,6 +393,13 @@ export function mobileDataProviderFrom(
   const discovery = provider.store()
     ? createDiscoveryRepo(provider.store())
     : undefined;
+  // Ascent engine (A5, lot B): the pedagogical engine facade (module
+  // AD-12, server-side, SSoT). Built from the provider's `store()`
+  // (AD-7 local-only, 03 S8.1). Absent when the provider has no local
+  // engine (tests injecting fake repos without a boot provider).
+  const ascentEngine = provider.store()
+    ? createAscentEngine(provider.store())
+    : undefined;
   return {
     goals,
     tasks,
@@ -393,6 +420,9 @@ export function mobileDataProviderFrom(
     // Discovery module (A4, lot B): the read facade over the discovery
     // mirrors (AD-7 local-only, 03 S8.1).
     discovery,
+    // Ascent engine (A5, lot B): the pedagogical engine facade
+    // (module AD-12, SSoT, AD-7 local-only, 03 S8.1).
+    ascentEngine,
     // AD-3: the publishable-scope agent client (kernel enqueue + mirror read).
     agent,
     // AD-3: the publishable-scope integrations client (Composio v3.1

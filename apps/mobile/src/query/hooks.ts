@@ -183,4 +183,53 @@ export function useDiscoveryGaps(userId?: string) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Ascent engine (A5 — lot B story A5). These hooks read through the
+// provider's `ascentEngine` facade (created at boot from the local store).
+// NO network on mount (AD-7). The engine PRODUCES the `AscentLearningIR`
+// (module SSoT, AD-12 server-side pedagogy) ; the device reads the
+// mirrored `ascent_paths` (frozen path) + pre-visualizes the next step
+// via the engine. Absent `ascentEngine` (tests without a boot provider)
+// → the queryFn throws, surfaced as the 5-canonical error state (AD-13),
+// never a fake data.
+// ---------------------------------------------------------------------------
+
+export function useAscentLearnerBaseline(userId?: string) {
+  const { ascentEngine } = useMobileData();
+  return useQuery({
+    queryKey: ['ascentEngine', 'learnerBaseline', userId ?? 'me'] as const,
+    queryFn: async () =>
+      ascentEngine && userId
+        ? ascentEngine.computeLearnerBaseline(ascentEngine.store, userId)
+        : Promise.reject(new Error('ascentEngine provider not wired')),
+    enabled: userId !== undefined,
+  });
+}
+
+/**
+ * Pre-visualize the AscentLearningIR for a goal (the `buildPath` SSoT).
+ * LE BUILD DU CHEMIN court SERVER-SIDE (AD-12) — ce hook prévisualise
+ * le calcul local (la persistance de l'IR reste l'EF `fn-ascent`).
+ * Le repo reçoit l'`input` du `buildPath` (le module est la SSoT du
+ * shape `BuildPathInput`) ; la page le lit via ce hook.
+ */
+export function useAscentPathPreview(
+  input: import('@aurora/ascent').BuildPathInput | undefined,
+) {
+  const { ascentEngine } = useMobileData();
+  return useQuery({
+    queryKey: [
+      'ascentEngine',
+      'pathPreview',
+      input?.userId ?? 'me',
+      input?.pathId ?? 'draft',
+    ] as const,
+    queryFn: async () =>
+      ascentEngine && input
+        ? ascentEngine.buildPath(input)
+        : Promise.reject(new Error('ascentEngine provider not wired')),
+    enabled: input !== undefined && ascentEngine !== undefined,
+  });
+}
+
 export type { MobileDataProvider };
