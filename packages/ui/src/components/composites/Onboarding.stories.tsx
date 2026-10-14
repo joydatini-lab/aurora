@@ -50,6 +50,84 @@ export const Connexion: Story = {
   },
 };
 
+export const ConnexionErreur: Story = {
+  render: () => {
+    const data: OnboardingViewData = {
+      appName: "Aurora",
+      steps: [],
+      currentStepIndex: 0,
+      authError: "Identifiants invalides. Vérifiez votre e-mail et mot de passe.",
+      verificationPendingEmail: null,
+      forgotPasswordTarget: null,
+    };
+    return (
+      <OnboardingView
+        data={data}
+        onStepChange={() => {}}
+        onSignIn={() => {}}
+        onSignUp={() => {}}
+        onOAuth={() => {}}
+        onForgotPassword={() => {}}
+        onResendVerification={() => {}}
+        onSkip={() => {}}
+        onFinish={() => {}}
+      />
+    );
+  },
+};
+
+export const VerificationEnAttente: Story = {
+  render: () => {
+    const data: OnboardingViewData = {
+      appName: "Aurora",
+      steps: [],
+      currentStepIndex: 0,
+      authError: null,
+      verificationPendingEmail: "joy@aurora.app",
+      forgotPasswordTarget: null,
+    };
+    return (
+      <OnboardingView
+        data={data}
+        onStepChange={() => {}}
+        onSignIn={() => {}}
+        onSignUp={() => {}}
+        onOAuth={() => {}}
+        onForgotPassword={() => {}}
+        onResendVerification={() => console.log("resend")}
+        onSkip={() => {}}
+        onFinish={() => {}}
+      />
+    );
+  },
+};
+
+export const MotDePasseOublie: Story = {
+  render: () => {
+    const data: OnboardingViewData = {
+      appName: "Aurora",
+      steps: [],
+      currentStepIndex: 0,
+      authError: null,
+      verificationPendingEmail: null,
+      forgotPasswordTarget: "joy@aurora.app",
+    };
+    return (
+      <OnboardingView
+        data={data}
+        onStepChange={() => {}}
+        onSignIn={() => {}}
+        onSignUp={() => {}}
+        onOAuth={() => {}}
+        onForgotPassword={(email) => console.log("forgot", email)}
+        onResendVerification={() => {}}
+        onSkip={() => {}}
+        onFinish={() => {}}
+      />
+    );
+  },
+};
+
 export const Wizard: Story = {
   render: () => {
     const [stepIndex, setStepIndex] = React.useState(0);
@@ -168,6 +246,61 @@ const artifacts: ArtifactData[] = [
     processingError: "Le tableur Excel v2 n'est pas supporté",
   },
 ];
+
+export const VisionneuseVide: Story = {
+  render: () => {
+    const data: ArtifactsViewData = {
+      title: "Artifacts",
+      activeArtifact: null,
+      artifacts: [],
+    };
+    return (
+      <div className="flex min-h-[320px] flex-col overflow-hidden rounded-xl border bg-background">
+        <ArtifactsView data={data} onSelectArtifact={() => {}} />
+      </div>
+    );
+  },
+};
+
+export const VisionneuseChargement: Story = {
+  render: () => {
+    const [activeId, setActiveId] = React.useState<string | null>("a1");
+    const list = artifacts.filter((a) => a.processingState === "ready");
+    const data: ArtifactsViewData = {
+      title: "Artifacts",
+      activeArtifact: list.find((a) => a.id === activeId) ?? null,
+      artifacts: list,
+    };
+    return (
+      <div className="flex min-h-[480px] flex-col overflow-hidden rounded-xl border bg-background">
+        <ArtifactsView
+          data={data}
+          onSelectArtifact={setActiveId}
+          viewerContent={(artifact) =>
+            artifact.type === "image" ? null : undefined
+          }
+        />
+      </div>
+    );
+  },
+};
+
+export const VisionneuseErreurTraitement: Story = {
+  render: () => {
+    const [activeId, setActiveId] = React.useState<string | null>("a5");
+    const list = artifacts.filter((a) => a.id === "a5");
+    const data: ArtifactsViewData = {
+      title: "Artifacts",
+      activeArtifact: list.find((a) => a.id === activeId) ?? null,
+      artifacts: list,
+    };
+    return (
+      <div className="flex min-h-[480px] flex-col overflow-hidden rounded-xl border bg-background">
+        <ArtifactsView data={data} onSelectArtifact={setActiveId} />
+      </div>
+    );
+  },
+};
 
 export const Visionneuse: Story = {
   render: () => {

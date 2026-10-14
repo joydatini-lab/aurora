@@ -131,3 +131,58 @@ export const Retro: Story = {
     </div>
   ),
 };
+
+export const RetroAvecPeriode: Story = {
+  render: () => {
+    const [data, setData] = React.useState(retroData);
+    return (
+      <div className="mx-auto max-w-3xl">
+        <RetroView
+          data={data}
+          onPeriodChange={(range) =>
+            setData((d) => ({
+              ...d,
+              periodFrom: range.from ?? d.periodFrom,
+              periodTo: range.to ?? d.periodTo,
+            }))
+          }
+          onPublish={() => console.log("publish-retro")}
+        />
+      </div>
+    );
+  },
+};
+
+export const RetroVide: Story = {
+  render: () => (
+    <div className="mx-auto max-w-3xl">
+      <RetroView
+        data={{
+          ...retroData,
+          milestones: [],
+          bacMetrics: [],
+          rootCauses: [],
+          actions: [],
+          lessons: [],
+        }}
+        onPublish={() => console.log("publish-retro")}
+      />
+    </div>
+  ),
+};
+
+export const RevueVide: Story = {
+  render: () => (
+    <div className="mx-auto max-w-2xl">
+      <ReviewView
+        data={{
+          ...reviewData,
+          rows: [],
+          causes: [],
+          actions: [],
+          comparison: undefined,
+        }}
+      />
+    </div>
+  ),
+};
