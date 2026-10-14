@@ -187,17 +187,16 @@ jobs:
   # déclarées au niveau du workflow (voir permissions: en tête).
   # Pas de RENDER_API_KEY ni de secret dédié — l'OIDC est la méthode
   # recommandée par GitHub pour Actions → Pages.
+  #
+  # NE PAS déclarer d'`environment:` ici : le job `deploy-pages` écrit
+  # sur la branche de publication GitHub Pages, et tout environnement
+  # with protection rule (ou custom deployment branch policy) bloque la
+  # publication. GitHub Pages n'a besoin d'aucun environment pour
+  # qu'actions/deploy-pages fonctionne.
   deploy-pages:
     needs: build
     if: github.ref == 'refs/heads/main' && github.repository_owner == 'joynagassi-cyber'
     runs-on: ubuntu-latest
-    # L'environnement `github-pages` est auto-créé par GitHub quand on
-    # active la publication Pages via GitHub Actions (Settings → Pages →
-    # Source = "GitHub Actions"). Un environnement `pages` custom peut
-    # exister mais n'est pas utilisé par le système Pages interne.
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v4
