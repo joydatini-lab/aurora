@@ -5,6 +5,7 @@
 #   2. typecheck        tsc --noEmit (packages/ui)
 #   3. build-storybook  storybook build → storybook-static/
 #   4. deploy           render deploy → https://aurora-storybook.onrender.com
+#   5. deploy-pages     deploy-pages → GitHub Pages → https://joynagassi-cyber.github.io/aurora/
 #
 # Trigger : push sur main OU PR vers main (build testé sur les PR)
 # Deploy  : main uniquement (PR = build + test, main = deploy)
@@ -33,6 +34,16 @@
 # (index.html, sb-manager/, favicon*) — d'où une sidebar affichée mais aucun
 # composant rendu. Réparation à la main dans le dashboard : Root Directory
 # = packages/ui, Publish Path = storybook-static.
+#
+# GitHub Pages (alternative sans Render, sans dashboard manuel) :
+#   - Le job `deploy-pages` pousse `storybook-static/` vers GitHub Pages
+#     (CDN GitHub, pas de problème de rootDir/publishPath).
+#   - `base: "/aurora/"` est déjà défini dans .storybook/main.ts (viteFinal)
+#     pour que les asset URL soient relatifs au sous-dossier du repo.
+#   - À activer une seule fois dans Settings → Pages → Build and deployment
+#     → Source = "GitHub Actions" (le workflow `storybook-deploy.yml` est
+#     automatiquement détecté comme la source de build).
+#   - URL finale : https://joynagassi-cyber.github.io/aurora/
 
 name: Storybook Deploy
 
@@ -41,6 +52,14 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+
+# GitHub Pages : la permission `pages` est requise pour que le job
+# `deploy-pages` puisse écrire sur le branch de publication (pages).
+# `id-token` est requis par actions/deploy-pages (OIDC, pas de secret).
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: storybook-${{ github.ref }}
@@ -150,3 +169,40 @@ jobs:
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+
+  # ------------------------------------------------------------------
+  # Deploy sur GitHub Pages — main uniquement (CDN GitHub, pas de Render)
+  # ------------------------------------------------------------------
+  # Prérequis une seule fois (dashboard GitHub, pas de secret requis) :
+  #   Settings → Pages → Build and deployment → Source = "GitHub Actions"
+  #   (le workflow est automatiquement détecté)
+  #
+  # Les permissions `pages: write` + `id-token: write` (OIDC) sont
+  # déclarées au niveau du workflow (voir permissions: en tête).
+  # Pas de RENDER_API_KEY ni de secret dédié — l'OIDC est la méthode
+  # recommandée par GitHub pour Actions → Pages.
+  deploy-pages:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.repository_owner == 'joynagassi-cyber'
+    runs-on: ubuntu-latest
+    environment:
+      # L'environnement `pages` doit exister dans Settings → Environments
+      # avant le premier run (création automatique au premier push, ou
+      # manuellement dans Settings → Environments → "Add environment").
+      name: pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: storybook-static
+          path: storybook-static
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: storybook-static
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

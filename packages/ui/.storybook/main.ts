@@ -35,9 +35,16 @@ const config: StorybookConfig = {
 // NOTE (Windows) — Fix build statique : esbuild temp file lock +
 // minify rollup provoque "Accès refusé". Target esnext + minify false
 // (même fix que apps/desktop et apps/mobile, cf. mémoire).
+//
+// NOTE (GitHub Pages) — Le site est servi sous /aurora/ (repo de branche
+// `joynagassi-cyber/aurora`). Sans `base: "/aurora/"`, tous les URL
+// d'assets sont absolus (/, /assets/…) et retournent 404 sur
+// <user>.github.io/aurora/assets/…
 config.viteFinal = async (config) => ({
   ...config,
+  base: "/aurora/",
   build: {
+    ...config.build,
     target: "esnext",
     minify: false,
   },
