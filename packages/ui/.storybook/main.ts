@@ -22,11 +22,6 @@ const config: StorybookConfig = {
     "@storybook/addon-vitest",
     "@storybook/addon-a11y",
     "@storybook/addon-docs",
-    // NOTE (SB 10) — Controls & Viewport sont intégrés au core de
-    // storybook@10 : les packages @storybook/addon-controls /
-    // @storybook/addon-viewport (dernière : v9.0.8) ne sont plus
-    // nécessaires et cassent le manager (blank canvas) quand déclarés.
-    // Les paramètres restent déclarés dans `preview.tsx`.
     "@storybook/addon-mcp"
   ],
   "features": {
