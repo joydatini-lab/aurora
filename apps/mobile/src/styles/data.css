@@ -1294,6 +1294,98 @@
   flex: 1;
 }
 
+/* Bannière de synthèse (L5, 2026-10-14) : le document SSoT de
+   synthèse des 10 vaults (le § L5 "Décision 3 figelée" de la mémoire
+   `discovery-refactor-lots-2-4`). Une bannière posée au-dessus de la
+   liste de cartes (le SSoT du § L5 : « la bannière de la page
+   /discovery »). 4 chiffres SSoT (le total programmes, le total
+   sources, la pertinence moyenne, le verdict du cache) + le CTA de
+   synthèse globale (le § L5 : le chat-agent croise les 10 vaults, il
+   propose des synthèses globales — la bannière n'est QUE l'entrée, la
+   synthèse elle-même est produite par l'agent). Design (AD-17) :
+   tokens-only, radius ≤ 8px, tap ≥ 44px. */
+.veil-synthesis-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 14px;
+  background: var(--aurora-surface-bg);
+  border: 1px solid var(--aurora-border);
+  border-radius: var(--aurora-radius, 0.5rem);
+  box-shadow: var(--aurora-shadow-card);
+  color: var(--aurora-text-secondary);
+}
+.veil-synthesis-banner__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.veil-synthesis-banner__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aurora-text-primary);
+}
+.veil-synthesis-banner__title svg {
+  color: var(--aurora-accent-primary);
+}
+.veil-synthesis-banner__as-of {
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--aurora-text-tertiary);
+}
+.veil-synthesis-banner__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (max-width: 480px) {
+  .veil-synthesis-banner__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.veil-synthesis-banner__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--aurora-surface);
+  border: 1px solid var(--aurora-border-tertiary, var(--aurora-border));
+  border-radius: calc(var(--aurora-radius, 0.5rem) * 0.5);
+}
+.veil-synthesis-banner__stat--cache {
+  justify-content: center;
+}
+.veil-synthesis-banner__value {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--aurora-text-primary);
+}
+.veil-synthesis-banner__label {
+  font-size: 11px;
+  color: var(--aurora-text-tertiary);
+}
+/* Le verdict du cache (le L5 invariant 3) : le SSoT du « le cache
+   préserve le run N+1 » (le taux de doublons ≤ 20 % = valide,
+   sinon en veille). Les couleurs sémantiques (success / warning)
+   via les tokens du design system (AD-17). */
+.veil-synthesis-banner__stat--cache {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.veil-synthesis-banner__stat--cache .veil-synthesis-banner__label {
+  width: 100%;
+}
+
 /* skeleton (AD-13) : la carte de veille en chargement prévisualise sa FORME
    (titre + sous-titre + rangée de stats), pas un placeholder générique.
    On compose les primitives shell.css (`.sk` base animée + `.sk-card` forme)

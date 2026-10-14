@@ -226,6 +226,12 @@ export const qk = {
     all: () => ['discovery'] as const,
     programs: () => [...qk.discovery.all(), 'programs'] as const,
     vaults: () => [...qk.discovery.all(), 'vaults'] as const,
+    // L5 (2026-10-14) : la bannière de synthèse des 10 vaults (le
+    //  SSoT de la feature Discovery UI, figelé commit `c42f3c9`).
+    //  Invalidation : le SSoT de la synthèse change quand le miroir
+    //  `discovery_vault` OU `automations` change (le `onLocalChange`
+    //  invalide déjà les deux — la synthèse inherit la même inval).
+    synthesis: () => [...qk.discovery.all(), 'synthesis'] as const,
   },
   // agent_runs mirror (AD-7 read side, 0008): per-run polling while
   // the kernel job is in flight (02 §4 / F-09).

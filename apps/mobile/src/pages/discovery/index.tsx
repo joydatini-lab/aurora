@@ -18,17 +18,22 @@
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
 import { Compass } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { UxStates, type UxStateFlags } from '../../ux-states';
 import { useOnlineStatus } from '../../hooks/use-online';
 import { useKilledDetection } from '../../hooks/use-killed';
 import { VeilleProgramSkeleton } from '../../ux/skeletons';
 import { useVeillePrograms } from '../../hooks/use-veille-programs';
+import { useVeilleSynthesis } from '../../hooks/use-veille-synthesis';
 import { VeilleProgramCard } from './card';
+import { VeilleSynthesisBanner } from '../../components/veille/VeilleSynthesisBanner';
 
 export function DiscoveryPage() {
   const online = useOnlineStatus();
+  const navigate = useNavigate();
   const { programs, isPending, isError, refetch } = useVeillePrograms();
   const killed = useKilledDetection(() => refetch());
+  const { synthesis } = useVeilleSynthesis();
 
   // 5 états UX + killed (AD-13) : l'ordre de priorité est porté par
   // `resolveUxState` (killed > offline > query states).
@@ -59,6 +64,28 @@ export function DiscoveryPage() {
       </IonHeader>
       <IonContent>
         <div data-discovery>
+          {/* L5 (2026-10-14) : la bannière de synthèse des 10 vaults
+              (le § L5 "Décision 3 figelée" — le document SSoT de
+              synthèse des vaults, le SSoT du chat-agent en READ-ONLY
+              via l'outil discovery_vault_read L3). Elle apparaît QUE
+              si ≥ 1 vault a au moins 1 run + un verdict SSoT de
+              pertinence (le SSoT de la feature, jamais une
+              bannière factice — AD-7 état vide honnête). */}
+          <VeilleSynthesisBanner
+            synthesis={synthesis}
+            onSynthesize={() => {
+              // Le CTA « Synthèse globale » (le § L5 "le chat-agent
+              //  croise les 10 vaults, il propose des synthèses
+              //  globales") ouvre l'agent (le SSoT de la feature,
+              //  le chat-agent est le seul SSoT de la synthèse,
+              //  AD-7 single-writer : la bannière ne commite JAMAIS
+              //  dans le vault d'un programme — elle est QUE la
+              //  surface de lecture locale).
+              navigate(
+                `/agent?intent=${encodeURIComponent('Fais une synthèse globale de mes vaults de veille : ce que je sais, ce qui a changé, et les intersections entre les domaines')}`,
+              );
+            }}
+          />
           <UxStates
             state={state}
             flags={flags}
