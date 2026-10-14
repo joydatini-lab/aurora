@@ -32,4 +32,19 @@ const config: StorybookConfig = {
   },
   "framework": "@storybook/react-vite"
 };
+
+// NOTE (Windows) — Fix build statique : esbuild temp file lock +
+// minify rollup provoque "Accès refusé". Target esnext + minify false
+// (même fix que apps/desktop et apps/mobile, cf. mémoire).
+config.viteFinal = async (config) => ({
+  ...config,
+  build: {
+    target: "esnext",
+    minify: false,
+  },
+  esbuild: {
+    target: "esnext",
+  },
+});
+
 export default config;

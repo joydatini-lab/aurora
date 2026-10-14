@@ -591,6 +591,7 @@ export {
   TermsConsent,
   OnboardingProgress,
   WizardStepCard,
+  WizardCarousel,
   SetupSuccessState,
   OnboardingSummary,
   OAUTH_PROVIDER_LABELS,
@@ -612,6 +613,7 @@ export {
   type TermsConsentProps,
   type OnboardingProgressProps,
   type WizardStepCardProps,
+  type WizardCarouselProps,
   type SetupSuccessStateProps,
   type OnboardingSummaryProps,
   type OnboardingSummaryItem,
@@ -1340,3 +1342,34 @@ export { useToast } from "./hooks/use-toast";
 export { useIsMobile } from "./hooks/use-mobile";
 
 export {};
+
+// ------------------------------------------------------------------
+// assistant-ui — elements + utils + demo provider
+// ------------------------------------------------------------------
+export * from "./components/assistant-ui/utils/receipt-focus";
+export * from "./components/assistant-ui/elements/agent-status.aui";
+export * from "./components/assistant-ui/elements/thread-list.aui";
+export { Thread, type ThreadProps, type ThreadComponents, type ThreadGroupPart } from "./components/assistant-ui/elements/thread.aui";
+export * from "./components/assistant-ui/elements/tool-group.aui";
+export * from "./components/assistant-ui/elements/tool-fallback.aui";
+export * from "./components/assistant-ui/elements/reasoning.aui";
+export * from "./components/assistant-ui/elements/attachment.aui";
+export * from "./components/assistant-ui/elements/context-display.aui";
+export * from "./components/assistant-ui/elements/mermaid-diagram.aui";
+export * from "./components/assistant-ui/elements/model-selector.aui";
+export * from "./components/assistant-ui/elements/quote.aui";
+export * from "./components/assistant-ui/elements/sources.aui";
+export * from "./components/assistant-ui/elements/task-card.aui";
+export * from "./components/assistant-ui/elements/voice.aui";
+export * from "./components/assistant-ui/elements/voice-conversation.aui";
+export * from "./components/assistant-ui/elements/follow-up-suggestions.aui";
+export * from "./components/assistant-ui/elements/mcp-config.aui";
+export * from "./components/assistant-ui/elements/message-timing.aui";
+export * from "./components/assistant-ui/elements/shiki-highlighter.aui";
+export * from "./components/assistant-ui/elements/composer-trigger-popover.aui";
+export * from "./components/assistant-ui/elements/conversation-map.aui";
+export * from "./components/assistant-ui/elements/directive-text.aui";
+export * from "./components/assistant-ui/elements/assistant-modal.aui";
+export * from "./components/assistant-ui/elements/assistant-sidebar.aui";
+export * from "./components/assistant-ui/elements/threadlist-sidebar.aui";
+export { DemoAuiProvider, useDemoAuiRuntime, type DemoThread } from "./components/assistant-ui/demo/demo-aui-provider";

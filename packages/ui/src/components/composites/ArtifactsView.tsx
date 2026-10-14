@@ -20,6 +20,7 @@ import { AppIcon, type IconKey } from "src/components/ui/AppIcon";
 import { Badge } from "src/components/ui/badge";
 import { Button } from "src/components/ui/button";
 import { Progress } from "src/components/ui/progress";
+import { EmptyState } from "src/components/ui/empty-state";
 
 /* ------------------------------------------------------------------ */
 /* Contrats de données                                                */
@@ -765,18 +766,15 @@ export function ArtifactViewerShell({
 }: ArtifactViewerShellProps) {
   if (!artifact) {
     return (
-      <div
-        data-slot="artifact-viewer-shell"
-        data-empty
-        className={cn(
-          "flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-16 text-center",
-          className
-        )}
-      >
-        <AppIcon name="file" size="lg" tone="muted" aria-hidden />
-        <p className="text-sm text-muted-foreground">
-          Aucun artefact sélectionné
-        </p>
+      <div data-slot="artifact-viewer-shell" data-empty className={className}>
+        <EmptyState size="md">
+          <EmptyState.Header icon="file" tone="muted">
+            <EmptyState.Title>Aucun artefact sélectionné</EmptyState.Title>
+            <EmptyState.Description>
+              Choisissez un artefact dans la liste pour l'afficher ici.
+            </EmptyState.Description>
+          </EmptyState.Header>
+        </EmptyState>
       </div>
     );
   }

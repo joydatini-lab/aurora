@@ -1,0 +1,41 @@
+{
+  "$schema": "https://render.com/deployments/stories/schema.json",
+  "services": [
+    {
+      "type": "staticSite",
+      "name": "aurora-storybook",
+      "repo": {
+        "type": "git",
+        "repo": "joynagassi-cyber/aurora",
+        "branch": "main",
+        "rootDir": "packages/ui"
+      },
+      "buildCommand": "pnpm install --frozen-lockfile && cd packages/ui && pnpm exec storybook build --output-dir storybook-static",
+      "publishDir": "packages/ui/storybook-static",
+      "envs": [],
+      "headers": [
+        {
+          "path": "/*.js",
+          "headers": [
+            { "name": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+          ]
+        },
+        {
+          "path": "/*.css",
+          "headers": [
+            { "name": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+          ]
+        },
+        {
+          "path": "/index.html",
+          "headers": [
+            { "name": "Cache-Control", "value": "no-cache" }
+          ]
+        }
+      ],
+      "routes": [
+        { "source": "/(.*)", "destination": "/$1" }
+      ]
+    }
+  ]
+}

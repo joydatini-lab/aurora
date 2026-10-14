@@ -16,6 +16,10 @@ import {
   ReviewSummaryCards,
   ReviewSummaryData,
 } from "src/components/composites/ReviewSummaryCards";
+import {
+  DateRangePicker,
+  type DateRangePickerValue,
+} from "src/components/ui/date-range-picker";
 
 /* ------------------------------------------------------------------ */
 /* Contrats de données                                                */
@@ -67,6 +71,9 @@ export interface ReviewActionStep {
 export interface ReviewViewData {
   period: ReviewPeriod;
   periodLabel: string;
+  /** Période sélectionnée (dates exactes), pour le `DateRangePicker`. */
+  periodFrom?: Date;
+  periodTo?: Date;
   summary: ReviewSummaryData;
   rows: ReviewRowData[];
   comparison?: ReviewComparisonData;
@@ -86,6 +93,8 @@ export interface ReviewViewProps {
   /** Cause active (filtrage). */
   activeCauseId?: string | null;
   onActiveCauseChange?: (id: string | null) => void;
+  /** Appelé quand la période (dates) change via le `DateRangePicker`. */
+  onPeriodChange?: (range: DateRangePickerValue) => void;
   className?: string;
 }
 
@@ -392,6 +401,7 @@ export function ReviewView({
   onArchive,
   activeCauseId,
   onActiveCauseChange,
+  onPeriodChange,
   className,
 }: ReviewViewProps) {
   const [localCause, setLocalCause] = React.useState<string | null>(null);
@@ -419,8 +429,14 @@ export function ReviewView({
               Période : {data.period}
             </p>
           </div>
-          {(onPublish || onArchive) && (
+          {onPeriodChange && (
             <div className="flex items-center gap-2">
+              <DateRangePicker
+                size="sm"
+                value={{ from: data.periodFrom, to: data.periodTo }}
+                onApply={onPeriodChange}
+                className="h-7"
+              />
               {onArchive && (
                 <Button variant="outline" size="sm" onClick={onArchive}>
                   Archiver

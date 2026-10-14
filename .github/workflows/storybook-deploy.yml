@@ -1,0 +1,143 @@
+# Aurora — Storybook CI/CD : build + deploy sur Render (STATIC SITE)
+#
+# Pipeline :
+#   1. install          pnpm install (caching pnpm)
+#   2. typecheck        tsc --noEmit (packages/ui)
+#   3. build-storybook  storybook build → storybook-static/
+#   4. deploy           render deploy → https://aurora-storybook.onrender.com
+#
+# Trigger : push sur main OU PR vers main (build testé sur les PR)
+# Deploy  : main uniquement (PR = build + test, main = deploy)
+#
+# Prérequis (1 fois, à poser dans GitHub Secrets) :
+#   - RENDER_API_KEY      : https://dashboard.render.com/api-keys
+#   - REPO_NAME           : nom du repo GitHub (ex. joynagassi-cyber/aurora)
+#
+# Méthode recommandée (sans secret, sans CLI) :
+#   Le `render.yaml` à la racine du repo est lu automatiquement par Render
+#   quand le service est créé via le dashboard :
+#     1. dashboard.render.com → New+ → Static Site
+#     2. Lien au repo GitHub `joynagassi-cyber/aurora`, branch `main`
+#     3. Render détecte `render.yaml` et propose le service `aurora-storybook`
+#        (rootDir packages/ui, buildCommand pnpm install + storybook build)
+#     4. Chaque push sur main = rebuild + republish auto.
+#   Ce workflow GitHub reste utile pour : valider le build en PR (artefact
+#   `storybook-static` téléchargeable), et forcer un deploy manuel via
+#   RENDER_API_KEY / RENDER_SERVICE_ID (job `deploy`, noop si secrets absents).
+
+name: Storybook Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: storybook-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref == 'refs/heads/main' }}
+
+env:
+  PNPM_VERSION: "10.28.0"
+  NODE_VERSION: "22"
+
+jobs:
+  # ------------------------------------------------------------------
+  # Build + typecheck sur chaque PR / push main
+  # ------------------------------------------------------------------
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Typecheck (packages/ui)
+        working-directory: packages/ui
+        run: pnpm exec tsc --noEmit
+
+      - name: Build Storybook
+        working-directory: packages/ui
+        # Le build statique est le gate de deploy : s'il échoue, le job
+        # échoue et le deploy (needs: build) ne se déclenche pas.
+        # Pas de continue-on-error — c'est le point de contrôle qualité.
+        run: pnpm exec storybook build --output-dir storybook-static
+
+      - name: Upload storybook-static (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-static
+          path: packages/ui/storybook-static
+          retention-days: 7
+
+  # ------------------------------------------------------------------
+  # Deploy sur Render — main uniquement
+  # ------------------------------------------------------------------
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build Storybook
+        working-directory: packages/ui
+        run: pnpm exec storybook build --output-dir storybook-static
+
+      - name: Download build artifact (cache du job précédent)
+        uses: actions/download-artifact@v4
+        with:
+          name: storybook-static
+          path: packages/ui/storybook-static
+
+      # Render CLI (v2) : deploy un static site déjà buildé
+      # La commande `render deploy` utilise RENDER_API_KEY + RENDER_SERVICE_ID
+      # Alternative sans CLI : le service Render auto-déclenche son build
+      # quand un push arrive sur main (Branch: main dans le dashboard)
+      # — dans ce cas ce step est un noop optionnel.
+      - name: Deploy via Render API (optionnel si auto-deploy est activé)
+        # Décommenter si on veut un deploy forcé par le workflow :
+        # uses: render-apps/render-action@v1
+        # with:
+        #   service-id: ${{ secrets.RENDER_SERVICE_ID }}
+        #   api-key: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          echo "Deploy storybook à Render…"
+          if [ -z "${{ secrets.RENDER_SERVICE_ID }}" ] || [ -z "${{ secrets.RENDER_API_KEY }}" ]; then
+            echo "::warning::RENDER_SERVICE_ID ou RENDER_API_KEY absent — déploy auto via le dashboard Render (push sur main) est le fallback."
+            exit 0
+          fi
+          # Render CLI v2
+          curl -fsSL https://render.com/install.sh | bash
+          render deploy --api-key "$RENDER_API_KEY" --service-id "$RENDER_SERVICE_ID"
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}

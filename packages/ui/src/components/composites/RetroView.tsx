@@ -25,6 +25,10 @@ import {
   CardHeader,
   CardTitle,
 } from "src/components/ui/card";
+import {
+  DateRangePicker,
+  type DateRangePickerValue,
+} from "src/components/ui/date-range-picker";
 
 /* ------------------------------------------------------------------ */
 /* Contrats de données                                                */
@@ -82,6 +86,10 @@ export interface RetroLesson {
 export interface RetroViewData {
   /** Libellé de la période. */
   periodLabel: string;
+  /** Période sélectionnée (dates exactes). */
+  periodFrom?: Date;
+  /** Période sélectionnée (date de fin). */
+  periodTo?: Date;
   /** Équipe / projet. */
   teamLabel?: string;
   /** Statut global de la rétro. */
@@ -101,6 +109,8 @@ export interface RetroViewProps {
   onMoveAction?: (actionId: string, toColumn: RetroActionItem["column"]) => void;
   onAddLesson?: (lesson: Omit<RetroLesson, "id">) => void;
   onPublish?: () => void;
+  /** Appelé quand la période (dates) change via le `DateRangePicker`. */
+  onPeriodChange?: (range: DateRangePickerValue) => void;
   className?: string;
 }
 
@@ -118,10 +128,12 @@ const RETRO_STATUS: Record<RetroViewData["status"], string> = {
 export function RetroHeader({
   data,
   onPublish,
+  onPeriodChange,
   className,
 }: {
   data: RetroViewData;
   onPublish?: () => void;
+  onPeriodChange?: (range: DateRangePickerValue) => void;
   className?: string;
 }) {
   return (
@@ -156,6 +168,23 @@ export function RetroHeader({
           )}
         </div>
       </div>
+      {onPeriodChange && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>Période :</span>
+          <DateRangePicker
+            size="sm"
+            value={{
+              from: data.periodFrom,
+              to: data.periodTo,
+            }}
+            onApply={onPeriodChange}
+            className="h-7"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
     </div>
   );
 }
@@ -679,6 +708,7 @@ export function RetroView({
   onMoveAction,
   onAddLesson,
   onPublish,
+  onPeriodChange,
   className,
 }: RetroViewProps) {
   return (
@@ -686,7 +716,7 @@ export function RetroView({
       data-slot="retro-view"
       className={cn("flex flex-col gap-5", className)}
     >
-      <RetroHeader data={data} onPublish={onPublish} />
+      <RetroHeader data={data} onPublish={onPublish} onPeriodChange={onPeriodChange} />
 
       <MissedMilestoneList
         milestones={data.milestones}

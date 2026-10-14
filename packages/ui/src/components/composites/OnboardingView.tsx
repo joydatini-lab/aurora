@@ -30,6 +30,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "src/components/ui/tabs";
+import { Carousel, useCarousel } from "src/components/ui/carousel-base";
 
 /* ------------------------------------------------------------------ */
 /* Contrats de données                                                */
@@ -748,6 +749,92 @@ export function WizardStepCard({
 }
 
 /* ------------------------------------------------------------------ */
+/* WizardCarousel (embla carousel des étapes)                          */
+/* ------------------------------------------------------------------ */
+
+export interface WizardCarouselProps {
+  steps: OnboardingStep[];
+  currentIndex: number;
+  onStepClick?: (index: number) => void;
+  onContinue: () => void;
+  onBack?: () => void;
+  onSkip?: () => void;
+  stepContent?: (step: OnboardingStep) => React.ReactNode;
+  className?: string;
+}
+
+export function WizardCarousel({
+  steps,
+  currentIndex,
+  onStepClick,
+  onContinue,
+  onBack,
+  onSkip,
+  stepContent,
+  className,
+}: WizardCarouselProps) {
+  const isLast = currentIndex === steps.length - 1;
+  const currentStep = steps[currentIndex] ?? null;
+
+  if (!currentStep) return null;
+
+  return (
+    <div className={cn("flex w-full max-w-sm flex-col gap-4", className)}>
+      {/* Indicateurs (cliquables, on ne recule que jusqu'à l'étape faite) */}
+      <div className="flex items-center justify-center gap-1.5" aria-label="Progression du wizard">
+        {steps.map((s, i) => (
+          <button
+            key={s.id}
+            type="button"
+            aria-label={s.label}
+            aria-current={i === currentIndex}
+            disabled={i > currentIndex}
+            onClick={() => onStepClick?.(i)}
+            className={cn(
+              "size-1.5 rounded-full transition-colors",
+              i === currentIndex
+                ? "bg-primary"
+                : s.isDone
+                  ? "bg-primary/50"
+                  : i < currentIndex
+                    ? "bg-primary/30"
+                    : "bg-muted-foreground/20 disabled:cursor-not-allowed",
+            )}
+          />
+        ))}
+      </div>
+
+      {/* Le carousel lui-même (Embla) — une seule slide à la fois,
+          navigation clavier ← → déjà câblée par `carousel-base.tsx`. */}
+      <Carousel.Root opts={{ containScroll: "trimSnaps" }}>
+        <Carousel.Content>
+          {steps.map((s, i) => (
+            <Carousel.Item key={s.id}>
+              <WizardStepCard
+                step={s}
+                onBack={i > 0 ? onBack : undefined}
+                onContinue={onContinue}
+                onSkip={isLast ? onSkip : undefined}
+                isSkippable
+                isLast={i === steps.length - 1}
+              >
+                {stepContent ? stepContent(s) : null}
+              </WizardStepCard>
+            </Carousel.Item>
+          ))}
+        </Carousel.Content>
+      </Carousel.Root>
+
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">
+          Étape {currentIndex + 1} / {steps.length}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* SetupSuccessState                                                  */
 /* ------------------------------------------------------------------ */
 
@@ -998,21 +1085,18 @@ export function OnboardingView({
           className
         )}
       >
-        <div className="flex w-full max-w-sm flex-col gap-4">
-          <OnboardingProgress
-            steps={data.steps}
-            currentIndex={data.currentStepIndex}
-            onStepClick={(i) => i <= data.currentStepIndex && onStepChange(i)}
-          />
-          {data.verificationPendingEmail && (
-            <VerificationNotice
-              email={data.verificationPendingEmail}
-              onResend={onResendVerification}
-              onSkip={onSkip}
-            />
-          )}
-          {renderWizardStep()}
-        </div>
+        <WizardCarousel
+          steps={data.steps}
+          currentIndex={data.currentStepIndex}
+          onStepClick={(i) => i <= data.currentStepIndex && onStepChange(i)}
+          onContinue={() => {
+            if (data.currentStepIndex === data.steps.length - 1) onFinish();
+            else onContinue?.();
+          }}
+          onBack={onBack}
+          onSkip={onSkip}
+          stepContent={stepContent}
+        />
       </AuthShell>
     );
   }
