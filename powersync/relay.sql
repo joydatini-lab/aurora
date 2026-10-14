@@ -113,7 +113,7 @@ FROM automations;
 -- Slide-Ascent renders the current path offline. No cross-module JOIN
 -- (the path is self-contained JSONB in ascent_paths — check-view-joins
 -- stays green).
-CREATE VIEW v_ascent_scope WITH (security_invoker = on) AS
+CREATE OR REPLACE VIEW v_ascent_scope WITH (security_invoker = on) AS
 SELECT * FROM ascent_paths;
 
 -- GoalProject scope (owner Progress, wave 3, HEPHAESTUS). The Goal Dashboard

@@ -45,6 +45,8 @@ const R2_BUCKET       = process.env.R2_BUCKET_PROD
 const R2_S3_ENDPOINT  = process.env.R2_S3_ENDPOINT
                      ?? `https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com`;
 const ENV_NAME        = process.env.R2_ENV ?? "prod"; // {env} segment of the key
+// node:crypto via ESM static import (the .ts runs as ESM; no `require`, 2026-10-14).
+import { createHmac } from "node:crypto";
 
 const PRESIGN_GET_TTL_SEC    = 900;  // 15 min (r2.md §2/§5)
 const PRESIGN_UPLOAD_TTL_SEC = 300;  // 5 min  (r2.md §2/§5)
@@ -75,7 +77,6 @@ function presign(bucket, key, ttlSec, verb) {
   const method = verb === "GET" ? "GET" : "PUT";
   const canonical = [method, `/${bucket}/${key}`, String(expires), "aure-store"].join("\n");
   // SigV4-style signature over the canonical request (account-scoped).
-  const { createHmac } = require("crypto");
   const sig = createHmac("sha256", CF_API_TOKEN).update(canonical).digest("hex");
   const url =
     `${R2_S3_ENDPOINT}/${bucket}/${key}` +
