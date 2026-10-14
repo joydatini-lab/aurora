@@ -58,16 +58,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Run Chromatic
-        # chromaui/action : installe le CLI Chromatic et le lance.
-        # Il détecte le script `build-storybook` du package.json racine
-        # (ajouté pour le monorepo) et `chromatic.config.js`
-        # (storybookBuildDir: packages/ui/storybook-static).
-        uses: chromaui/action@v18.12.1
-        with:
-          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-          # Monorepo : le site Storybook est public via GitHub Pages
-          # (URL repo : /aurora/), pas le preview ephemeral Chromatic.
-          # On garde autoAcceptChanges sur main pour que la baseline
-          # reste propre (recommandé par Chromatic pour squash merge).
-          autoAcceptChanges: main
+      # ----------------------------------------------------------------
+      # Diagnostics — le log du step ci-dessous est visible dans l'UI
+      # GitHub Actions (pas via l'API, qui exige admin). Chercher :
+      #   - "chromatic is not installed"  → npm step ci-dessous a échoué
+      #   - "project token" erreur        → secret CHROMATIC_PROJECT_TOKEN
+      #                                      vide/mal nommé dans
+      #                                      Settings → Secrets → Actions
+      #   - "build-storybook" failed      → build Vite (esbuild, OOM)
+      # ----------------------------------------------------------------
+      - name: Install chromatic CLI
+        run: npm install --no-save chromatic@18.12.1
+
+      - name: Run Chromatic (local CLI, log lisible)
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: npx chromatic --project-token="${{ secrets.CHROMATIC_PROJECT_TOKEN }}" --exit-on-zero
