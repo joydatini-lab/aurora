@@ -30,7 +30,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "src/components/ui/tabs";
-import { Carousel, useCarousel } from "src/components/ui/carousel-base";
+import { Carousel } from "src/components/ui/carousel-base";
 
 /* ------------------------------------------------------------------ */
 /* Contrats de données                                                */
@@ -974,7 +974,7 @@ export function OnboardingView({
   onSignUp,
   onOAuth,
   onForgotPassword,
-  onResendVerification,
+  onResendVerification: _onResendVerification,
   onSkip,
   onFinish,
   onBack,
@@ -1016,26 +1016,6 @@ export function OnboardingView({
   };
 
   /* Rendu wizard (étape courante) */
-  const renderWizardStep = () => {
-    if (!currentStep) return null;
-    return (
-      <WizardStepCard
-        step={currentStep}
-        title={currentStep.label}
-        description={currentStep.description}
-        onBack={onBack ? () => onBack() : undefined}
-        onContinue={() => {
-          if (isLastStep) onFinish();
-          else onContinue?.();
-        }}
-        onSkip={isLastStep ? onSkip : undefined}
-        isSkippable
-        isLast={isLastStep}
-      >
-        {stepContent ? stepContent(currentStep) : null}
-      </WizardStepCard>
-    );
-  };
 
   /* Rendu état succès */
   if (allDone && data.successMessage) {

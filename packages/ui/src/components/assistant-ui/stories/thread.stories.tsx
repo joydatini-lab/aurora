@@ -1,15 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import {
-  Thread,
-  type ThreadComponents,
-  type ThreadProps,
-} from "../elements/thread.aui";
+import { Thread } from "../elements/thread.aui";
 import { DemoAuiProvider } from "../demo/demo-aui-provider";
-
-const mobileThreadComponents: Partial<ThreadComponents> = {
-  Message: () => null,
-} as Partial<ThreadComponents>;
 
 const meta = {
   title: "Assistant-UI/Thread",

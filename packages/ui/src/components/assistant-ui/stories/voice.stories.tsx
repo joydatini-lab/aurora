@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DemoAuiProvider } from "../demo/demo-aui-provider";
-import { VoiceOrb, VoiceControl, VoiceStatusDot, VoiceConnectButton, VoiceMuteButton, VoiceDisconnectButton } from "../elements/voice.aui";
+import { VoiceOrb } from "../elements/voice.aui";
 
 const meta = {
   title: "Assistant-UI/voice",

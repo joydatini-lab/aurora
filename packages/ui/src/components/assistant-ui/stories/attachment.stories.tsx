@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DemoAuiProvider } from "../demo/demo-aui-provider";
-import { UserMessageAttachments, ComposerAttachments, ComposerAddAttachment } from "../elements/attachment.aui";
+import { UserMessageAttachments } from "../elements/attachment.aui";
 
 const meta = {
   title: "Assistant-UI/attachment",

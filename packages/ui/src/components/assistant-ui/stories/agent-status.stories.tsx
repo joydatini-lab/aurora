@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DemoAuiProvider } from "../demo/demo-aui-provider";
-import { AgentStatus, TaskTray } from "../elements/agent-status.aui";
+import { AgentStatus } from "../elements/agent-status.aui";
 
 const meta = {
   title: "Assistant-UI/agent-status",

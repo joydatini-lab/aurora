@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DemoAuiProvider } from "../demo/demo-aui-provider";
-import { ThreadList, ThreadListRoot, ThreadListItems, ThreadListItem, ThreadListSearch, ThreadListNew } from "../elements/thread-list.aui";
+import { ThreadList } from "../elements/thread-list.aui";
 
 const meta = {
   title: "Assistant-UI/thread-list",

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DemoAuiProvider } from "../demo/demo-aui-provider";
-import { TaskCard, TaskGroup, isTaskPart, type TaskPart } from "../elements/task-card.aui";
+import { TaskCard, type TaskPart } from "../elements/task-card.aui";
 
 const meta = {
   title: "Assistant-UI/task-card",

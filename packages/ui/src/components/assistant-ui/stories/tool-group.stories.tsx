@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DemoAuiProvider } from "../demo/demo-aui-provider";
-import { ToolGroupRoot, ToolGroupTrigger, ToolGroupContent, ToolGroup } from "../elements/tool-group.aui";
+import { ToolGroupRoot } from "../elements/tool-group.aui";
 
 const meta = {
   title: "Assistant-UI/tool-group",
