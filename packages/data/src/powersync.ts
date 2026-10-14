@@ -98,6 +98,34 @@ export const POWERSYNC_SCHEMA: PowerSyncSchema = {
     'CRDT SSoT packages/domain (AD-15/F-01).',
 };
 
+/**
+ * The full edition-3 Sync Stream names of `powersync/sync-config.yaml`
+ * (03 S8.1, OQ-11) — the single SSoT that the app boot sites
+ * (`apps/mobile/src/lib/boot-data.ts#connect()`,
+ * `apps/desktop/renderer.jsx`) and the drift guard
+ * (`apps/mobile/test/sync-config-wiring.test.ts`) read, so no caller
+ * parses the YAML. `auto_subscribe: true` everywhere → the relay
+ * subscribes on `connect`; the client `addScope` calls only materialize
+ * the local mirror on first sync + gate `waitForFirstSync` (AD-7).
+ * Order = OQ-11 priorities: identity first (priority 1), then core
+ * (priority 2), then bulk (priority 3, the rest).
+ * A new stream in sync-config.yaml MUST land here too (AD-15 event —
+ * the drift test fails otherwise).
+ */
+export const SYNC_STREAMS: readonly string[] = [
+  'identity',          // priority 1 — first paint (OQ-11 / AD-14)
+  'productivity',      // priority 2 — Home foreground (AD-14)
+  'productivity_bulk', // priority 3 — bulk
+  'knowledge',         // priority 3
+  'learning',          // priority 3
+  'progress',          // priority 3
+  'discovery',         // priority 3
+  'artifact',          // priority 3
+  'integrations',      // priority 3
+  'user_goals',        // priority 3 (0017, HEPHAESTUS)
+  'ascent',            // priority 3 (0016, wave 3 W3-E2)
+];
+
 /** Every mirror table (flattened, single source for the engine + tests). */
 export function allMirrorTableNames(): string[] {
   return Object.values(POWERSYNC_SCHEMA.mirrorTables).flat();

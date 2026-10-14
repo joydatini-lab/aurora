@@ -20,6 +20,7 @@ import {
   createAuroraSupabaseClient,
   EngineLocalStoreBridge,
   SqliteQueryRepository,
+  SYNC_STREAMS,
 } from '@aurora/data';
 import { PowerSyncDatabase } from '@powersync/web';
 
@@ -75,11 +76,24 @@ export function DesktopSpike() {
           PowerSyncDatabase, // la voie A (WASQLite), pas Capacitor
         );
         await engine.init();
-        await engine.addScope('identity');
-        setPowerSyncBootStatus('engine=init+addScope(identity)');
+        // Miroir de apps/mobile boot-data.ts#connect() : les 11 streams
+        // PowerSync du SSoT `SYNC_STREAMS` (packages/data, la même liste
+        // que le mobile + le test de dérive). La voie A = WASQLite
+        // (`PowerSyncDatabase` de `@powersync/web`), le reste est identique
+        // au moteur mobile (le spike est la preuve que le desktop voit
+        // les MÊMES données que le mobile au prochain downsync).
+        for (const stream of SYNC_STREAMS) {
+          await engine.addScope(stream);
+        }
+        setPowerSyncBootStatus('engine=init+addScope(all 11 streams)');
 
         const bridge = new EngineLocalStoreBridge(engine.storeAdapter());
         const ctxRepo = new SqliteQueryRepository(bridge, 'user_context');
+        // Le spike ne lit QUE `user_context` (le round-trip check #3) →
+        // un seul watch (pas les 19 du mobile : le spike n'a pas les
+        // autres repos de l'UI, AD-7 local-first = pas de réactivité
+        // inutile sur des tables sans site de lecture ici).
+        void bridge.bindEngineWatch('user_context');
 
         // Upsync local-first (off-line capable, check #2) : une ligne de
         // user_context écrite côté desktop doit reparaître côté mobile au

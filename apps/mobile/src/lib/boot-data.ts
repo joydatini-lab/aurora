@@ -16,6 +16,7 @@ import {
   EngineLocalStoreBridge,
   SqliteQueryRepository,
   UpsyncQueue,
+  SYNC_STREAMS,
   type AuroraSupabaseClient,
   type LocalQueryRepository,
   type LocalStore,
@@ -160,23 +161,15 @@ export function createAuroraDataProvider(env: AuroraDataEnv): AuroraDataProvider
       // signed in yet (no Supabase session for `fetchCredentials`) —
       // `boot-data.ts#connect()` catches that and degrades to the
       // local-mirror shell (AD-7), so the shell always paints.
-      await engine.addScope('identity');
-      await engine.addScope('productivity');
-      // A2: the ascent local-mirror stream (ascent_paths, read-only AD-7).
-      await engine.addScope('ascent');
-      // Knowledge local-mirror stream (semantic_nodes / semantic_edges /
-      // node_state / semantic_bridges / source_refs, read-only AD-7 —
-      // the `embedding` column is NOT mirrored, 0004 §4.2 / AD-12).
-      await engine.addScope('knowledge');
-      // Discovery local-mirror stream (discovery_items + discovery_vault,
-      // read-only AD-7, discovery-vault plan 2026-10-10 Lot 4): the card
-      // renders the evolving VAULT.md + manifest offline.
-      await engine.addScope('discovery');
-      // Integrations local-mirror stream (automations, read-only AD-7 —
-      // the Discovery card's program title/subtitle come from a
-      // jobKind:'research' automation; the write side is the
-      // Integrations module via G2/G3 typed commands).
-      await engine.addScope('integrations');
+      // All 11 edition-3 streams come from the SSoT `SYNC_STREAMS`
+      // (packages/data, the single list read by mobile + desktop boot
+      // + the drift test — no caller parses the YAML). `auto_subscribe`
+      // streams self-subscribe at the relay; `addScope` only materializes
+      // the local mirror on first sync + gates `waitForFirstSync`
+      // (AD-7, 03 S8.1).
+      for (const stream of SYNC_STREAMS) {
+        await engine.addScope(stream);
+      }
       // Bind the engine's reactive row stream into the bridge cache (03
       // S5.2.2) so repository reads stay live without a poll; the UI's
       // QueryClient invalidation rides on this channel (03 S5.8).
@@ -192,6 +185,26 @@ export function createAuroraDataProvider(env: AuroraDataEnv): AuroraDataProvider
       // the vault manifest + automation program downstream batches.
       void bridge.bindEngineWatch('discovery_vault');
       void bridge.bindEngineWatch('automations');
+      // Productivity bulk mirror (AD-7): the /reviews, /retro, /habits,
+      // /routines, /countdown pages read habits / routines / decisions /
+      // focus_sessions / calendar_events / milestones through the same
+      // reactive channel (03 S5.8).
+      void bridge.bindEngineWatch('habits');
+      void bridge.bindEngineWatch('routines');
+      void bridge.bindEngineWatch('decisions');
+      void bridge.bindEngineWatch('milestones');
+      void bridge.bindEngineWatch('focus_sessions');
+      void bridge.bindEngineWatch('calendar_events');
+      // Learning mirror (AD-7): the /learn + /knowledge pages read
+      // learning_sessions / reviews through the same reactive channel.
+      void bridge.bindEngineWatch('learning_sessions');
+      void bridge.bindEngineWatch('reviews');
+      // Progress mirror (AD-7, LIMITED 03 S4.2): the /progress page reads
+      // skill_states / progress_snapshots / gaps through the same
+      // reactive channel.
+      void bridge.bindEngineWatch('skill_states');
+      void bridge.bindEngineWatch('progress_snapshots');
+      void bridge.bindEngineWatch('gaps');
     },
 
     async dispose(clear = false): Promise<void> {

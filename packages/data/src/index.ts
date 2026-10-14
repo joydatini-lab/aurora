@@ -134,6 +134,7 @@ export type { LocalQueryClient } from './react-query-bridge';
 export type { PowerSyncSchema } from './powersync';
 export {
   POWERSYNC_SCHEMA,
+  SYNC_STREAMS,
   allMirrorTableNames,
   ownerScopeForTable,
   isMirrorable,
