@@ -666,7 +666,7 @@ export function AgentPage() {
 
             {thinking && (
               <AgentThinkingLoader
-                state="thinking"
+                status="thinking"
                 label={`L'agent réfléchit (${thinkingLevel})…`}
                 className="agent-thinking"
               />

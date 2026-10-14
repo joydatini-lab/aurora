@@ -303,8 +303,8 @@ export function resolveFeatureEnabled(
   userFeatures: Record<string, boolean> | null | undefined,
   urlOverride?: Record<string, boolean> | null,
 ): boolean {
-  if (urlOverride && featureId in urlOverride) return urlOverride[featureId];
-  if (userFeatures && featureId in userFeatures) return userFeatures[featureId];
+  if (urlOverride && featureId in urlOverride) return urlOverride[featureId] ?? false;
+  if (userFeatures && featureId in userFeatures) return userFeatures[featureId] ?? false;
   return FEATURE_DEFAULTS[featureId] ?? false;
 }
 

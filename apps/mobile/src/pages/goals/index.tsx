@@ -156,7 +156,7 @@ export function GoalFeatureDetailPage() {
   const goalId = searchParams.get('goalId') ?? id;
   const subGoalId = searchParams.get('subGoalId') ?? '';
 
-  const featureName = featureLabel(fid);
+  const featureName = featureLabel(fid ?? '');
 
   return (
     <IonContent>

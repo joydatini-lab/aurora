@@ -50,7 +50,7 @@ export function OnboardingPage() {
 
   // Session réelle (client partagé persistSession) — undefined = chargement.
   useEffect(() => {
-    void currentSession().then((s) => setSession(s));
+    void currentSession().then((s) => setSession(s ? { email: s.user?.email } : null));
   }, []);
 
   // Parcours déjà terminé → on n'y reste pas (AD-13, jamais de blocage).

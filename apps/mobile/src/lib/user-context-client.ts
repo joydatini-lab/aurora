@@ -49,8 +49,9 @@ export function createUserContextClient(client: AuroraSupabaseClient): UserConte
 
   /** The current user's row (`null` when signed out — honest state, AD-7). */
   async function readRow(): Promise<RawRow | null> {
-    const { data: session } = await client.auth.getSession();
-    const userId = session?.user?.id;
+    const { data: session, error: sessionError } = await client.auth.getSession();
+    if (sessionError) throw new Error(`user_context read: session ${sessionError.message}`);
+    const userId = (session as { user?: { id: string } } | null)?.user?.id;
     if (!userId) return null;
     const { data, error } = await client
       .from('user_context')
@@ -80,8 +81,9 @@ export function createUserContextClient(client: AuroraSupabaseClient): UserConte
     async setFeature(featureId, enabled) {
       const current = toBoolMap((await readRow())?.features);
       const merged: UserFeatures = { ...current, [featureId]: enabled };
-      const { data: session } = await client.auth.getSession();
-      const userId = session?.user?.id;
+      const { data: session, error: sessionError } = await client.auth.getSession();
+      if (sessionError) throw new Error(`user_context write: session ${sessionError.message}`);
+      const userId = (session as { user?: { id: string } } | null)?.user?.id;
       if (!userId) throw new Error('Non connecté — connecte-toi pour sauvegarder.');
       const { error } = await client
         .from('user_context')

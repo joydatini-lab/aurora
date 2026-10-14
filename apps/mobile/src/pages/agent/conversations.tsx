@@ -101,7 +101,7 @@ export function AgentConversationsPage() {
           ? { status: 'loading' }
           : rows?.length === 0
             ? { status: 'empty' }
-            : { status: 'success', data: rows };
+            : { status: 'success', data: rows ?? [] };
 
   return (
     <>
