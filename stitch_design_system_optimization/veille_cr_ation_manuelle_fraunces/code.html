@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-white" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Nouvelle veille</title>
+<!-- Google Fonts: Inter & Fraunces -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Fraunces', 'serif'],
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              DEFAULT: '#2563EB',
+              hover: '#1D4ED8',
+              soft: '#EFF6FF',
+              border: '#3B82F6',
+            },
+            neutral: {
+              border: '#E2E8F0',
+              label: '#0F172A',
+              subtext: '#64748B',
+              bgInput: '#FFFFFF',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-styling">
+    body {
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* Custom iOS checkbox styling for exact match */
+    .custom-checkbox {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 0.375rem;
+      background-color: #2563EB;
+      background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
+      border: 1px solid #2563EB;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="font-sans text-slate-900 bg-white min-h-full flex flex-col justify-between selection:bg-blue-100 pb-safe">
+<!-- BEGIN: MainContent -->
+<main class="w-full max-w-md mx-auto px-5 pt-4 pb-28">
+<!-- BEGIN: TopNavigation -->
+<header class="flex items-center gap-3.5 mb-7">
+<button aria-label="Retour" class="p-1 -ml-1 text-blue-600 hover:text-blue-700 transition-colors focus:outline-none" type="button">
+<svg class="w-6 h-6 stroke-[2.25]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.75 19.5L8.25 12l7.5-7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<h1 class="font-serif text-[1.65rem] font-bold text-slate-900 tracking-tight">Nouvelle veille</h1>
+</header>
+<!-- END: TopNavigation -->
+<form class="space-y-6" onsubmit="event.preventDefault()">
+<!-- Field: Nom -->
+<div class="space-y-2">
+<label class="block text-[0.95rem] font-semibold text-slate-900" for="name">Nom</label>
+<input class="w-full px-4 py-3 rounded-2xl border border-slate-200 text-slate-900 text-[0.95rem] font-normal focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-none outline-none transition-all" id="name" name="name" type="text" value="Veille Eurocode 7 2026 — fondations"/>
+</div>
+<!-- Field: Sujet à surveiller -->
+<div class="space-y-2">
+<label class="block text-[0.95rem] font-semibold text-slate-900" for="subject">Sujet à surveiller</label>
+<textarea class="w-full px-4 py-3.5 rounded-2xl border border-slate-200 text-slate-900 text-[0.95rem] leading-relaxed font-normal focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-none outline-none resize-none transition-all" id="subject" name="subject" rows="3">Suivi de la révision 2026 de l'Eurocode 7 : dimensionnement des fondations, interaction sol-structure.</textarea>
+<p class="text-[0.875rem] text-slate-500 font-normal leading-normal pt-0.5">
+          L'agent s'en sert pour chercher. Précisez votre domaine et votre objectif.
+        </p>
+</div>
+<!-- Section: Déclencheur -->
+<div class="space-y-2.5">
+<label class="block text-[0.95rem] font-semibold text-slate-900">Déclencheur</label>
+<div aria-label="Type de déclencheur" class="grid grid-cols-3 gap-2.5" role="group">
+<button class="py-3 px-2 rounded-2xl border border-blue-500 bg-blue-50 text-blue-600 font-medium text-[0.95rem] text-center transition-all shadow-sm" type="button">
+            Planifié
+          </button>
+<button class="py-3 px-2 rounded-2xl border border-slate-200 bg-white text-slate-800 font-medium text-[0.95rem] text-center hover:bg-slate-50 transition-all" type="button">
+            Réactif
+          </button>
+<button class="py-3 px-2 rounded-2xl border border-slate-200 bg-white text-slate-800 font-medium text-[0.95rem] text-center hover:bg-slate-50 transition-all" type="button">
+            Conditionnel
+          </button>
+</div>
+<p class="text-[0.875rem] text-slate-500 font-normal leading-relaxed pt-0.5">
+          Planifié : un run à chaque échéance. Réactif : à la suite d'un événement. Conditionnel : quand un seuil est atteint.
+        </p>
+</div>
+<!-- Section: Cadence -->
+<div class="space-y-3">
+<label class="block text-[0.95rem] font-semibold text-slate-900">Cadence</label>
+<div aria-label="Cadence de la veille" class="grid grid-cols-4 gap-2" role="group">
+<button class="py-2.5 px-1 rounded-2xl border border-slate-200 bg-white text-slate-800 font-medium text-[0.92rem] text-center hover:bg-slate-50 transition-all" type="button">
+            Jour
+          </button>
+<button class="py-2.5 px-1 rounded-2xl border border-slate-200 bg-white text-slate-800 font-medium text-[0.92rem] text-center hover:bg-slate-50 transition-all" type="button">
+            Semaine
+          </button>
+<button class="py-2.5 px-1 rounded-2xl border border-blue-500 bg-blue-50 text-blue-600 font-medium text-[0.92rem] text-center transition-all" type="button">
+            Mois
+          </button>
+<button class="py-2.5 px-1 rounded-2xl border border-slate-200 bg-white text-slate-800 font-medium text-[0.92rem] text-center hover:bg-slate-50 transition-all" type="button">
+            Trimestre
+          </button>
+</div>
+<!-- Inputs: Jour du run & Heure -->
+<div class="space-y-2 pt-1">
+<div class="flex items-center justify-between px-4 py-3.5 rounded-2xl border border-slate-200 bg-white">
+<span class="text-[0.95rem] font-medium text-slate-800">Jour du run</span>
+<span class="text-[0.95rem] font-normal text-slate-800">Le 1<sup>er</sup> du mois</span>
+</div>
+<div class="flex items-center justify-between px-4 py-3.5 rounded-2xl border border-slate-200 bg-white">
+<span class="text-[0.95rem] font-medium text-slate-800">Heure</span>
+<span class="text-[0.95rem] font-normal text-slate-800 tracking-wider">08:00</span>
+</div>
+</div>
+</div>
+<!-- Section: Familles de sources -->
+<div class="space-y-2.5">
+<label class="block text-[0.95rem] font-semibold text-slate-900">Familles de sources</label>
+<div class="space-y-2">
+<label class="flex items-center justify-between px-4 py-3.5 rounded-2xl border border-slate-200 bg-white cursor-pointer active:bg-slate-50 transition-colors">
+<span class="text-[0.95rem] font-normal text-slate-800">Académiques</span>
+<input checked="" class="custom-checkbox focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+</label>
+<label class="flex items-center justify-between px-4 py-3.5 rounded-2xl border border-slate-200 bg-white cursor-pointer active:bg-slate-50 transition-colors">
+<span class="text-[0.95rem] font-normal text-slate-800">Web</span>
+<input checked="" class="custom-checkbox focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+</label>
+<label class="flex items-center justify-between px-4 py-3.5 rounded-2xl border border-slate-200 bg-white cursor-pointer active:bg-slate-50 transition-colors">
+<span class="text-[0.95rem] font-normal text-slate-800">Professionnelles et normatives</span>
+<input checked="" class="custom-checkbox focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+</label>
+</div>
+</div>
+<!-- Section: Notification -->
+<div class="space-y-2">
+<label class="block text-[0.95rem] font-semibold text-slate-900">Notification</label>
+<label class="flex items-center justify-between px-4 py-3.5 rounded-2xl border border-slate-200 bg-white cursor-pointer active:bg-slate-50 transition-colors">
+<span class="text-[0.95rem] font-normal text-slate-800">Push à la fin de chaque run</span>
+<input checked="" class="custom-checkbox focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+</label>
+<p class="text-[0.875rem] text-slate-500 font-normal leading-relaxed pt-0.5">
+          Chaque run lit d'abord le vault et ne cherche que les nouveautés.
+        </p>
+</div>
+</form>
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: BottomStickyActions -->
+<footer class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-100 px-5 py-3.5 shadow-lg backdrop-blur-md bg-white/95">
+<div class="max-w-md mx-auto flex items-center gap-3">
+<!-- Button: Annuler -->
+<button class="w-1/3 py-3 px-4 rounded-2xl border border-blue-500 text-blue-600 font-medium text-[0.95rem] text-center hover:bg-blue-50/50 active:scale-[0.98] transition-all" type="button">
+        Annuler
+      </button>
+<!-- Button: Créer la veille -->
+<button class="flex-1 py-3 px-4 rounded-2xl bg-blue-600 text-white font-medium text-[0.95rem] text-center shadow-sm hover:bg-blue-700 active:scale-[0.98] transition-all" type="button">
+        Créer la veille
+      </button>
+</div>
+</footer>
+<!-- END: BottomStickyActions -->
+</body></html>

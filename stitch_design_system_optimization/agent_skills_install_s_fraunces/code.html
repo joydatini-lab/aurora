@@ -1,0 +1,162 @@
+<!DOCTYPE html><html class="h-full" lang="fr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Agent — Skills installés</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Fraunces & Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Fraunces', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f2f6ff',
+              100: '#e5edff',
+              500: '#3461fd',
+              600: '#2b50ec',
+              700: '#213dc7',
+            },
+            sheet: {
+              bg: '#8f949c',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Styles: General Layout & Typography tweaks -->
+<style data-purpose="base-styling">
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+  </style>
+</head>
+<body class="h-full bg-[#8e949d] font-sans antialiased flex flex-col justify-between overflow-hidden">
+<!-- BEGIN: TopBar -->
+<!-- Header with Aurora branding visible above the backdrop -->
+<header class="pt-12 px-6 flex items-center justify-between text-[#1c2438] shrink-0" data-purpose="top-navigation-bar">
+<button aria-label="Menu" class="p-1 focus:outline-none">
+<svg class="w-6 h-6 stroke-current stroke-[2.2]" fill="none" stroke-linecap="round" viewBox="0 0 24 24">
+<line x1="4" x2="14" y1="9" y2="9"></line>
+<line x1="4" x2="20" y1="15" y2="15"></line>
+</svg>
+</button>
+<h1 class="text-xl font-bold tracking-tight text-[#1e2738]">Aurora</h1>
+<div aria-hidden="true" class="w-6"></div>
+</header>
+<!-- END: TopBar -->
+<!-- BEGIN: BottomSheet -->
+<main class="w-full bg-white rounded-t-[36px] shadow-2xl pt-3 pb-8 px-6 flex flex-col max-h-[85vh] overflow-y-auto" data-purpose="bottom-sheet-container" role="dialog" aria-modal="true" aria-labelledby="modal-skills-title">
+<!-- Drag Handle Indicator -->
+<div aria-hidden="true" class="flex justify-center mb-4">
+<div class="w-12 h-1.5 bg-[#cdd4de] rounded-full"></div>
+</div>
+<!-- Header with Back Button and Fraunces Title -->
+<div class="flex items-center gap-3 mb-2">
+<button aria-label="Retour" class="p-1 text-[#26334a] hover:opacity-75 transition-opacity">
+<svg class="w-6 h-6 stroke-current stroke-[2.5]" fill="none" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+<polyline points="15 18 9 12 15 6"></polyline>
+</svg>
+</button>
+<h2 class="font-serif text-[26px] font-semibold tracking-tight text-[#111927]" id="modal-skills-title">
+        Skills installés
+      </h2>
+</div>
+<!-- Subtitle / Instruction Text -->
+<p class="text-[14px] leading-relaxed text-[#52525B] mb-6">
+      Les skills actifs sont indexés : l'agent choisit le bon selon votre demande, ou tapez <span class="font-semibold text-[#1e293b]">/</span> dans la saisie pour en appeler un.
+    </p>
+<!-- Skills List -->
+<ul class="divide-y divide-gray-100 mb-6" data-purpose="skills-list">
+<!-- Skill Item 1 -->
+<li class="py-3.5 flex items-center justify-between gap-3">
+<div class="flex flex-col pr-1">
+<span class="text-[15px] font-bold text-[#111827]">Fiche de révision</span>
+<span class="text-[13px] text-[#52525B]">Structure un cours en fiche</span>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<span class="px-2.5 py-0.5 text-[11px] font-semibold text-[#2563eb] border border-[#2563eb] rounded-md tracking-wider">
+            INDEXÉ
+          </span>
+<!-- Active Toggle -->
+<button aria-checked="true" aria-label="Activer Fiche de révision" class="relative inline-flex h-7 w-12 items-center rounded-full bg-[#2b59ec] transition-colors focus:outline-none" role="switch" type="button">
+<span class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform translate-x-[22px] shadow-sm"></span>
+</button>
+</div>
+</li>
+<!-- Skill Item 2 -->
+<li class="py-3.5 flex items-center justify-between gap-3">
+<div class="flex flex-col pr-1">
+<span class="text-[15px] font-bold text-[#111827]">Rapport technique</span>
+<span class="text-[13px] text-[#52525B]">Rédige avec sources numérotées</span>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<span class="px-2.5 py-0.5 text-[11px] font-semibold text-[#2563eb] border border-[#2563eb] rounded-md tracking-wider">
+            INDEXÉ
+          </span>
+<!-- Active Toggle -->
+<button aria-checked="true" aria-label="Activer Rapport technique" class="relative inline-flex h-7 w-12 items-center rounded-full bg-[#2b59ec] transition-colors focus:outline-none" role="switch" type="button">
+<span class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform translate-x-[22px] shadow-sm"></span>
+</button>
+</div>
+</li>
+<!-- Skill Item 3 -->
+<li class="py-3.5 flex items-center justify-between gap-3">
+<div class="flex flex-col pr-1">
+<span class="text-[15px] font-bold text-[#111827]">Veille normative</span>
+<span class="text-[13px] text-[#52525B]">Suit les normes et leur évolution</span>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<span class="px-2.5 py-0.5 text-[11px] font-semibold text-[#2563eb] border border-[#2563eb] rounded-md tracking-wider">
+            INDEXÉ
+          </span>
+<!-- Active Toggle -->
+<button aria-checked="true" aria-label="Activer Veille normative" class="relative inline-flex h-7 w-12 items-center rounded-full bg-[#2b59ec] transition-colors focus:outline-none" role="switch" type="button">
+<span class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform translate-x-[22px] shadow-sm"></span>
+</button>
+</div>
+</li>
+<!-- Skill Item 4 -->
+<li class="py-3.5 flex items-center justify-between gap-3">
+<div class="flex flex-col pr-1">
+<span class="text-[15px] font-bold text-[#111827]">Plan de semaine</span>
+<span class="text-[13px] text-[#52525B]">Répartit tâches et sessions Focus</span>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<span class="px-2.5 py-0.5 text-[10px] font-semibold text-[#b87614] border border-[#c48d2b] rounded-md tracking-wider text-center leading-tight">
+            NON<br>INDEXÉ
+          </span>
+<!-- Inactive Toggle -->
+<button aria-checked="false" aria-label="Activer Plan de semaine" class="relative inline-flex h-7 w-12 items-center rounded-full bg-[#cbd5e1] transition-colors focus:outline-none" role="switch" type="button">
+<span class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform translate-x-1 shadow-sm"></span>
+</button>
+</div>
+</li>
+</ul>
+<!-- BEGIN: ActionButtons -->
+<section class="grid grid-cols-2 gap-3 pt-2" data-purpose="sheet-actions">
+<!-- Secondary Outline Button -->
+<button class="w-full py-3.5 px-4 text-[15px] font-semibold text-[#2b59ec] bg-white border-2 border-[#2b59ec] rounded-2xl active:bg-blue-50 transition-colors text-center shadow-sm min-h-[44px]" type="button">
+        Gérer les skills
+      </button>
+<!-- Primary Filled Button -->
+<button class="w-full py-3.5 px-4 text-[15px] font-semibold text-white bg-[#2b59ec] rounded-2xl active:bg-[#2044c2] transition-colors text-center shadow-md min-h-[44px]" type="button">
+        Parcourir les skills
+      </button>
+</section>
+<!-- END: ActionButtons -->
+</main>
+<!-- END: BottomSheet -->
+
+
+</body></html>

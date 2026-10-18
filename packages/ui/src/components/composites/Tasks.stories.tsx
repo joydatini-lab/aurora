@@ -1,8 +1,12 @@
 /**
  * Composites — Tasks + Kanban + Eisenhower stories (cat. 2.2, 2.4).
+ *
+ * Standard CDD (docs/cdd.md) : callbacks `fn()` (pas de console.log), états
+ * vide couverts, au moins un test `play`.
  */
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as React from "react";
+import { expect, fn } from "storybook/test";
 import {
   TaskCard,
   type TaskCardData,
@@ -15,13 +19,12 @@ import {
   TodayFocusPanel,
 } from "src/index";
 
-type Story = StoryObj;
-
 const meta: Meta = {
   title: "Aurora/Composites/Tasks+Kanban",
   tags: ["autodocs"],
 };
 export default meta;
+type Story = StoryObj<typeof meta>;
 
 /* ------------------------------------------------------------------ */
 /* Données partagées                                                    */
@@ -77,9 +80,14 @@ const tasks: TaskCardData[] = [
 /* TaskCard                                                            */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Cartes tâche par défaut : progression, tags, assignés et action Terminer.
+ *
+ * @summary liste de cartes tâche
+ */
 export const CartesTaches: Story = {
   render: () => (
-    <div className="flex max-w-md flex-col gap-2.5">
+    <div className="flex max-w-md flex-col gap-3">
       {tasks.map((t) => (
         <TaskCard
           key={t.id}
@@ -88,20 +96,47 @@ export const CartesTaches: Story = {
           showAssignees
           showProgress
           showTags
-          onOpen={(id) => console.log("open", id)}
-          onPriorityChange={(id, level) => console.log("priority", id, level)}
-          onComplete={(id) => console.log("complete", id)}
           showComplete
+          onOpen={fn()}
+          onPriorityChange={fn()}
+          onComplete={fn()}
+          onMenu={fn()}
         />
       ))}
     </div>
   ),
 };
 
+/**
+ * Test d'interaction : le bouton « Terminer » appelle `onComplete(id)`.
+ *
+ * @summary clique Terminer → onComplete
+ */
+const onCompleteMock = fn();
+
+export const TerminerTache: Story = {
+  tags: ["!dev", "!autodocs"],
+  name: "quand on clique Terminer, appelle onComplete",
+  render: () => (
+    <TaskCard data={tasks[0]!} onComplete={onCompleteMock} onOpen={fn()} />
+  ),
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Marquer comme terminée" }),
+    );
+    await expect(onCompleteMock).toHaveBeenCalledWith("t1");
+  },
+};
+
 /* ------------------------------------------------------------------ */
 /* TaskFilterBar                                                       */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Barre de filtres actifs : libellés + boutons de suppression + résultat.
+ *
+ * @summary filtres actifs
+ */
 export const FiltresTaches: Story = {
   render: () => {
     const [filters, setFilters] = React.useState<TaskFilter[]>([
@@ -114,60 +149,100 @@ export const FiltresTaches: Story = {
         onRemoveFilter={(key) => setFilters((f) => f.filter((x) => x.key !== key))}
         onClearAll={() => setFilters([])}
         resultCount={12}
-        onOpenAdvanced={() => console.log("advanced")}
+        onOpenAdvanced={fn()}
       />
     );
   },
+};
+
+/**
+ * État vide : aucun filtre actif, zéro résultat.
+ *
+ * @summary aucun filtre
+ */
+export const FiltresVides: Story = {
+  render: () => (
+    <TaskFilterBar
+      filters={[]}
+      onRemoveFilter={fn()}
+      onClearAll={fn()}
+      resultCount={0}
+      onOpenAdvanced={fn()}
+    />
+  ),
 };
 
 /* ------------------------------------------------------------------ */
 /* EisenhowerMatrix                                                    */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Matrice d'Eisenhower remplie (do / schedule / delegate / eliminate).
+ *
+ * @summary matrice remplie
+ */
 export const MatriceEisenhower: Story = {
   render: () => {
-    const [, t1, t2, t3] = [tasks[0]!, tasks[1]!, tasks[2]!, tasks[3]!];
     const quadrants: Record<QuadrantId, TaskCardData[]> = {
-      do: [t2],
-      schedule: [t1],
-      delegate: [t3],
+      do: [tasks[1]!],
+      schedule: [tasks[0]!],
+      delegate: [tasks[2]!],
       eliminate: [],
     };
     return (
       <EisenhowerMatrix
         quadrants={quadrants}
-        onMoveTask={(taskId, from, to) => console.log("move", taskId, from, to)}
-        onQuickCreate={(q) => console.log("quick-create", q)}
+        onMoveTask={fn()}
+        onQuickCreate={fn()}
       />
     );
   },
+};
+
+/**
+ * Matrice vide : les quatre quadrants sans tâche (état vide).
+ *
+ * @summary matrice vide
+ */
+export const MatriceVide: Story = {
+  render: () => (
+    <EisenhowerMatrix
+      quadrants={{ do: [], schedule: [], delegate: [], eliminate: [] }}
+      onMoveTask={fn()}
+      onQuickCreate={fn()}
+    />
+  ),
 };
 
 /* ------------------------------------------------------------------ */
 /* CompositeKanbanColumn                                               */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Colonnes Kanban (todo / doing / done) avec limites WIP et accents.
+ *
+ * @summary colonnes kanban
+ */
 export const KanbanColonnes: Story = {
   render: () => {
-    const [kt0, kt1, kt2, kt3] = [tasks[0]!, tasks[1]!, tasks[2]!, tasks[3]!];
     const cols: { column: CompositeKanbanColumnData; tasks: TaskCardData[] }[] = [
       {
         column: { id: "todo", title: "À faire", wipLimit: 5, accent: "default" },
         tasks: [
-          { ...kt3, status: "a_faire", progress: 0 },
-          { ...kt1, status: "a_faire" },
+          { ...tasks[3]!, status: "a_faire", progress: 0 },
+          { ...tasks[1]!, status: "a_faire" },
         ],
       },
       {
         column: { id: "doing", title: "En cours", wipLimit: 3, accent: "primary" },
         tasks: [
-          { ...kt0, status: "en_cours" },
-          { ...kt2, status: "en_cours" },
+          { ...tasks[0]!, status: "en_cours" },
+          { ...tasks[2]!, status: "en_cours" },
         ],
       },
       {
         column: { id: "done", title: "Terminé", wipLimit: undefined, accent: "success" },
-        tasks: [{ ...kt1, status: "termine", progress: 100 }],
+        tasks: [{ ...tasks[1]!, status: "termine", progress: 100 }],
       },
     ];
     return (
@@ -177,9 +252,9 @@ export const KanbanColonnes: Story = {
             key={column.id}
             column={column}
             tasks={tks}
-            onQuickCreate={(colId) => console.log("quick-create", colId)}
-            onOpenTask={(taskId) => console.log("open", taskId)}
-            onDropOnColumn={(colId) => console.log("drop", colId)}
+            onQuickCreate={fn()}
+            onOpenTask={fn()}
+            onDropOnColumn={fn()}
           />
         ))}
       </div>
@@ -191,24 +266,32 @@ export const KanbanColonnes: Story = {
 /* TodayFocusPanel                                                     */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Panneau « focus du jour » : tâches du jour, en retard, blocs planifiés.
+ *
+ * @summary focus du jour
+ */
 export const FocusJour: Story = {
-  render: () => {
-    const [tf0, tf1, tf2, tf3] = [tasks[0]!, tasks[1]!, tasks[2]!, tasks[3]!];
-    return (
-      <div className="mx-auto max-w-md">
-        <TodayFocusPanel
-          focusTasks={[tf0, tf1, tf2]}
-          overdueTasks={[{ ...tf3, dueDate: "2026-10-01", progress: 0, status: "a_faire" }]}
-          todayTasks={[tf0, tf1, { ...tf1, id: "t5", status: "termine", progress: 100 }]}
-          scheduledBlocks={[
-            { time: "14:00", task: { ...tf1, id: "b1", status: "a_faire" } },
-            { time: "15:00", task: { ...tf0, id: "b2", status: "a_faire" } },
-          ]}
-          onCompleteTask={(id) => console.log("complete", id)}
-          onOpenTask={(id) => console.log("open", id)}
-          onQuickCreate={() => console.log("quick-create")}
-        />
-      </div>
-    );
-  },
+  render: () => (
+    <div className="mx-auto max-w-md">
+      <TodayFocusPanel
+        focusTasks={[tasks[0]!, tasks[1]!, tasks[2]!]}
+        overdueTasks={[
+          { ...tasks[3]!, dueDate: "2026-10-01", progress: 0, status: "a_faire" },
+        ]}
+        todayTasks={[
+          tasks[0]!,
+          tasks[1]!,
+          { ...tasks[1]!, id: "t5", status: "termine", progress: 100 },
+        ]}
+        scheduledBlocks={[
+          { time: "14:00", task: { ...tasks[1]!, id: "b1", status: "a_faire" } },
+          { time: "15:00", task: { ...tasks[0]!, id: "b2", status: "a_faire" } },
+        ]}
+        onCompleteTask={fn()}
+        onOpenTask={fn()}
+        onQuickCreate={fn()}
+      />
+    </div>
+  ),
 };

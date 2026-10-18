@@ -1,0 +1,188 @@
+<!DOCTYPE html><html class="h-full" lang="fr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<title>Aurora — Agent Accueil</title>
+<!-- Tailwind CSS v3 CDN with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Fraunces, Inter, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Fraunces', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            aurora: {
+              blue: '#2563EB',
+              blueLight: '#EEF2FF',
+              brand: '#3B82F6',
+              textPrimary: '#0F172A',
+              textSecondary: '#64748B',
+              border: '#E2E8F0',
+            }
+          },
+          boxShadow: {
+            'orb-glow': '0 20px 48px -8px rgba(59, 130, 246, 0.45), 0 0 24px -2px rgba(96, 165, 250, 0.3)',
+            'float-bar': '0 12px 32px -4px rgba(15, 23, 42, 0.08), 0 4px 16px -2px rgba(15, 23, 42, 0.04)',
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Styles for Avatar Orb and layout specifics -->
+<style data-purpose="custom-orb">
+    .aurora-orb {
+      background: radial-gradient(circle at 35% 30%, #93c5fd 0%, #3b82f6 45%, #2563eb 80%, #1d4ed8 100%);
+    }
+    /* Smooth iOS touch feel */
+    body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+  </style>
+</head>
+<body class="bg-white text-aurora-textPrimary font-sans antialiased h-full flex flex-col justify-between selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden">
+<!-- BEGIN: TopBar -->
+<header class="w-full pt-4 pb-2 px-6 flex items-center justify-between select-none">
+<!-- Left: Hamburger Menu Icon -->
+<button aria-label="Ouvrir le menu de navigation" class="p-2 -ml-2 text-aurora-brand hover:opacity-75 active:scale-95 transition" type="button">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+<line x1="4" x2="16" y1="9" y2="9"></line>
+<line x1="4" x2="20" y1="15" y2="15"></line>
+</svg>
+</button>
+<!-- Center: Brand Logo with Sparkle -->
+<div class="flex items-center gap-2">
+<!-- 4-point sparkle icon -->
+<svg class="w-5 h-5 text-aurora-brand" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24">
+<path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="none"></path>
+</svg>
+<span class="font-serif font-bold text-2xl tracking-tight text-aurora-textPrimary">Aurora</span>
+</div>
+<!-- Right: User Profile Icon -->
+<button aria-label="Accéder au profil utilisateur" class="p-2 -mr-2 text-aurora-brand hover:opacity-75 active:scale-95 transition" type="button">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+<circle cx="12" cy="7" r="4"></circle>
+</svg>
+</button>
+</header>
+<!-- END: TopBar -->
+<!-- BEGIN: MainContent -->
+<main class="flex-1 flex flex-col items-center justify-center px-6 text-center max-w-lg mx-auto w-full -mt-6">
+<!-- Hero Avatar Orb -->
+<div class="relative mb-8" data-purpose="agent-avatar">
+<!-- Glow backlight effect -->
+<div class="w-32 h-32 rounded-full aurora-orb shadow-orb-glow flex items-center justify-center transition-transform hover:scale-105 duration-300">
+<!-- Dual vertical pill eyes -->
+<div class="flex items-center gap-3">
+<div class="w-2.5 h-6 bg-white rounded-full shadow-sm"></div>
+<div class="w-2.5 h-6 bg-white rounded-full shadow-sm"></div>
+</div>
+</div>
+</div>
+<!-- Welcome Headline in Fraunces -->
+<h1 class="font-serif font-bold text-[32px] sm:text-4xl text-slate-900 tracking-tight leading-snug mb-3">
+      Que puis-je faire pour vous ?
+    </h1>
+<!-- Descriptive Subtitle in Inter -->
+<p class="font-sans text-slate-700 text-sm sm:text-base leading-relaxed max-w-[330px] sm:max-w-md mx-auto mb-9">Mode Agent : j'agis sur vos veilles, votre agenda et vos sessions Focus.</p>
+<!-- Suggestion Action Pills -->
+<div class="w-full flex flex-col items-center gap-3" data-purpose="quick-actions">
+<!-- Row 1: Primary actions -->
+<div class="flex flex-wrap items-center justify-center gap-2.5 w-full">
+<button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-sm font-medium transition active:scale-95 shadow-sm">
+<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+</svg>
+<span class="">Créer une veille</span>
+</button>
+<button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-sm font-medium transition active:scale-95 shadow-sm">
+<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<circle cx="12" cy="12" r="3"></circle>
+</svg>
+<span class="">Planifier un Focus</span>
+</button>
+</div>
+<!-- Row 2: Secondary contextual prompts -->
+<div class="flex items-center justify-center gap-2.5">
+<button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-sm font-medium transition active:scale-95 shadow-sm">
+<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+<circle cx="11" cy="11" r="8"></circle>
+<line x1="21" x2="16.65" y1="21" y2="16.65"></line>
+</svg>
+<span class="">Où j'en suis sur...</span>
+</button>
+<button class="px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-sm font-medium transition active:scale-95 shadow-sm">
+          Plus
+        </button>
+</div>
+</div>
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: BottomFloatingBar -->
+<nav aria-label="Barre d'outils de saisie" class="w-full px-4 pb-6 pt-2 max-w-md mx-auto" data-purpose="floating-command-dock">
+<div class="bg-white rounded-[28px] border border-slate-200 shadow-float-bar p-4 flex flex-col gap-3.5">
+<div class="w-full px-1">
+<input aria-label="Zone de saisie de votre demande ou compétence" class="w-full p-0 text-[15px] text-slate-800 placeholder-slate-500 bg-transparent border-none focus:ring-0 focus:outline-none" placeholder="Demandez, ou tapez / pour un skill" type="text">
+</div>
+<div class="flex items-center justify-between pt-0.5">
+<div class="flex items-center gap-2">
+<button aria-label="Ajouter une pièce jointe ou un paramètre" class="w-11 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition active:scale-95" type="button">
+<svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.2" viewBox="0 0 24 24">
+<line x1="12" x2="12" y1="5" y2="19"></line>
+<line x1="5" x2="19" y1="12" y2="12"></line>
+</svg>
+</button>
+<button aria-label="Sélectionner le mode Agent" class="h-11 px-3.5 rounded-xl bg-blue-50 hover:bg-blue-100 flex items-center gap-1.5 text-blue-600 font-medium text-xs sm:text-sm transition active:scale-95" type="button">
+<span class="">Agent</span>
+<svg aria-hidden="true" class="w-4 h-4 mt-0.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+<polyline points="6 9 12 15 18 9"></polyline>
+</svg>
+</button>
+<button aria-label="Recherche sur le web" class="w-11 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-blue-600 transition active:scale-95" type="button">
+<svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<line x1="2" x2="22" y1="12" y2="12"></line>
+<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+</svg>
+</button>
+<button aria-label="Sélection du modèle (actuellement Auto)" class="h-11 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 text-slate-700 font-medium text-xs sm:text-sm transition active:scale-95" type="button">
+<svg aria-hidden="true" class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+<line x1="4" x2="4" y1="21" y2="14"></line>
+<line x1="4" x2="4" y1="10" y2="3"></line>
+<line x1="12" x2="12" y1="21" y2="12"></line>
+<line x1="12" x2="12" y1="8" y2="3"></line>
+<line x1="20" x2="20" y1="21" y2="16"></line>
+<line x1="20" x2="20" y1="12" y2="3"></line>
+<line x1="1" x2="7" y1="14" y2="14"></line>
+<line x1="9" x2="15" y1="8" y2="8"></line>
+<line x1="17" x2="23" y1="16" y2="16"></line>
+</svg>
+<span class="">Auto</span>
+</button>
+</div>
+<button aria-label="Activer la dictée vocale" class="w-11 h-11 rounded-2xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white flex items-center justify-center shadow-md shadow-blue-500/20 active:scale-95 transition" type="button">
+<svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+<path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+<line x1="12" x2="12" y1="19" y2="23"></line>
+<line x1="8" x2="16" y1="23" y2="23"></line>
+</svg>
+</button>
+</div>
+</div>
+</nav>
+<!-- END: BottomFloatingBar -->
+
+
+</body></html>

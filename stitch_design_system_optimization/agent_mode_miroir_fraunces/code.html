@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-white" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Agent — Mode Miroir</title>
+<!-- Google Fonts: Fraunces, Inter, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script data-purpose="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            fraunces: ['Fraunces', 'serif'],
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            aurora: {
+              blue: '#2563EB',
+              border: '#E4E4E7',
+              graybg: '#F4F4F5',
+              textDark: '#18181B',
+              textMuted: '#71717A',
+            }
+          }
+        }
+      }
+    };
+  </script>
+<style data-purpose="custom-styling">
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .font-fraunces {
+      font-family: 'Fraunces', serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Hide scrollbars for slick mobile view */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="h-full bg-white text-aurora-textDark flex flex-col justify-between max-w-md mx-auto relative antialiased select-none">
+<!-- BEGIN: MainHeader -->
+<header class="sticky top-0 z-20 bg-white/95 backdrop-blur-md px-5 pt-3 pb-3 flex items-center justify-between border-b border-aurora-border/60">
+<!-- Menu Hamburger Icon -->
+<button aria-label="Menu" class="p-1 -ml-1 text-aurora-blue focus:outline-none" type="button">
+<svg class="w-6 h-6 stroke-current" fill="none" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24">
+<line x1="3" x2="15" y1="7" y2="7"></line>
+<line x1="3" x2="21" y1="13" y2="13"></line>
+</svg>
+</button>
+<!-- Logo / Agent Brand -->
+<div class="flex items-center gap-1.5 font-fraunces font-bold text-xl tracking-tight text-neutral-900">
+<svg class="w-5 h-5 text-aurora-blue fill-current" viewbox="0 0 24 24">
+<!-- 4-point star sparkle -->
+<path d="M12 2L13.8 9.2L21 11L13.8 12.8L12 20L10.2 12.8L3 11L10.2 9.2L12 2Z"></path>
+</svg>
+<span>Aurora</span>
+</div>
+<!-- User Profile Icon -->
+<button aria-label="Profil" class="p-1 -mr-1 text-aurora-blue focus:outline-none" type="button">
+<svg class="w-6 h-6 stroke-current" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+<circle cx="12" cy="7" r="4"></circle>
+</svg>
+</button>
+</header>
+<!-- END: MainHeader -->
+<!-- BEGIN: ScrollableContent -->
+<main class="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-44 space-y-4">
+<!-- BEGIN: BannerIntro -->
+<!-- Card showing Miroir Mode context and subject toggle -->
+<section class="bg-white border border-aurora-border rounded-2xl p-5 shadow-xs" data-purpose="intro-banner">
+<h2 class="text-[11px] font-bold tracking-widest text-[#52525B] uppercase mb-3">
+        MODE MIROIR
+      </h2>
+<p class="text-[15.5px] leading-snug text-neutral-800 font-normal mb-5">
+        Expliquez ce que vous avez appris. Aurora reformule, puis signale ce qui manque ou reste fragile.
+      </p>
+<div class="flex items-center justify-between pt-1">
+<div class="text-[14px] text-neutral-600">
+          Sujet : <span class="text-neutral-700 font-normal">Fondations superficielles</span>
+</div>
+<button class="px-3.5 py-1.5 rounded-xl border border-aurora-blue text-aurora-blue text-[13.5px] font-medium hover:bg-blue-50/50 transition-colors" type="button">
+          Changer
+        </button>
+</div>
+</section>
+<!-- END: BannerIntro -->
+<!-- BEGIN: UserMessageBubble -->
+<!-- Student's explanation bubble -->
+<div class="flex justify-end pt-1" data-purpose="user-message">
+<div class="bg-[#F4F4F6] text-neutral-900 rounded-3xl rounded-br-md px-5 py-3.5 max-w-[85%] text-[15px] leading-relaxed shadow-xs">
+        La capacité portante d'une semelle dépend de la cohésion, du poids volumique et de l'encastrement. J'applique Terzaghi avec les trois facteurs Nc, Nq et Nγ.
+      </div>
+</div>
+<!-- END: UserMessageBubble -->
+<!-- BEGIN: AuroraEvaluationCard -->
+<!-- Aurora's structured cognitive feedback -->
+<section class="bg-white border border-aurora-border rounded-2xl p-5 shadow-xs space-y-5" data-purpose="feedback-card">
+<!-- Sub-section: Reformulation -->
+<div>
+<h3 class="text-[11px] font-bold tracking-widest text-[#52525B] uppercase mb-2">
+          CE QUE J'AI COMPRIS
+        </h3>
+<p class="text-[15px] leading-relaxed text-neutral-900 font-normal">
+          Trois termes : cohésion, surcharge d'encastrement et poids du sol, chacun pondéré par un facteur lié à φ.
+        </p>
+</div>
+<!-- Sub-section: Detected Gaps -->
+<div>
+<h3 class="text-[11px] font-bold tracking-widest text-[#52525B] uppercase mb-2.5">
+          LACUNES DÉTECTÉES
+        </h3>
+<ul class="space-y-2.5">
+<!-- Item 1: Missing -->
+<li class="flex items-baseline gap-2 text-[14.5px] text-neutral-900 leading-normal">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10.5px] font-semibold font-mono tracking-wide bg-amber-50 text-amber-700 border border-amber-500/30">
+              MANQUANT
+            </span>
+<span class="flex-1">Effet de la nappe phréatique sur le terme Nγ</span>
+</li>
+<!-- Item 2: Fragile -->
+<li class="flex items-baseline gap-2 text-[14.5px] text-neutral-900 leading-normal">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10.5px] font-semibold font-mono tracking-wide bg-amber-50 text-amber-700 border border-amber-500/30">
+              FRAGILE
+            </span>
+<span class="flex-1">Choix de φ en calcul à court terme</span>
+</li>
+</ul>
+</div>
+<!-- Sub-section: Reflective Question -->
+<div>
+<h3 class="text-[11px] font-bold tracking-widest text-[#52525B] uppercase mb-2">
+          QUESTION POUR VOUS
+        </h3>
+<p class="text-[15px] leading-relaxed text-neutral-900 font-normal">
+          Que devient Nγ si la nappe affleure sous la semelle ?
+        </p>
+</div>
+<!-- Sub-section: Action Buttons -->
+<div class="pt-2 flex items-center gap-2.5">
+<button class="flex-1 bg-aurora-blue text-white py-3 px-3 rounded-xl font-medium text-[14px] text-center shadow-xs active:scale-[0.99] transition-transform truncate" type="button">
+          Planifier un Focus
+        </button>
+<button class="flex-1 border border-aurora-blue text-aurora-blue py-3 px-3 rounded-xl font-medium text-[14px] text-center hover:bg-blue-50/40 active:scale-[0.99] transition-all truncate" type="button">
+          Créer une veille
+        </button>
+</div>
+</section>
+<!-- END: AuroraEvaluationCard -->
+</main>
+<!-- END: ScrollableContent -->
+<!-- BEGIN: BottomInputPanel -->
+<!-- Fixed interaction bar mimicking high-end iOS AI app input dock -->
+<footer class="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-3.5 bg-transparent pointer-events-none z-30">
+<div class="bg-white border border-aurora-border rounded-3xl p-3 shadow-lg pointer-events-auto">
+<!-- Input text trigger / field -->
+<div class="px-2 pb-2.5">
+<input aria-label="Répondez ou expliquez la suite" class="w-full text-[15px] placeholder-neutral-500 text-neutral-800 bg-transparent border-0 p-0 focus:ring-0" placeholder="Répondez ou expliquez la suite" type="text"/>
+</div>
+<!-- Action Toolbar -->
+<div class="flex items-center justify-between pt-1">
+<!-- Left buttons group -->
+<div class="flex items-center space-x-1.5">
+<!-- Plus button -->
+<button aria-label="Ajouter un document" class="w-9 h-9 flex items-center justify-center rounded-xl bg-blue-50 text-aurora-blue hover:bg-blue-100/70 transition-colors" type="button">
+<svg class="w-4 h-4 stroke-current" fill="none" stroke-linecap="round" stroke-width="2.5" viewbox="0 0 24 24">
+<line x1="12" x2="12" y1="5" y2="19"></line>
+<line x1="5" x2="19" y1="12" y2="12"></line>
+</svg>
+</button>
+<!-- Mode Picker Dropdown Button -->
+<button class="h-9 px-3 flex items-center gap-1 rounded-xl bg-blue-50 text-aurora-blue text-[13px] font-medium hover:bg-blue-100/70 transition-colors" type="button">
+<span>Miroir</span>
+<svg class="w-3.5 h-3.5 stroke-current" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24">
+<polyline points="6 9 12 15 18 9"></polyline>
+</svg>
+</button>
+<!-- Web Search Icon button -->
+<button aria-label="Recherche Web" class="w-9 h-9 flex items-center justify-center rounded-xl border border-aurora-border text-aurora-blue hover:bg-neutral-50 transition-colors" type="button">
+<svg class="w-4 h-4 stroke-current" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<line x1="2" x2="22" y1="12" y2="12"></line>
+<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+</svg>
+</button>
+<!-- Auto Settings Button -->
+<button class="h-9 px-2.5 flex items-center gap-1.5 rounded-xl border border-aurora-border text-neutral-800 text-[13px] font-medium hover:bg-neutral-50 transition-colors" type="button">
+<svg class="w-3.5 h-3.5 stroke-current text-aurora-blue" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<line x1="4" x2="4" y1="21" y2="14"></line>
+<line x1="4" x2="4" y1="10" y2="3"></line>
+<line x1="12" x2="12" y1="21" y2="12"></line>
+<line x1="12" x2="12" y1="8" y2="3"></line>
+<line x1="20" x2="20" y1="21" y2="16"></line>
+<line x1="20" x2="20" y1="12" y2="3"></line>
+<line x1="1" x2="7" y1="14" y2="14"></line>
+<line x1="9" x2="15" y1="8" y2="8"></line>
+<line x1="17" x2="23" y1="16" y2="16"></line>
+</svg>
+<span>Auto</span>
+</button>
+</div>
+<!-- Send Arrow Button (Right) -->
+<button aria-label="Envoyer" class="w-9 h-9 flex items-center justify-center rounded-xl bg-aurora-blue text-white shadow-xs hover:bg-blue-700 active:scale-95 transition-all" type="submit">
+<svg class="w-4 h-4 stroke-current" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24">
+<line x1="12" x2="12" y1="19" y2="5"></line>
+<polyline points="5 12 12 5 19 12"></polyline>
+</svg>
+</button>
+</div>
+</div>
+</footer>
+<!-- END: BottomInputPanel -->
+</body></html>

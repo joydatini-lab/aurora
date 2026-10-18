@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DemoAuiProvider } from "../demo/demo-aui-provider";
-import { ToolFallback, ToolFallbackRoot, ToolFallbackTrigger, ToolFallbackContent, ToolFallbackArgs, ToolFallbackResult, ToolFallbackError, ToolFallbackApproval } from "../elements/tool-fallback.aui";
+import { ToolFallback } from "../elements/tool-fallback.aui";
 
 const meta = {
   title: "Assistant-UI/tool-fallback",

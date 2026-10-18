@@ -1,0 +1,128 @@
+<!DOCTYPE html><html class="h-full" lang="fr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Agent — Réflexion et modèle</title>
+<!-- Tailwind CSS v3 CDN with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Fraunces & Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            serif: ['Fraunces', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Typography & Overrides -->
+<style data-purpose="typography">
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-fraunces {
+      font-family: 'Fraunces', serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 h-full flex justify-center items-center m-0 p-0 overflow-hidden select-none">
+<!-- BEGIN: MobileDeviceFrame -->
+<div class="relative w-full max-w-[430px] h-full sm:h-[932px] bg-slate-900 shadow-2xl flex flex-col justify-end overflow-hidden">
+<!-- BEGIN: BackgroundChatContext -->
+<!-- The dimmed background view simulating the conversational agent screen behind the sheet -->
+<div class="absolute inset-0 bg-[#8f959e] flex flex-col px-5 pt-12 pb-6 z-0" data-purpose="background-screen">
+<!-- Top navigation bar of background -->
+<header class="flex items-center justify-between py-2 mb-6">
+<button aria-label="Menu" class="text-slate-800 p-1" type="button">
+<svg class="w-6 h-6 stroke-current stroke-2 fill-none" viewBox="0 0 24 24">
+<path d="M3.75 6.75h16.5M3.75 12h10.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<h1 class="text-lg font-semibold text-slate-800">Aurora</h1>
+<div class="w-6"></div>
+</header>
+<!-- Chat Bubble Prompt -->
+<div class="flex justify-end w-full mt-2">
+<div class="bg-slate-700/20 text-slate-900 px-5 py-3 rounded-2xl max-w-[85%] text-[15px] leading-snug">
+          Compare les deux versions de la norme.
+        </div>
+</div>
+</div>
+<!-- END: BackgroundChatContext -->
+<!-- Modal Backdrop Overlay -->
+<div aria-hidden="true" class="absolute inset-0 bg-black/25 backdrop-blur-[0.5px] z-10"></div>
+<!-- BEGIN: BottomSheetModal -->
+<main class="relative z-20 w-full bg-white rounded-t-[32px] pt-3 pb-8 px-6 shadow-2xl flex flex-col max-h-[85vh] overflow-y-auto" data-purpose="bottom-sheet" role="dialog" aria-modal="true" aria-label="Réflexion et modèle">
+<!-- Drag Handle -->
+<div class="flex justify-center w-full mb-3">
+<span aria-hidden="true" class="w-10 h-1 rounded-full bg-slate-300"></span>
+</div>
+<!-- Sheet Header -->
+<div class="mb-5">
+<h2 class="text-[22px] font-bold text-slate-900 tracking-tight font-fraunces">
+          Réflexion et modèle
+        </h2>
+</div>
+<!-- BEGIN: SectionThinkingLevel -->
+<section class="mb-6" data-purpose="thinking-level-selection">
+<h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">
+          NIVEAU DE RÉFLEXION
+        </h3>
+<!-- Segmented Control -->
+<div aria-label="Niveau de réflexion" class="p-1 bg-white border border-slate-200 rounded-2xl flex items-center justify-between gap-1 shadow-sm" role="radiogroup">
+<!-- Option: Rapide -->
+<button aria-checked="false" class="flex-1 py-2.5 text-center text-[15px] font-medium text-slate-800 rounded-xl hover:bg-slate-50 transition-colors" role="radio" type="button">
+            Rapide
+          </button>
+<!-- Option: Équilibré (Selected) -->
+<button aria-checked="true" class="flex-1 py-2.5 text-center text-[15px] font-medium text-white bg-brand-600 rounded-xl shadow-sm transition-transform active:scale-[0.98]" role="radio" type="button">
+            Équilibré
+          </button>
+<!-- Option: Approfondi -->
+<button aria-checked="false" class="flex-1 py-2.5 text-center text-[15px] font-medium text-slate-800 rounded-xl hover:bg-slate-50 transition-colors" role="radio" type="button">
+            Approfondi
+          </button>
+</div>
+<!-- Section Help / Description Text -->
+<p class="mt-2.5 text-[13px] leading-relaxed text-[#52525B] font-normal">Plan court et vérification légère. Plus l'agent réfléchit, plus la réponse est fiable, mais plus elle est lente.</p>
+</section>
+<!-- END: SectionThinkingLevel -->
+<!-- BEGIN: SectionModelSelection -->
+<section class="mb-7" data-purpose="model-radio-list">
+<h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+          MODÈLE
+        </h3>
+<!-- List of Radio Options -->
+<div aria-label="Modèle" class="flex flex-col divide-y divide-slate-100" role="radiogroup"><label class="flex items-start gap-3.5 py-3 cursor-pointer group" role="radio" aria-checked="true"><div class="mt-0.5 relative flex items-center justify-center"><input checked="" class="sr-only peer" name="model" type="radio" value="auto"><div class="w-5 h-5 rounded-full border-2 border-slate-300 peer-checked:border-brand-600 flex items-center justify-center transition-colors"><div class="w-2.5 h-2.5 rounded-full bg-brand-600 opacity-0 peer-checked:opacity-100 transition-opacity"></div></div></div><div class="flex flex-col"><div class="flex items-center gap-2"><span class="text-[15px] font-semibold text-slate-900 leading-snug">Auto</span><span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold text-brand-600 border border-brand-500 rounded uppercase tracking-wider leading-none">RECOMMANDÉ</span></div><span class="text-[13px] text-[#52525B] leading-snug mt-0.5">Aurora choisit selon la tâche et votre budget</span></div></label><label class="flex items-start gap-3.5 py-3 cursor-pointer group" role="radio" aria-checked="false"><div class="mt-0.5 relative flex items-center justify-center"><input class="sr-only peer" name="model" type="radio" value="light"><div class="w-5 h-5 rounded-full border-2 border-slate-300 peer-checked:border-brand-600 flex items-center justify-center transition-colors"><div class="w-2.5 h-2.5 rounded-full bg-brand-600 opacity-0 peer-checked:opacity-100 transition-opacity"></div></div></div><div class="flex flex-col"><span class="text-[15px] font-semibold text-slate-900 leading-snug">Léger</span><span class="text-[13px] text-[#52525B] leading-snug mt-0.5">Réponses rapides, coût réduit</span></div></label><label class="flex items-start gap-3.5 py-3 cursor-pointer group" role="radio" aria-checked="false"><div class="mt-0.5 relative flex items-center justify-center"><input class="sr-only peer" name="model" type="radio" value="standard"><div class="w-5 h-5 rounded-full border-2 border-slate-300 peer-checked:border-brand-600 flex items-center justify-center transition-colors"><div class="w-2.5 h-2.5 rounded-full bg-brand-600 opacity-0 peer-checked:opacity-100 transition-opacity"></div></div></div><div class="flex flex-col"><span class="text-[15px] font-semibold text-slate-900 leading-snug">Standard</span><span class="text-[13px] text-[#52525B] leading-snug mt-0.5">Bon compromis pour la plupart des demandes</span></div></label><label class="flex items-start gap-3.5 py-3 cursor-pointer group" role="radio" aria-checked="false"><div class="mt-0.5 relative flex items-center justify-center"><input class="sr-only peer" name="model" type="radio" value="advanced"><div class="w-5 h-5 rounded-full border-2 border-slate-300 peer-checked:border-brand-600 flex items-center justify-center transition-colors"><div class="w-2.5 h-2.5 rounded-full bg-brand-600 opacity-0 peer-checked:opacity-100 transition-opacity"></div></div></div><div class="flex flex-col"><span class="text-[15px] font-semibold text-slate-900 leading-snug">Avancé</span><span class="text-[13px] text-[#52525B] leading-snug mt-0.5">Raisonnement poussé, plus lent</span></div></label></div>
+</section>
+<!-- END: SectionModelSelection -->
+<!-- BEGIN: ActionButton -->
+<footer class="mt-auto pt-1" data-purpose="sheet-actions">
+<button class="w-full py-3.5 px-6 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-medium text-[16px] rounded-2xl shadow-sm transition duration-150 flex items-center justify-center" type="button" style="min-height: 44px;">
+          Appliquer
+        </button>
+</footer>
+<!-- END: ActionButton -->
+</main>
+<!-- END: BottomSheetModal -->
+</div>
+<!-- END: MobileDeviceFrame -->
+
+
+</body></html>

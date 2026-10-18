@@ -3665,29 +3665,6 @@ html[data-aurora-image-theme] .cal-header {
   line-height: 1.5;
 }
 
-/* Les pastilles (le composant `CalendarDots` de `ux/calendar-dots.tsx`)
-   — 4px, 2px gap, colorées par token d'accent (AD-17 : color-mix(),
-   jamais une valeur brute — le thème pilote la couleur automatiquement).
-   Lèche (pas de glow, pas de halo, pas d'animation — règle 1, 05 §2.6). */
-.cal-dots {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  min-height: 12px;
-}
-.cal-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  flex: none;
-}
-.cal-dots-overflow {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--aurora-text-muted);
-  margin-left: 1px;
-}
-
 /* ==========================================================================
    C5.4 propagation /habits (10-08) — le menu ⋮ + le glissement horizontal
    (3 vues glissables Jour / Actives / Catalogue) + le panneau latéral

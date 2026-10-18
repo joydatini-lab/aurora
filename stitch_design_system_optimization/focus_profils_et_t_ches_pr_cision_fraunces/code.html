@@ -1,0 +1,211 @@
+<!DOCTYPE html><html class="h-full bg-white" lang="fr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<title>Focus — Profils et Tâches</title>
+<!-- Tailwind CSS CDN with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Fraunces, Inter, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Fraunces', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              blue: '#2563EB',
+              'blue-light': '#EFF6FF',
+              dark: '#09090B',
+              muted: '#71717A',
+              border: '#E4E4E7',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-styling">
+    /* Remove tap highlight & enforce clean iOS layout feel */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    body {
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    }
+    /* Safe area padding helper */
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+  </style>
+</head>
+<body class="h-full bg-white text-zinc-900 font-sans antialiased flex flex-col justify-between selection:bg-blue-100">
+<!-- Main Scrollable Screen Content -->
+<div class="flex-1 overflow-y-auto pb-28">
+<div class="max-w-md mx-auto px-5 pt-8 sm:pt-10">
+<!-- BEGIN: Header -->
+<header class="flex items-center justify-between mb-8" data-purpose="screen-header">
+<h1 class="font-display text-[2.15rem] leading-none font-bold text-zinc-900 tracking-tight">Focus</h1>
+<!-- Add action button -->
+<button aria-label="Ajouter un profil ou une tâche" class="w-11 h-11 flex items-center justify-center rounded-full active:scale-95 transition-transform text-brand-blue" type="button">
+<svg aria-hidden="true" class="w-7 h-7 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M12 4.5v15m7.5-7.5h-15" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</header>
+<!-- END: Header -->
+<!-- BEGIN: ProfilesSection -->
+<section class="mb-8" data-purpose="profiles-section">
+<!-- Section label -->
+<h2 class="text-[0.8rem] font-semibold tracking-wider text-zinc-600 uppercase mb-3 px-0.5">
+          Mes Profils
+        </h2>
+<div class="space-y-4">
+<!-- Card 1: Étude profonde -->
+<article class="p-5 rounded-2xl border border-zinc-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02)]" data-purpose="profile-card">
+<div class="flex items-start justify-between mb-2">
+<h3 class="text-[1.075rem] font-bold text-zinc-900 tracking-tight">Étude profonde</h3>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.68rem] font-semibold tracking-wider text-brand-blue border border-brand-blue uppercase">
+                Pomodoro
+              </span>
+</div>
+<p class="text-[0.875rem] text-zinc-600 font-sans mb-5 font-normal">
+<span class="font-mono">25</span> min · pause <span class="font-mono">5</span> min · <span class="font-mono">4</span> sessions
+            </p>
+<button class="w-full py-3.5 bg-brand-blue hover:bg-blue-700 active:bg-blue-800 text-white font-medium text-[0.95rem] rounded-xl transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" type="button">
+              Lancer
+            </button>
+</article>
+<!-- Card 2: Lecture libre -->
+<article class="p-5 rounded-2xl border border-zinc-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02)]" data-purpose="profile-card">
+<div class="flex items-start justify-between mb-2">
+<h3 class="text-[1.075rem] font-bold text-zinc-900 tracking-tight">Lecture libre</h3>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.68rem] font-semibold tracking-wider text-brand-blue border border-brand-blue uppercase">
+                Chronomètre
+              </span>
+</div>
+<p class="text-[0.875rem] text-zinc-600 font-sans mb-5 font-normal">
+              Sans limite de durée
+            </p>
+<button class="w-full py-3.5 bg-brand-blue hover:bg-blue-700 active:bg-blue-800 text-white font-medium text-[0.95rem] rounded-xl transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" type="button">
+              Lancer
+            </button>
+</article>
+</div>
+</section>
+<!-- END: ProfilesSection -->
+<!-- BEGIN: TasksSection -->
+<section class="mb-4" data-purpose="tasks-section">
+<!-- Section header with button -->
+<div class="flex items-center justify-between mb-3 px-0.5"><h2 class="text-[0.8rem] font-semibold tracking-wider text-zinc-600 uppercase">
+            Tâches
+          </h2>
+<button aria-label="Ajouter une nouvelle tâche" class="inline-flex items-center justify-center min-h-[44px] px-3.5 py-1.5 rounded-full border border-brand-blue text-brand-blue text-[0.825rem] font-medium hover:bg-blue-50 active:bg-blue-100 transition-colors" type="button">
+            + Ajouter
+          </button></div>
+<!-- Task List Container Card -->
+<div class="rounded-2xl border border-zinc-200 bg-white divide-y divide-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)] overflow-hidden"><!-- Task 1 -->
+<div class="p-4 flex items-center justify-between gap-3 hover:bg-zinc-50 transition-colors cursor-pointer" data-purpose="task-item">
+<div class="min-w-0 pr-2">
+<h4 class="text-[0.95rem] font-bold text-zinc-900 leading-snug truncate">
+                Réviser le chapitre 4 : flexion
+              </h4>
+<p class="text-[0.825rem] text-zinc-600 mt-0.5 font-normal">
+                Profil : Étude profonde
+              </p>
+</div>
+<!-- Play Action Icon -->
+<button aria-label="Lancer la tâche : Réviser le chapitre 4 : flexion" class="flex-shrink-0 w-11 h-11 flex items-center justify-center text-brand-blue hover:opacity-80 active:scale-90 transition p-1" type="button">
+<svg aria-hidden="true" class="w-6 h-6 stroke-[1.6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<circle cx="12" cy="12" r="9"></circle>
+<polygon fill="none" points="10 8 16 12 10 16 10 8" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"></polygon>
+</svg>
+</button>
+</div>
+<!-- Task 2 -->
+<div class="p-4 flex items-center justify-between gap-3 hover:bg-zinc-50 transition-colors cursor-pointer" data-purpose="task-item">
+<div class="min-w-0 pr-2">
+<h4 class="text-[0.95rem] font-bold text-zinc-900 leading-snug truncate">
+                Lire les fiches techniques nationales
+              </h4>
+<p class="text-[0.825rem] text-zinc-600 mt-0.5 font-normal">
+                Profil : Lecture libre
+              </p>
+</div>
+<!-- Play Action Icon -->
+<button aria-label="Lancer la tâche : Lire les fiches techniques nationales" class="flex-shrink-0 w-11 h-11 flex items-center justify-center text-brand-blue hover:opacity-80 active:scale-90 transition p-1" type="button">
+<svg aria-hidden="true" class="w-6 h-6 stroke-[1.6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<circle cx="12" cy="12" r="9"></circle>
+<polygon fill="none" points="10 8 16 12 10 16 10 8" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"></polygon>
+</svg>
+</button>
+</div>
+<!-- Task 3 -->
+<div class="p-4 flex items-center justify-between gap-3 hover:bg-zinc-50 transition-colors cursor-pointer" data-purpose="task-item">
+<div class="min-w-0 pr-2">
+<h4 class="text-[0.95rem] font-bold text-zinc-900 leading-snug truncate">
+                Rendre le TD de béton armé
+              </h4>
+<p class="text-[0.825rem] text-zinc-600 mt-0.5 font-normal">
+                Aucun profil · à choisir
+              </p>
+</div>
+<!-- Outline Pill Button -->
+<button aria-label="Choisir un profil pour Rendre le TD de béton armé" class="flex-shrink-0 min-h-[44px] px-4 py-1.5 rounded-full border border-brand-blue text-brand-blue text-[0.825rem] font-medium hover:bg-blue-50 active:bg-blue-100 transition-colors inline-flex items-center justify-center" type="button">
+              Choisir
+            </button>
+</div></div>
+</section>
+<!-- END: TasksSection -->
+</div>
+</div>
+<!-- BEGIN: BottomNavigationBar -->
+<nav aria-label="Navigation principale" class="fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 z-50 pb-safe" data-purpose="bottom-navigation">
+<div class="max-w-md mx-auto grid grid-cols-4 items-center h-16 px-3">
+<!-- Nav Item 1: Agent -->
+<a aria-label="Agent" class="flex flex-col items-center justify-center min-h-[44px] py-1 text-zinc-600 hover:text-zinc-800 transition-colors group" href="#">
+<svg aria-hidden="true" class="w-[22px] h-[22px] stroke-[1.8] mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M7.5 8.25h9m-9 3H12m-9.75 6.75V5.25a2.25 2.25 0 012.25-2.25h15a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25h-3.375l-4.5 3.375-4.5-3.375H4.5a2.25 2.25 0 01-2.25-2.25z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[0.72rem] font-normal leading-tight">Agent</span>
+</a>
+<!-- Nav Item 2: Discovery -->
+<a aria-label="Discovery" class="flex flex-col items-center justify-center min-h-[44px] py-1 text-zinc-600 hover:text-zinc-800 transition-colors group" href="#">
+<svg aria-hidden="true" class="w-[22px] h-[22px] stroke-[1.8] mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<circle cx="12" cy="12" r="9"></circle>
+<polygon fill="none" points="14.83 9.17 13.06 13.06 9.17 14.83 10.94 10.94 14.83 9.17" stroke-linejoin="round"></polygon>
+</svg>
+<span class="text-[0.72rem] font-normal leading-tight">Discovery</span>
+</a>
+<!-- Nav Item 3: Focus (Active) -->
+<a aria-current="page" aria-label="Focus, page actuelle" class="flex flex-col items-center justify-center min-h-[44px] py-1 text-brand-blue group" href="#">
+<div class="w-14 h-7 bg-blue-50 rounded-full flex items-center justify-center mb-0.5">
+<svg aria-hidden="true" class="w-[21px] h-[21px] stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<circle cx="12" cy="12" r="9"></circle>
+<circle cx="12" cy="12" r="3.5"></circle>
+</svg>
+</div>
+<span class="text-[0.72rem] font-semibold leading-tight">Focus</span>
+</a>
+<!-- Nav Item 4: Plus -->
+<a aria-label="Plus d'options" class="flex flex-col items-center justify-center min-h-[44px] py-1 text-zinc-600 hover:text-zinc-800 transition-colors group" href="#">
+<svg aria-hidden="true" class="w-[22px] h-[22px] stroke-[2.2] mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<circle cx="5" cy="12" fill="currentColor" r="1"></circle>
+<circle cx="12" cy="12" fill="currentColor" r="1"></circle>
+<circle cx="19" cy="12" fill="currentColor" r="1"></circle>
+</svg>
+<span class="text-[0.72rem] font-normal leading-tight">Plus</span>
+</a>
+</div>
+</nav>
+<!-- END: BottomNavigationBar -->
+
+
+</body></html>

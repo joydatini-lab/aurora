@@ -1837,7 +1837,7 @@ function useEscapeRevert(
    squircle in mira, square in lyra and sera) and its keyboard ring, drawn on
    the thumb while its control has focus. */
 const THUMB_CLASS =
-  "pointer-events-none absolute size-(--color-picker-thumb-size) -translate-x-1/2 -translate-y-1/2 border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.12),0_1px_3px_rgb(0_0_0/0.3)] transition-[box-shadow] rounded-full ring-ring/50 group-focus-visible/color-picker-control:ring-3 forced-colors:outline-2 forced-colors:outline-solid"
+  "pointer-events-none absolute size-(--color-picker-thumb-size) -translate-x-1/2 -translate-y-1/2 border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.12),0_1px_3px_rgb(0_0_0/0.3)] transition-colors rounded-full ring-ring/50 group-focus-visible/color-picker-control:ring-3 forced-colors:outline-2 forced-colors:outline-solid"
 
 /* A hairline inside the edge, so the white corner of the area and the light
    end of a track stay visible on a white surface. */
@@ -2894,7 +2894,7 @@ const SWATCH_ITEM_SQUARE =
   "rounded-md"
 
 const SWATCH_ITEM_CLASS =
-  "forced-color-adjust-none relative flex size-(--color-picker-swatch-size) shrink-0 cursor-default items-center justify-center outline-offset-2 transition-[scale] duration-150 after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:inset-ring after:inset-ring-foreground/10 not-aria-disabled:hover:scale-110 aria-disabled:opacity-40 motion-reduce:transition-none group-focus-visible/color-picker-swatches:data-active:outline-2 group-focus-visible/color-picker-swatches:data-active:outline-ring [&_svg]:size-3.5"
+  "forced-color-adjust-none relative flex size-(--color-picker-swatch-size) shrink-0 cursor-default items-center justify-center outline-offset-2 transition-transform duration-150 after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:inset-ring after:inset-ring-foreground/10 not-aria-disabled:hover:scale-110 aria-disabled:opacity-40 motion-reduce:transition-none group-focus-visible/color-picker-swatches:data-active:outline-2 group-focus-visible/color-picker-swatches:data-active:outline-ring [&_svg]:size-3.5"
 
 export type ColorPickerSwatchItemProps = Omit<
   ComponentProps<"div">,

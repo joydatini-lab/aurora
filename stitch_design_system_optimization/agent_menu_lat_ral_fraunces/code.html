@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Agent — Menu latéral | Aurora</title>
+<!-- Tailwind CSS CDN with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Fraunces & Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Fraunces', 'serif'],
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              DEFAULT: '#2563EB',
+              hover: '#1D4ED8',
+              active: '#1E40AF',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom Typography Styles -->
+<style data-purpose="typography">
+    .font-fraunces {
+      font-family: 'Fraunces', serif;
+      font-variation-settings: 'SOFT' 0, 'WONK' 1;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+  </style>
+<!-- END: Custom Typography Styles -->
+<!-- BEGIN: Custom Layout Styles -->
+<style data-purpose="drawer-layout">
+    /* Emulates standard mobile device screen aspect-ratio & touch handling */
+    .drawer-overlay {
+      background-color: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
+  </style>
+<!-- END: Custom Layout Styles -->
+</head>
+<body class="h-full bg-neutral-900 overflow-hidden flex justify-center items-center">
+<!-- BEGIN: MobileViewportContainer -->
+<!-- Constrained container to simulate iOS device screen (iPhone 14/15 Pro: 390x844 / 393x852) -->
+<div class="relative w-full max-w-[420px] h-full sm:h-[844px] bg-neutral-800 shadow-2xl flex overflow-hidden sm:rounded-[44px]">
+<!-- Backdrop overlay on the right -->
+<div aria-label="Fermer le menu" class="absolute inset-0 drawer-overlay pointer-events-auto z-10" data-purpose="drawer-backdrop"></div>
+<!-- BEGIN: LeftDrawerPanel -->
+<aside aria-label="Navigation latérale" class="relative z-20 w-[78%] h-full bg-white flex flex-col justify-between pt-12 pb-8 px-6 shadow-2xl border-r border-neutral-100 overflow-y-auto select-none" data-purpose="navigation-drawer">
+<div class="flex flex-col">
+<!-- BEGIN: AppHeader -->
+<header class="flex items-center gap-2.5 mb-7 mt-2" data-purpose="app-branding">
+<!-- 4-point Sparkle Icon (Aurora Spark) -->
+<svg aria-hidden="true" class="w-6 h-6 text-brand shrink-0 fill-current" viewbox="0 0 24 24">
+<path d="M12 0C12 6.627 6.627 12 0 12C6.627 12 12 17.373 12 24C12 17.373 17.373 12 24 12C17.373 12 12 6.627 12 0Z"></path>
+</svg>
+<span class="font-fraunces text-[23px] font-bold text-neutral-950 tracking-tight leading-none">
+            Aurora
+          </span>
+</header>
+<!-- END: AppHeader -->
+<!-- BEGIN: NewConversationButton -->
+<button class="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-brand hover:bg-brand-hover active:bg-brand-active text-white font-medium text-[15px] rounded-xl transition duration-150 shadow-sm cursor-pointer" data-purpose="cta-new-chat" type="button">
+<span class="text-base font-semibold leading-none">+</span>
+<span class="leading-none">Nouvelle conversation</span>
+</button>
+<!-- END: NewConversationButton -->
+<!-- BEGIN: MainNavigationLinks -->
+<nav aria-label="Navigation principale" class="mt-8 flex flex-col space-y-1" data-purpose="main-menu">
+<!-- Item: Agent (Active) -->
+<a class="flex items-center gap-3.5 py-3 px-2 rounded-lg text-brand font-medium text-[15.5px] transition-colors" data-purpose="nav-item-active" href="#agent">
+<!-- Chat bubble outline -->
+<svg class="w-5 h-5 shrink-0 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Agent</span>
+</a>
+<!-- Item: Discovery -->
+<a class="flex items-center gap-3.5 py-3 px-2 rounded-lg text-neutral-800 hover:text-neutral-950 active:bg-neutral-50 font-normal text-[15.5px] transition-colors" data-purpose="nav-item" href="#discovery">
+<!-- Compass icon -->
+<svg class="w-5 h-5 shrink-0 stroke-[1.8] text-brand" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="9" stroke="currentColor"></circle>
+<path d="m14.828 9.172-2.121 5.656-5.657 2.122 2.121-5.657 5.657-2.121Z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Discovery</span>
+</a>
+<!-- Item: Focus -->
+<a class="flex items-center gap-3.5 py-3 px-2 rounded-lg text-neutral-800 hover:text-neutral-950 active:bg-neutral-50 font-normal text-[15.5px] transition-colors" data-purpose="nav-item" href="#focus">
+<!-- Target / Bullseye icon -->
+<svg class="w-5 h-5 shrink-0 stroke-[1.8] text-brand" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="8"></circle>
+<circle cx="12" cy="12" r="3"></circle>
+</svg>
+<span>Focus</span>
+</a>
+<!-- Item: Intégrations -->
+<a class="flex items-center gap-3.5 py-3 px-2 rounded-lg text-neutral-800 hover:text-neutral-950 active:bg-neutral-50 font-normal text-[15.5px] transition-colors" data-purpose="nav-item" href="#integrations">
+<!-- Power plug icon -->
+<svg class="w-5 h-5 shrink-0 stroke-[1.8] text-brand" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 3v4m6-4v4M6 7h12a2 2 0 012 2v2a6 6 0 01-6 6h-4a6 6 0 01-6-6V9a2 2 0 012-2Zm6 10v4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Intégrations</span>
+</a>
+</nav>
+<!-- END: MainNavigationLinks -->
+<!-- BEGIN: RecentConversationsSection -->
+<section aria-labelledby="recents-header" class="mt-8" data-purpose="recent-conversations-list">
+<h2 class="text-xs font-semibold tracking-wider text-neutral-500 uppercase px-2 mb-3" id="recents-header">
+            RÉCENTES
+          </h2>
+<ul class="flex flex-col text-[14.5px] text-neutral-900 divide-y divide-neutral-100">
+<li>
+<a class="block py-3 px-2 rounded-md hover:bg-neutral-50 transition-colors truncate" href="#eurocode">
+                Veille Eurocode 7
+              </a>
+</li>
+<li>
+<a class="block py-3 px-2 rounded-md hover:bg-neutral-50 transition-colors truncate" href="#fondations">
+                Miroir : fondations superficielles
+              </a>
+</li>
+<li>
+<a class="block py-3 px-2 rounded-md hover:bg-neutral-50 transition-colors truncate" href="#semaine">
+                Planifier ma semaine
+              </a>
+</li>
+</ul>
+</section>
+<!-- END: RecentConversationsSection -->
+</div>
+<!-- Bottom container area for mobile safe spacing -->
+<div aria-hidden="true" class="h-6 w-full" data-purpose="ios-safe-bottom"></div>
+</aside>
+<!-- END: LeftDrawerPanel -->
+</div>
+<!-- END: MobileViewportContainer -->
+</body></html>

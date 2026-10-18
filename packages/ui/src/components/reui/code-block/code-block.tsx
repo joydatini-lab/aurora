@@ -314,7 +314,7 @@ const LINE_MOTION_CLASS =
 const TOKEN_MOTION_CLASS = ""
 
 const LINE_FOCUS_CLASS =
-  "data-[blurred]:opacity-40 data-[blurred]:blur-[1.5px] data-[blurred]:transition-[opacity,filter] group-hover/code-block:data-[blurred]:opacity-100 group-hover/code-block:data-[blurred]:blur-none"
+  "data-[blurred]:opacity-40 data-[blurred]:blur-[1.5px] data-[blurred]:transition-opacity group-hover/code-block:data-[blurred]:opacity-100 group-hover/code-block:data-[blurred]:blur-none"
 
 /**
  * `data-code-line`, not `data-line`: rehype-pretty-code apps ship a global

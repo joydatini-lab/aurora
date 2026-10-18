@@ -36,6 +36,27 @@ _bmad-output/**/.working/
 # Local secrets script (real values NEVER committed — see
 # set-secrets.template.ps1 for the tracked, value-free template).
 set-secrets.ps1
+
+# Secrets locaux (dotenv, jamais commités — env.local = nom Vite local)
+env.local
+
+# Artefacts de crash / debug (JVM dumps, screenshots debug, logs Chromatic)
+hs_err_pid*.log
+replay_pid*.log
+run-logs.zip
+chromatic.log
+chromatic-logs.txt
+build-storybook.log
+debug-*.png
+
+# Artefacts de CI / cache npm (régénérables, jamais commités)
+tpc.json
+job-build.json
+jobs.json
+
+# Artefact de fetch PowerSync Cloud (synchronisé côté dashboard)
+powersync/service-fetched.yaml
+
 # Generated build artifacts
 # Stripped monochrome logo (ui-libraries §9.2 — node scripts/strip-logo-metadata.mjs)
 apps/mobile/.build/

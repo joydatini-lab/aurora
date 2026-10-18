@@ -24,11 +24,18 @@ export type IconKey =
   | "task" | "project" | "calendar" | "timer" | "habit"
   | "chart" | "table" | "file" | "file-pdf" | "file-doc"
   | "image" | "audio" | "code" | "terminal" | "tool"
-  | "approval" | "permission" | "copy" | "retry" | "open";
+  | "approval" | "permission" | "copy" | "retry" | "open"
+  | "download" | "upload" | "folders" | "team"
+  | "alert-circle" | "alert-octagon"
+  | "rotate-cw" | "rotate-ccw"
+  | "user" | "users" | "user-check" | "user-plus"
+  | "check-square";
+
+export type IconSize = "xs" | "sm" | "md" | "lg";
 
 export type AppIconProps = {
   name: IconKey;
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: IconSize;
   /** Couleur sémantique ; défaut = `currentColor` (hérité). */
   tone?: "default" | "muted" | "success" | "warning" | "danger";
   /**
@@ -85,6 +92,19 @@ const ICONS: Record<IconKey, LucideIcon> = {
   copy: Icons.Copy,
   retry: Icons.RotateCw,
   open: Icons.ExternalLink,
+  download: Icons.Download,
+  upload: Icons.Upload,
+  folders: Icons.Folders,
+  team: Icons.Users,
+  "alert-circle": Icons.AlertCircle,
+  "alert-octagon": Icons.AlertOctagon,
+  "rotate-cw": Icons.RotateCw,
+  "rotate-ccw": Icons.RotateCcw,
+  user: Icons.User,
+  users: Icons.Users,
+  "user-check": Icons.UserCheck,
+  "user-plus": Icons.UserPlus,
+  "check-square": Icons.CheckSquare,
 };
 
 export function AppIcon({
@@ -101,8 +121,8 @@ export function AppIcon({
   const ariaProps = ariaHidden
     ? { "aria-hidden": true as const }
     : label
-      ? { "aria-label": label, role: "img" as const }
-      : {};
+    ? { "aria-label": label, role: "img" as const }
+    : {};
 
   return (
     <Icon

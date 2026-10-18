@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-slate-50" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>Discovery — Programmes de veille</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Fraunces, Inter, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Fraunces', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+<!-- Custom Styles -->
+<style data-purpose="base-styling">
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Hide scrollbars for smooth app appearance */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans bg-slate-50 text-slate-900 antialiased overflow-x-hidden selection:bg-blue-100">
+<!-- BEGIN: MainContainer -->
+<div class="relative w-full max-w-md mx-auto min-h-screen flex flex-col bg-[#FAFAFA] shadow-2xl overflow-hidden pb-28">
+<!-- BEGIN: TopBarAndHeader -->
+<header class="pt-10 px-6 pb-5" data-purpose="page-header">
+<!-- Title -->
+<h1 class="font-serif text-[38px] leading-tight font-extrabold text-slate-900 tracking-tight">Discovery</h1>
+<!-- Subtitle -->
+<p class="font-sans text-[15px] font-medium text-slate-500 mt-1">Vos programmes de veille <span class="mx-1 text-slate-400">·</span> 10</p>
+</header>
+<!-- END: TopBarAndHeader -->
+<!-- BEGIN: ProgramList -->
+<main class="flex-1 px-4 space-y-3.5" data-purpose="program-card-list">
+<!-- Card 1: Eurocode 7 — fondations -->
+<article class="group relative rounded-2xl border border-zinc-200/80 bg-white p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-200" data-purpose="program-card">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3">
+<!-- Pastille statut d'analyse avec micro-icône -->
+<div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 ring-4 ring-blue-50/60 flex items-center justify-center shrink-0 mt-0.5">
+<svg class="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="inline-block text-[11px] font-semibold text-blue-700 bg-blue-50/90 px-2 py-0.5 rounded-md uppercase tracking-wider font-sans">Veille normative</span>
+<span class="text-zinc-400 text-xs">·</span>
+<span class="text-xs text-zinc-500 font-medium">Mensuelle</span>
+</div>
+<h2 class="font-serif text-[19px] sm:text-xl font-bold tracking-tight text-zinc-900 mt-1 leading-snug">Eurocode 7 — fondations</h2>
+</div>
+</div>
+<!-- Flèche chevron d'ouverture -->
+<button aria-label="Consulter le rapport" class="text-zinc-400 group-hover:text-zinc-700 group-hover:translate-x-0.5 transition-all p-1 -mr-1">
+<svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- Description / Champ d'observation -->
+<p class="text-xs text-zinc-600 line-clamp-2 mt-2.5 leading-relaxed pl-12">
+    Suivi de la révision 2026 de l'Eurocode 7, dimensionnement géotechnique, fondations profondes et interactions sol-structure.
+  </p>
+<!-- Pilules d'état (Pills) -->
+<div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-4 pt-3 border-t border-zinc-100">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-50 border border-zinc-200/70 text-[11.5px] font-medium text-zinc-700">
+<span class="font-mono font-semibold text-zinc-900">15</span> sources
+      <span class="font-mono font-bold text-blue-600 text-[11px]">(+3)</span>
+</div>
+<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-50 border border-zinc-200/70 text-[11.5px] font-medium text-zinc-600">
+<span>Dernier run :</span>
+<span class="font-mono font-semibold text-zinc-800">01 Déc.</span>
+</div>
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50/80 border border-emerald-200/60 text-[11.5px] font-semibold text-emerald-800 ml-auto">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+      Pertinence Élevée
+    </div>
+</div>
+</article>
+<!-- Card 2: Géosynthétiques 2030 -->
+<article class="group relative rounded-2xl border border-zinc-200/80 bg-white p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-200" data-purpose="program-card">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3">
+<!-- Pastille statut d'analyse avec micro-icône -->
+<div class="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 ring-4 ring-teal-50/60 flex items-center justify-center shrink-0 mt-0.5">
+<svg class="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="inline-block text-[11px] font-semibold text-teal-800 bg-teal-50/90 px-2 py-0.5 rounded-md uppercase tracking-wider font-sans">Veille matériaux</span>
+<span class="text-zinc-400 text-xs">·</span>
+<span class="text-xs text-zinc-500 font-medium">Trimestrielle</span>
+</div>
+<h2 class="font-serif text-[19px] sm:text-xl font-bold tracking-tight text-zinc-900 mt-1 leading-snug">Géosynthétiques 2030</h2>
+</div>
+</div>
+<!-- Flèche chevron d'ouverture -->
+<button aria-label="Consulter le rapport" class="text-zinc-400 group-hover:text-zinc-700 group-hover:translate-x-0.5 transition-all p-1 -mr-1">
+<svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- Description / Champ d'observation -->
+<p class="text-xs text-zinc-600 line-clamp-2 mt-2.5 leading-relaxed pl-12">
+    Innovations polymères biosourcés, renforcement de talus et filtration hydraulique bas-carbone.
+  </p>
+<!-- Pilules d'état (Pills) -->
+<div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-4 pt-3 border-t border-zinc-100">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-50 border border-zinc-200/70 text-[11.5px] font-medium text-zinc-700">
+<span class="font-mono font-semibold text-zinc-900">8</span> sources
+      <span class="font-mono font-bold text-teal-700 text-[11px]">(+2)</span>
+</div>
+<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-50 border border-zinc-200/70 text-[11.5px] font-medium text-zinc-600">
+<span>Dernier run :</span>
+<span class="font-mono font-semibold text-zinc-800">01 Oct.</span>
+</div>
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50/80 border border-blue-200/60 text-[11.5px] font-semibold text-blue-800 ml-auto">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+      Pertinence Moyenne
+    </div>
+</div>
+</article>
+<!-- Card 3: BIM/GEO — sols en 3D -->
+<article class="group relative rounded-2xl border border-zinc-200/80 bg-white p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-200" data-purpose="program-card">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3">
+<!-- Pastille statut d'analyse avec micro-icône -->
+<div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 ring-4 ring-indigo-50/60 flex items-center justify-center shrink-0 mt-0.5">
+<svg class="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-.778.099-1.533.284-2.253" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="inline-block text-[11px] font-semibold text-indigo-700 bg-indigo-50/90 px-2 py-0.5 rounded-md uppercase tracking-wider font-sans">Veille numérique</span>
+<span class="text-zinc-400 text-xs">·</span>
+<span class="text-xs text-zinc-500 font-medium">Mensuelle</span>
+</div>
+<h2 class="font-serif text-[19px] sm:text-xl font-bold tracking-tight text-zinc-900 mt-1 leading-snug">BIM/GEO — sols en 3D</h2>
+</div>
+</div>
+<!-- Flèche chevron d'ouverture -->
+<button aria-label="Consulter le rapport" class="text-zinc-400 group-hover:text-zinc-700 group-hover:translate-x-0.5 transition-all p-1 -mr-1">
+<svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- Description / Champ d'observation -->
+<p class="text-xs text-zinc-600 line-clamp-2 mt-2.5 leading-relaxed pl-12">
+    Interpénétration modèles géologiques et maquette numérique IFC 4.3, interopérabilité SIG et jumeaux numériques.
+  </p>
+<!-- Pilules d'état (Pills) -->
+<div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-4 pt-3 border-t border-zinc-100">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-50 border border-zinc-200/70 text-[11.5px] font-medium text-zinc-700">
+<span class="font-mono font-semibold text-zinc-900">10</span> sources
+      <span class="font-mono font-bold text-indigo-600 text-[11px]">(+2)</span>
+</div>
+<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-50 border border-zinc-200/70 text-[11.5px] font-medium text-zinc-600">
+<span>Dernier run :</span>
+<span class="font-mono font-semibold text-zinc-800">01 Déc.</span>
+</div>
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50/90 border border-amber-200/70 text-[11.5px] font-semibold text-amber-800 ml-auto">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+      Pertinence Incertaine
+    </div>
+</div>
+</article>
+<!-- Card 4: NF P 5-3 — sols -->
+<article class="group relative rounded-2xl border border-zinc-200/80 bg-white p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-200" data-purpose="program-card">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3">
+<!-- Pastille statut d'analyse avec micro-icône -->
+<div class="w-9 h-9 rounded-xl bg-orange-50 text-orange-700 ring-4 ring-orange-50/60 flex items-center justify-center shrink-0 mt-0.5">
+<svg class="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="inline-block text-[11px] font-semibold text-orange-800 bg-orange-50/90 px-2 py-0.5 rounded-md uppercase tracking-wider font-sans">Veille normative</span>
+<span class="text-zinc-400 text-xs">·</span>
+<span class="text-xs text-zinc-500 font-medium">Trimestrielle</span>
+</div>
+<h2 class="font-serif text-[19px] sm:text-xl font-bold tracking-tight text-zinc-900 mt-1 leading-snug">NF P 5-3 — sols</h2>
+</div>
+</div>
+<!-- Flèche chevron d'ouverture -->
+<button aria-label="Consulter le rapport" class="text-zinc-400 group-hover:text-zinc-700 group-hover:translate-x-0.5 transition-all p-1 -mr-1">
+<svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- Description / Champ d'observation -->
+<p class="text-xs text-zinc-600 line-clamp-2 mt-2.5 leading-relaxed pl-12">
+    Essais de laboratoire géotechnique, qualification des granulats et conformité des remblais traités à la chaux.
+  </p>
+<!-- Pilules d'état (Pills) -->
+<div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-4 pt-3 border-t border-zinc-100">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-50 border border-zinc-200/70 text-[11.5px] font-medium text-zinc-700">
+<span class="font-mono font-semibold text-zinc-900">7</span> sources
+      <span class="font-mono font-bold text-orange-600 text-[11px]">(+1)</span>
+</div>
+<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-50 border border-zinc-200/70 text-[11.5px] font-medium text-zinc-600">
+<span>Dernier run :</span>
+<span class="font-mono font-semibold text-zinc-800">01 Oct.</span>
+</div>
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50/80 border border-blue-200/60 text-[11.5px] font-semibold text-blue-800 ml-auto">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+      Pertinence Moyenne
+    </div>
+</div>
+</article>
+</main>
+<!-- END: ProgramList -->
+<!-- BEGIN: FloatingActionButton -->
+<div class="fixed bottom-20 right-5 z-20 max-w-md pointer-events-auto" data-purpose="floating-action-button-wrapper">
+<button aria-label="Ajouter un programme" class="w-[58px] h-[58px] rounded-full bg-[#2563EB] hover:bg-blue-700 text-white shadow-xl shadow-blue-500/35 flex items-center justify-center transition-transform active:scale-95 focus:outline-none">
+<svg class="w-7 h-7 stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 4.5v15m7.5-7.5h-15" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- END: FloatingActionButton -->
+<!-- BEGIN: BottomNavigationBar -->
+<nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-4 py-2 z-30" data-purpose="bottom-tab-bar">
+<div class="flex items-center justify-around h-14">
+<!-- Tab: Agent -->
+<a class="flex flex-col items-center justify-center w-16 text-slate-500 hover:text-slate-800 transition-colors" href="#">
+<svg class="w-6 h-6 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.974-.94 6.342 6.342 0 00.748-2.82C3.774 15.753 3 13.974 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[11px] font-medium mt-1">Agent</span>
+</a>
+<!-- Tab: Discovery (Active) -->
+<a class="flex flex-col items-center justify-center w-16 text-blue-600 transition-colors" href="#">
+<div class="w-14 h-8 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-0.5">
+<svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 21a9 9 0 100-18 9 9 0 000 18z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M14.828 9.172l-2.12 4.95a.5.5 0 01-.283.283l-4.95 2.12a.25.25 0 01-.322-.322l2.12-4.95a.5.5 0 01.283-.283l4.95-2.12a.25.25 0 01.322.322z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[11px] font-semibold text-blue-600">Discovery</span>
+</a>
+<!-- Tab: Focus -->
+<a class="flex flex-col items-center justify-center w-16 text-slate-500 hover:text-slate-800 transition-colors" href="#">
+<svg class="w-6 h-6 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="7.5" stroke-dasharray="2 2" stroke-linecap="round"></circle>
+<circle cx="12" cy="12" r="3"></circle>
+</svg>
+<span class="text-[11px] font-medium mt-1">Focus</span>
+</a>
+<!-- Tab: Plus -->
+<a class="flex flex-col items-center justify-center w-16 text-slate-500 hover:text-slate-800 transition-colors" href="#">
+<svg class="w-6 h-6 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[11px] font-medium mt-1">Plus</span>
+</a>
+</div>
+</nav>
+<!-- END: BottomNavigationBar -->
+</div>
+<!-- END: MainContainer -->
+</body></html>

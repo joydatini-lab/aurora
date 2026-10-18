@@ -1,0 +1,103 @@
+<!DOCTYPE html><html class="h-full" lang="fr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Sources — Discovery</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Font imports -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;700&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            display: ['Fraunces', 'serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#2563eb',
+              600: '#1d4ed8',
+              700: '#1d4ed8',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-scrollbars-and-reset">
+    /* Hide scrollbar for clean horizontal scrolling pills */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    
+    /* Touch optimization */
+    body {
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body class="bg-[#24292e] font-sans antialiased h-full w-full flex justify-center items-end sm:items-center overflow-x-hidden">
+<!-- Mobile Screen Frame Container -->
+<div class="relative w-full max-w-[430px] h-full sm:h-[932px] sm:max-h-[96vh] sm:rounded-[48px] overflow-hidden flex flex-col justify-end bg-slate-100 shadow-2xl">
+<!-- BEGIN: BackgroundReportContent -->
+<!-- Dimmed & overlaid parent screen content mimicking the underlying Eurocode 7 article -->
+<div aria-hidden="true" class="absolute inset-0 px-6 pt-12 pb-24 bg-[#e9ecef] opacity-60 pointer-events-none select-none flex flex-col justify-start filter blur-[0.2px]">
+<div class="text-[14px] text-gray-500 font-medium tracking-tight mb-3">
+        Veille Eurocode 7 2026 · mensuel
+      </div>
+<h1 class="text-[28px] leading-[1.18] font-bold text-gray-900 tracking-tight mb-4">
+        Eurocode 7 : la révision est validée, les fiches nationales arrivent
+      </h1>
+<p class="text-[17px] leading-snug text-gray-700">
+        La révision 2026 de l'Eurocode 7 est validée par le CEN/TC 205 et entrera en vigueur en janvier 2027.
+      </p>
+</div>
+<!-- END: BackgroundReportContent -->
+<!-- Backdrop Dimming Layer -->
+<div aria-hidden="true" class="absolute inset-0 bg-black/40 z-10 transition-opacity"></div>
+<!-- BEGIN: BottomSheetModal -->
+<section class="relative z-20 w-full bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.18)] flex flex-col max-h-[82%] sm:max-h-[85%] border-t border-gray-100" data-purpose="sources-bottom-sheet" role="dialog" aria-modal="true" aria-label="Menu des sources">
+<!-- Top Header & Controls Area -->
+<header class="pt-5 pb-3.5 px-6">
+<!-- Title and Close Action Button -->
+<div class="flex items-center justify-between">
+<h2 class="text-[23px] font-bold text-gray-900 tracking-tight">
+            Sources <span class="font-normal text-gray-700">·</span> 15
+          </h2>
+<!-- Close button -->
+<button aria-label="Fermer le menu des sources" class="text-blue-600 hover:text-blue-700 w-11 h-11 inline-flex items-center justify-center -mr-2 rounded-full hover:bg-blue-50/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600" type="button"><svg aria-hidden="true" class="w-6 h-6 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</div>
+<!-- BEGIN: FilterPills -->
+<!-- Horizontal scrollable list of filter pills -->
+<nav aria-label="Filtres de sources" class="flex gap-2.5 mt-4 overflow-x-auto no-scrollbar py-0.5"><button class="flex-shrink-0 min-h-[44px] px-4 py-2 rounded-full text-[14px] font-medium border border-blue-600 bg-[#eff6ff] text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600" type="button">Toutes</button><button class="flex-shrink-0 min-h-[44px] px-4 py-2 rounded-full text-[14px] font-medium border border-gray-300 text-gray-800 hover:bg-gray-50 active:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600" type="button">Haute</button><button class="flex-shrink-0 min-h-[44px] px-4 py-2 rounded-full text-[14px] font-medium border border-gray-300 text-gray-800 hover:bg-gray-50 active:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600" type="button">Moyenne</button><button class="flex-shrink-0 min-h-[44px] px-4 py-2 rounded-full text-[14px] font-medium border border-gray-300 text-gray-800 hover:bg-gray-50 active:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600" type="button">Ce mois-ci</button></nav>
+<!-- END: FilterPills -->
+</header>
+<!-- BEGIN: SourcesList -->
+<!-- Scrollable list of source citation entries -->
+<div class="overflow-y-auto divide-y divide-gray-100 flex-1 px-6"><article class="py-4 flex items-start gap-4" data-purpose="source-item"><span class="font-mono font-bold text-blue-600 text-[15px] pt-1 select-none">[13]</span><div class="flex-1 min-w-0 pr-1"><div class="flex items-start justify-between gap-2 mb-1"><h3 class="text-[15px] font-medium text-gray-900 leading-snug">Clôture de la consultation publique</h3><span class="inline-flex items-center px-2 py-0.5 rounded border border-blue-600 text-[11px] font-medium text-blue-600 leading-normal flex-shrink-0">Haute</span></div><p class="text-[13px] text-[#52525B] font-normal">CEN/TC 205 · 28/10/2026</p></div><a aria-label="Consulter la source [13] : Clôture de la consultation publique" class="w-11 h-11 inline-flex items-center justify-center text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 rounded-full flex-shrink-0 -mr-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600" href="#"><svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" stroke-linecap="round" stroke-linejoin="round"></path></svg></a></article><article class="py-4 flex items-start gap-4" data-purpose="source-item"><span class="font-mono font-bold text-blue-600 text-[15px] pt-1 select-none">[1]</span><div class="flex-1 min-w-0 pr-1"><div class="flex items-start justify-between gap-2 mb-1"><h3 class="text-[15px] font-medium text-gray-900 leading-snug">Projet de révision de l'Eurocode 7</h3><span class="inline-flex items-center px-2 py-0.5 rounded border border-blue-600 text-[11px] font-medium text-blue-600 leading-normal flex-shrink-0">Haute</span></div><p class="text-[13px] text-[#52525B] font-normal">CEN/TC 205 · 15/09/2026</p></div><a aria-label="Consulter la source [1] : Projet de révision de l'Eurocode 7" class="w-11 h-11 inline-flex items-center justify-center text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 rounded-full flex-shrink-0 -mr-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600" href="#"><svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" stroke-linecap="round" stroke-linejoin="round"></path></svg></a></article><article class="py-4 flex items-start gap-4" data-purpose="source-item"><span class="font-mono font-bold text-blue-600 text-[15px] pt-1 select-none">[2]</span><div class="flex-1 min-w-0 pr-1"><div class="flex items-start justify-between gap-2 mb-1"><h3 class="text-[15px] font-medium text-gray-900 leading-snug">Analyse des modifications du chapitre 5</h3><span class="inline-flex items-center px-2 py-0.5 rounded border border-blue-600 text-[11px] font-medium text-blue-600 leading-normal flex-shrink-0">Moyenne</span></div><p class="text-[13px] text-[#52525B] font-normal">Article technique</p></div><a aria-label="Consulter la source [2] : Analyse des modifications du chapitre 5" class="w-11 h-11 inline-flex items-center justify-center text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 rounded-full flex-shrink-0 -mr-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600" href="#"><svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" stroke-linecap="round" stroke-linejoin="round"></path></svg></a></article><article class="py-4 flex items-start gap-4" data-purpose="source-item"><span class="font-mono font-bold text-blue-600 text-[15px] pt-1 select-none">[14]</span><div class="flex-1 min-w-0 pr-1"><div class="flex items-start justify-between gap-2 mb-1"><h3 class="text-[15px] font-medium text-gray-900 leading-snug">Première fiche technique nationale : France (D4)</h3></div><p class="text-[13px] text-[#52525B] font-normal">Run 3 · 01/12/2026</p></div><a aria-label="Consulter la source [14] : Première fiche technique nationale : France (D4)" class="w-11 h-11 inline-flex items-center justify-center text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 rounded-full flex-shrink-0 -mr-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600" href="#"><svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" stroke-linecap="round" stroke-linejoin="round"></path></svg></a></article><article class="py-4 flex items-start gap-4" data-purpose="source-item"><span class="font-mono font-bold text-blue-600 text-[15px] pt-1 select-none">[15]</span><div class="flex-1 min-w-0 pr-1"><div class="flex items-start justify-between gap-2 mb-1"><h3 class="text-[15px] font-medium text-gray-900 leading-snug">Première fiche technique nationale : Allemagne (DAfStAL)</h3></div><p class="text-[13px] text-[#52525B] font-normal">Run 3 · 01/12/2026</p></div><a aria-label="Consulter la source [15] : Première fiche technique nationale : Allemagne (DAfStAL)" class="w-11 h-11 inline-flex items-center justify-center text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 rounded-full flex-shrink-0 -mr-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600" href="#"><svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" stroke-linecap="round" stroke-linejoin="round"></path></svg></a></article></div>
+<!-- END: SourcesList -->
+<!-- BEGIN: BottomSheetFooter -->
+<!-- Fixed bottom action bar -->
+<footer class="p-4 px-5 border-t border-gray-100 bg-white">
+<button class="w-full py-3.5 px-4 rounded-xl border border-blue-600 bg-white hover:bg-blue-50/50 active:bg-blue-50 text-blue-600 font-semibold text-[15px] tracking-tight transition-all duration-150 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2" type="button" aria-label="Copier toutes les références bibliographiques">
+          Copier les références
+        </button>
+</footer>
+<!-- END: BottomSheetFooter -->
+</section>
+<!-- END: BottomSheetModal -->
+</div>
+
+
+</body></html>

@@ -2723,7 +2723,7 @@ function GanttView({
                  pass: the control glides inward while a chip occupies its
                  band, because the chips' position IS their meaning and this
                  corner spot is merely a habit */
-              className="bg-background absolute end-[calc(0.75rem+var(--gantt-zoom-shift,0px))] bottom-5 z-40 flex flex-col rounded-md border shadow-sm transition-[inset-inline-end] duration-200"
+              className="bg-background absolute end-[calc(0.75rem+var(--gantt-zoom-shift,0px))] bottom-5 z-40 flex flex-col rounded-md border shadow-sm duration-200"
             >
               {/* aria-disabled instead of disabled: the not-allowed cursor
                   must still show at the zoom limits */}

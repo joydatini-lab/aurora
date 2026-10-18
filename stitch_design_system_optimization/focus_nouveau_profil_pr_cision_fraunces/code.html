@@ -1,0 +1,162 @@
+<!DOCTYPE html><html class="h-full bg-white" lang="fr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<title>Nouveau profil de focus</title>
+<!-- Tailwind CSS CDN with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Fraunces, Inter, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Fraunces', 'serif'],
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              DEFAULT: '#2563EB',
+              blue: '#2563EB',
+            },
+            neutral: {
+              subtle: '#F4F4F5',
+              border: '#E4E4E7',
+              muted: '#71717A',
+              dark: '#09090B'
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="base-styling">
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input[type="text"] {
+      outline: none;
+      box-shadow: none !important;
+    }
+    input[type="checkbox"]:focus {
+      outline: none;
+      box-shadow: none !important;
+    }
+  </style>
+</head>
+<body class="h-full bg-white text-neutral-dark font-sans antialiased flex flex-col justify-between">
+<!-- Main Scrollable Area -->
+<main class="flex-1 overflow-y-auto px-5 pt-8 pb-4">
+<!-- BEGIN: TopHeader -->
+<header class="flex items-center gap-3.5 mb-6" data-purpose="top-navigation-bar">
+<!-- Back Chevron Button -->
+<button aria-label="Retour" class="p-1 -ml-1 text-brand hover:opacity-80 transition-opacity" type="button">
+<svg class="w-6 h-6 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+<path d="M15.75 19.5L8.25 12l7.5-7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Title -->
+<h1 class="text-[25px] font-bold tracking-tight text-neutral-dark font-display leading-tight">
+        Nouveau profil de focus
+      </h1>
+</header>
+<!-- END: TopHeader -->
+<!-- Form Container -->
+<div class="space-y-6">
+<!-- BEGIN: TitleField -->
+<div class="space-y-2" data-purpose="title-input-field">
+<label class="block text-[15px] font-semibold text-neutral-dark" for="profile-title">
+          Titre
+        </label>
+<div class="relative">
+<input class="w-full h-[52px] px-4 text-base font-normal text-neutral-dark bg-white border border-neutral-border rounded-xl focus:border-brand focus:ring-0 transition-colors" id="profile-title" name="title" type="text" value="Étude profonde">
+</div>
+</div>
+<!-- END: TitleField -->
+<!-- BEGIN: MethodSegmentedControl -->
+<div class="space-y-2.5" data-purpose="method-selector">
+<span class="block text-xs font-semibold tracking-wider text-neutral-muted uppercase" style="color: rgb(82, 82, 91);">
+          MÉTHODE
+        </span>
+<div class="p-1 bg-white border border-neutral-border rounded-2xl flex items-center h-[52px]" role="radiogroup" aria-label="Méthode de focus">
+<!-- Active Tab: Pomodoro -->
+<button class="flex-1 h-full rounded-xl bg-brand text-white font-medium text-[15px] flex items-center justify-center shadow-sm transition-all" type="button" role="radio" aria-checked="true">
+            Pomodoro
+          </button>
+<!-- Inactive Tab: Chronomètre -->
+<button class="flex-1 h-full rounded-xl bg-transparent text-neutral-dark font-medium text-[15px] flex items-center justify-center hover:bg-neutral-50 transition-all" type="button" role="radio" aria-checked="false">
+            Chronomètre
+          </button>
+</div>
+</div>
+<!-- END: MethodSegmentedControl -->
+<!-- BEGIN: PomodoroSettingsCard -->
+<div class="bg-white border border-neutral-border rounded-2xl px-4 divide-y divide-neutral-100" data-purpose="durations-config-card">
+<!-- Row: Travail -->
+<div class="flex items-center justify-between py-3.5">
+<span class="text-[15px] font-normal text-neutral-dark">Travail</span>
+<span class="font-mono text-base font-normal tracking-tight text-neutral-dark">25 min</span>
+</div>
+<!-- Row: Pause courte -->
+<div class="flex items-center justify-between py-3.5">
+<span class="text-[15px] font-normal text-neutral-dark">Pause courte</span>
+<span class="font-mono text-base font-normal tracking-tight text-neutral-dark">5 min</span>
+</div>
+<!-- Row: Pause longue -->
+<div class="flex items-center justify-between py-3.5">
+<span class="text-[15px] font-normal text-neutral-dark">Pause longue</span>
+<span class="font-mono text-base font-normal tracking-tight text-neutral-dark">15 min</span>
+</div>
+<!-- Row: Sessions -->
+<div class="flex items-center justify-between py-3.5">
+<span class="text-[15px] font-normal text-neutral-dark">Sessions</span>
+<span class="font-mono text-base font-normal tracking-tight text-neutral-dark">4</span>
+</div>
+</div>
+<!-- END: PomodoroSettingsCard -->
+<!-- BEGIN: AssignedTaskSection -->
+<div class="space-y-2" data-purpose="assigned-task-field">
+<label class="block text-xs font-semibold tracking-wider text-neutral-muted uppercase" style="color: rgb(82, 82, 91);">
+          TÂCHE ASSIGNÉE (OPTIONNEL)
+        </label>
+<button class="w-full h-[52px] px-4 bg-white border border-neutral-border rounded-2xl flex items-center justify-between text-left active:bg-neutral-50 transition-colors" type="button">
+<span class="text-[15px] text-neutral-dark truncate font-normal">Réviser le chapitre 4 : flexion</span>
+<svg class="w-4 h-4 text-brand stroke-[2.5] flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<p class="text-xs text-neutral-muted pt-0.5" style="color: rgb(82, 82, 91);">
+          Le focus se lancera sur cette tâche.
+        </p>
+</div>
+<!-- END: AssignedTaskSection -->
+<!-- BEGIN: DisplayCheckboxCard -->
+<div class="bg-white border border-neutral-border rounded-2xl p-4 flex items-center justify-between" data-purpose="toggle-display-card">
+<label class="text-[15px] font-normal text-neutral-dark cursor-pointer select-none" for="display-focus">
+          Afficher sur la page Focus
+        </label>
+<input checked="" class="w-5 h-5 rounded text-brand border-neutral-300 focus:ring-0 focus:ring-offset-0 cursor-pointer" id="display-focus" type="checkbox" aria-checked="true" role="checkbox">
+</div>
+<!-- END: DisplayCheckboxCard -->
+</div>
+</main>
+<!-- BEGIN: BottomActionButtons -->
+<footer class="p-4 border-t border-neutral-border/60 bg-white flex gap-3 items-center pb-8" data-purpose="action-buttons-footer">
+<!-- Cancel Button -->
+<button class="px-6 h-[48px] rounded-xl border border-brand text-brand font-medium text-[15px] flex items-center justify-center hover:bg-blue-50 active:bg-blue-100 transition-colors" type="button" style="min-height: 44px;">
+      Annuler
+    </button>
+<!-- Submit Button -->
+<button class="flex-1 h-[48px] rounded-xl bg-brand text-white font-medium text-[15px] flex items-center justify-center shadow-sm hover:bg-blue-700 active:bg-blue-800 transition-colors" type="button" style="min-height: 44px;">
+      Créer le profil
+    </button>
+</footer>
+<!-- END: BottomActionButtons -->
+
+
+</body></html>

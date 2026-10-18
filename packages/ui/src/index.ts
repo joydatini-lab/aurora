@@ -739,7 +739,7 @@ export {
   useCarousel,
   CarouselContext,
 } from "./components/ui/carousel-base";
-export { EmptyState, type EmptyAvatar } from "./components/ui/empty-state";
+export { EmptyState, type EmptyAvatarProps } from "./components/ui/empty-state";
 
 
 // --- EventCalendar (@reui, lot 2026-10-12 — moteur riche de vues calendrier)

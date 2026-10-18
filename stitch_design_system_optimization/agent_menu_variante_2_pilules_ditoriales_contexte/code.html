@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>Aurora — Agent Menu d'action</title>
+<!-- Google Fonts: Fraunces & Plus Jakarta Sans & Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&amp;family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script data-purpose="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Fraunces', 'serif'],
+            sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              blue: '#0284C7',
+              dark: '#1C1D21',
+              muted: '#636A7E',
+              border: '#E8ECF2',
+              segmentBg: '#F3F5F9',
+            }
+          }
+        }
+      }
+    };
+  </script>
+<!-- Custom Styles for iOS Touch & Aesthetics -->
+<style data-purpose="custom-styling">
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .sheet-shadow {
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.18);
+    }
+  </style>
+</head>
+<body class="bg-[#8E9298] text-[#1C1D21] font-sans antialiased h-full flex flex-col justify-between overflow-hidden">
+<!-- BEGIN: BlurredBackgroundHeader -->
+<!-- Top Background bar imitating the underlying Aurora application header -->
+<header class="w-full pt-12 px-6 pb-4 flex items-center justify-between select-none opacity-80" data-purpose="app-header">
+<button aria-label="Menu" class="text-[#1A243B] p-1" type="button">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.2" viewbox="0 0 24 24">
+<line x1="3" x2="15" y1="8" y2="8"></line>
+<line x1="3" x2="21" y1="16" y2="16"></line>
+</svg>
+</button>
+<h1 class="font-serif text-xl font-semibold tracking-tight text-[#1A243B]">Aurora</h1>
+<div aria-hidden="true" class="w-6 h-6"></div>
+</header>
+<!-- END: BlurredBackgroundHeader -->
+<!-- BEGIN: BottomSheetModal -->
+<!-- Main interactive modal container -->
+<main class="w-full bg-white rounded-t-[28px] sheet-shadow flex flex-col pt-3 pb-8 px-6 transition-transform" data-purpose="action-menu-sheet">
+<!-- Drag Handle / Grabber Indicator -->
+<div class="w-full flex justify-center pb-5 pt-1" data-purpose="sheet-handle">
+<div class="w-12 h-1 bg-[#CBD3DF] rounded-full"></div>
+</div>
+<!-- BEGIN: ModeSection -->
+<section class="mb-6" data-purpose="mode-selector-section">
+<!-- Section Header with badge -->
+<div class="flex items-center justify-between mb-3">
+<h2 class="text-[12px] font-bold tracking-wider text-[#687082] uppercase">
+    MODE ACTUEL
+  </h2>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#F0FDF4] text-[#15803D] border border-[#DCFCE7]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse"></span>
+    Autonome
+  </span>
+</div>
+<!-- Variante 2 : Pilules Segmentées Éditoriales avec Chips & Badges de Contexte -->
+<nav aria-label="Sélection du mode" class="flex items-center gap-2">
+<!-- Pill Ask -->
+<button class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-full border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] active:scale-[0.98] transition-all" data-purpose="segment-ask" type="button">
+<!-- Question mark / chat icon -->
+<svg class="w-4 h-4 text-[#64748B]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+<line x1="12" x2="12.01" y1="17" y2="17"></line>
+</svg>
+<span class="text-[13.5px] font-medium tracking-tight">Ask</span>
+</button>
+<!-- Pill Agent (Actif) -->
+<button class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-full bg-[#0284C7] text-white shadow-sm ring-2 ring-[#0284C7]/20 active:scale-[0.98] transition-all" data-purpose="segment-agent" type="button">
+<!-- Sparkles / Compass icon -->
+<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"></path>
+</svg>
+<span class="text-[13.5px] font-semibold tracking-tight">Agent</span>
+<span class="w-1.5 h-1.5 rounded-full bg-white shadow-sm ml-0.5"></span>
+</button>
+<!-- Pill Miroir -->
+<button class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-full border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] active:scale-[0.98] transition-all" data-purpose="segment-miroir" type="button">
+<!-- Dual / Reflect Icon -->
+<svg class="w-4 h-4 text-[#64748B]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="9"></circle>
+<path d="M12 3v18"></path>
+<path d="M12 8l4 4-4 4"></path>
+</svg>
+<span class="text-[13.5px] font-medium tracking-tight">Miroir</span>
+</button>
+</nav>
+<!-- Contextual Explanatory Card with 2px solid #0284C7 border and soft background -->
+<div class="mt-3.5 bg-[#F8FAFC] border-l-2 border-[#0284C7] rounded-r-xl px-3.5 py-3 border-y border-r border-[#E2E8F0]/60" data-purpose="mode-description">
+<p class="text-[13px] leading-relaxed text-[#334155]">
+<span class="font-semibold text-[#0F172A]">Mode Agent actif :</span> j'agis en autonomie sur vos veilles normatives, votre calendrier et vos sessions de travail Focus.
+  </p>
+<div class="mt-2 flex items-center gap-2 pt-2 border-t border-[#E2E8F0]/80">
+<span class="w-1.5 h-1.5 rounded-full bg-[#0284C7]"></span>
+<span class="text-[12px] font-medium text-[#475569]">Prêt à agir • 2 intégrations actives</span>
+</div>
+</div>
+</section>
+<!-- END: ModeSection -->
+<!-- BEGIN: ActionListSection -->
+<section class="flex flex-col divide-y divide-[#F0F2F6]" data-purpose="action-items-list">
+<!-- Action 1: Importer un fichier -->
+<button class="w-full py-4 flex items-center text-left group active:opacity-70 transition-opacity" type="button">
+<div class="w-7 flex justify-start text-[#0284C7]">
+<!-- Paperclip Icon -->
+<svg class="w-5 h-5 -rotate-45" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+</svg>
+</div>
+<span class="flex-1 text-[16px] font-medium text-[#1C2029]">Importer ou joindre un fichier</span>
+</button>
+<!-- Action 2: Scanner un document -->
+<button class="w-full py-4 flex items-center text-left group active:opacity-70 transition-opacity" type="button">
+<div class="w-7 flex justify-start text-[#0284C7]">
+<!-- Camera Icon -->
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+<circle cx="12" cy="13" r="4"></circle>
+</svg>
+</div>
+<span class="flex-1 text-[16px] font-medium text-[#1C2029]">Scanner un document</span>
+</button>
+<!-- Action 3: Skills -->
+<button class="w-full py-4 flex items-center text-left group active:opacity-70 transition-opacity" type="button">
+<div class="w-7 flex justify-start text-[#0284C7]">
+<!-- Checkbox / Square Check Icon -->
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<polyline points="9 11 12 14 22 4"></polyline>
+<path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+</svg>
+</div>
+<span class="flex-1 text-[16px] font-medium text-[#1C2029]">Skills</span>
+<div class="flex items-center space-x-1.5 text-[#5F6777]">
+<span class="text-[14px] font-medium">4 installés</span>
+<svg class="w-4 h-4 text-[#8A93A4]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24">
+<polyline points="9 18 15 12 9 6"></polyline>
+</svg>
+</div>
+</button>
+<!-- Action 4: Intégrations -->
+<button class="w-full py-4 flex items-center text-left group active:opacity-70 transition-opacity" type="button">
+<div class="w-7 flex justify-start text-[#0284C7]">
+<!-- Plug Icon -->
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M12 22v-5"></path>
+<path d="M9 8V2"></path>
+<path d="M15 2v6"></path>
+<path d="M18 8H6a2 2 0 0 0-2 2v2a7 7 0 0 0 14 0v-2a2 2 0 0 0-2-2z"></path>
+</svg>
+</div>
+<span class="flex-1 text-[16px] font-medium text-[#1C2029]">Intégrations</span>
+<div class="flex items-center space-x-1.5 text-[#5F6777]">
+<span class="text-[14px] font-medium">2 connectées</span>
+<svg class="w-4 h-4 text-[#8A93A4]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24">
+<polyline points="9 18 15 12 9 6"></polyline>
+</svg>
+</div>
+</button>
+<!-- Action 5: Recherche web with Toggle -->
+<label class="w-full py-4 flex items-center justify-between cursor-pointer select-none" data-purpose="toggle-web-search">
+<div class="flex items-center">
+<div class="w-7 flex justify-start text-[#0284C7]">
+<!-- Globe Icon -->
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<line x1="2" x2="22" y1="12" y2="12"></line>
+<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+</svg>
+</div>
+<span class="text-[16px] font-medium text-[#1C2029]">Recherche web</span>
+</div>
+<!-- Toggle Switch Control -->
+<div class="relative inline-flex items-center">
+<input checked="" class="sr-only peer" id="web-search-toggle" type="checkbox"/>
+<div class="w-13 h-7 bg-[#E2E6EE] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:shadow-sm after:transition-all peer-checked:bg-[#0284C7]"></div>
+</div>
+</label>
+</section>
+<!-- END: ActionListSection -->
+</main>
+<!-- END: BottomSheetModal -->
+</body></html>

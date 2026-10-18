@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-white" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Aurora - Mode Agent</title>
+<!-- Google Fonts: Fraunces, Inter, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with forms & container queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            serif: ['Fraunces', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            },
+            surface: {
+              card: '#ffffff',
+              bubble: '#F4F4F5',
+              border: '#E4E4E7',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Styles for Mobile Shell and safe-areas -->
+<style data-purpose="custom-layout">
+    body {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .safe-top {
+      padding-top: env(safe-area-inset-top, 16px);
+    }
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    /* Subtle scrollbar */
+    ::-webkit-scrollbar {
+      width: 0px;
+      background: transparent;
+    }
+  </style>
+</head>
+<body class="h-full bg-white text-zinc-900 flex flex-col font-sans antialiased selection:bg-blue-100 selection:text-blue-700">
+<!-- BEGIN: MainHeader -->
+<header class="sticky top-0 z-20 bg-white/95 backdrop-blur-md px-5 pt-3 pb-3 border-b border-transparent flex items-center justify-between">
+<!-- Menu Hamburger Button -->
+<button aria-label="Menu" class="w-10 h-10 -ml-2 flex flex-col justify-center items-start gap-[5px] p-2 text-blue-600 focus:outline-none" type="button">
+<span class="w-5 h-[2px] bg-blue-600 rounded-full"></span>
+<span class="w-3.5 h-[2px] bg-blue-600 rounded-full"></span>
+</button>
+<!-- App Logo with Sparkle -->
+<div class="flex items-center gap-2" data-purpose="brand-logo">
+<!-- Blue Four-Point Star Icon -->
+<svg class="w-5 h-5 text-blue-600 fill-current" viewbox="0 0 24 24">
+<path d="M12 0C12 6.627 6.627 12 0 12C6.627 12 12 17.373 12 24C12 17.373 17.373 12 24 12C17.373 12 12 6.627 12 0Z"></path>
+</svg>
+<h1 class="font-serif text-xl font-bold tracking-tight text-zinc-950">Aurora</h1>
+</div>
+<!-- User Profile Button -->
+<button aria-label="Profil utilisateur" class="w-10 h-10 -mr-2 flex items-center justify-end p-2 text-blue-600 focus:outline-none" type="button">
+<svg class="w-6 h-6 stroke-current fill-none stroke-[1.75]" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+<circle cx="12" cy="7" r="4"></circle>
+</svg>
+</button>
+</header>
+<!-- END: MainHeader -->
+<!-- BEGIN: ChatThreadContainer -->
+<main class="flex-1 overflow-y-auto px-4 pt-3 pb-36 space-y-5" data-purpose="conversation-feed">
+<!-- User Prompt Message Bubble (Right aligned) -->
+<section aria-label="Message utilisateur" class="flex justify-end">
+<div class="bg-[#F4F4F5] text-zinc-900 rounded-[22px] px-5 py-3.5 max-w-[88%] text-[15.5px] leading-relaxed shadow-sm font-normal">
+        Surveille l'Eurocode 7 chaque mois, et mets-moi un Focus de 25 min jeudi.
+      </div>
+</section>
+<!-- Agent Response Stream -->
+<section aria-label="Réponse de l'agent" class="space-y-4">
+<!-- Meta Skill Badge -->
+<div>
+<span class="inline-flex items-center font-mono text-[11px] font-semibold tracking-wider text-blue-600 uppercase border border-blue-600 rounded-lg px-2.5 py-1">
+          SKILL · VEILLE NORMATIVE
+        </span>
+</div>
+<!-- Agent Message Text -->
+<p class="text-[16px] text-zinc-900 leading-normal tracking-normal font-normal">
+        Votre veille est créée. Pour le Focus, j'ai besoin de votre accord car il modifie votre agenda.
+      </p>
+<!-- Card 1: Veille créée (Information Card) -->
+<article class="bg-white border border-[#E4E4E7] rounded-2xl p-5 shadow-sm space-y-4" data-purpose="card-task-created">
+<!-- Title with Checkmark -->
+<div class="flex items-center gap-2.5 text-zinc-900">
+<svg class="w-5 h-5 text-blue-600 stroke-current stroke-[2.5] fill-none" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<polyline points="20 6 9 17 4 12"></polyline>
+</svg>
+<h2 class="font-bold text-[17px] tracking-tight">Veille créée</h2>
+</div>
+<!-- Task Metadata Info -->
+<p class="text-zinc-900 text-[15px] leading-relaxed">
+          Eurocode 7 2026 · le 1<sup>er</sup> du mois · prochain run 01/11/2026
+        </p>
+<!-- Secondary Actions -->
+<div class="flex items-center gap-3 pt-1">
+<button class="px-5 py-2.5 rounded-xl border border-blue-600 text-blue-600 font-medium text-[15px] hover:bg-blue-50 transition-colors focus:outline-none" type="button">
+            Modifier
+          </button>
+<button class="px-5 py-2.5 rounded-xl border border-blue-600 text-blue-600 font-medium text-[15px] hover:bg-blue-50 transition-colors focus:outline-none" type="button">
+            Voir le rapport
+          </button>
+</div>
+</article>
+<!-- Card 2: À Confirmer (Interactive Confirmation Card) -->
+<article class="bg-white border-2 border-blue-600 rounded-2xl p-5 shadow-sm space-y-4" data-purpose="card-action-confirmation">
+<!-- Status Tag -->
+<div>
+<span class="inline-block font-mono text-[11px] font-semibold text-blue-600 uppercase border border-blue-600 rounded-md px-2 py-0.5">
+            À CONFIRMER
+          </span>
+</div>
+<!-- Title -->
+<h2 class="font-bold text-zinc-950 text-[17px] tracking-tight">
+          Session Focus · 25 min
+        </h2>
+<!-- Event Spec Sheet -->
+<dl class="space-y-2 text-[15px]">
+<div class="flex items-baseline justify-between text-zinc-500">
+<dt class="w-16 flex-shrink-0">Quand</dt>
+<dd class="text-zinc-900 font-medium font-mono text-[14.5px] text-right">
+              Jeu. 22 oct.  ·  14:00
+            </dd>
+</div>
+<div class="flex items-baseline gap-4 text-zinc-500">
+<dt class="w-16 flex-shrink-0">Effet</dt>
+<dd class="text-zinc-900 font-normal">
+              Ajoute un événement à Google Agenda
+            </dd>
+</div>
+</dl>
+<!-- Action Buttons: Primary & Secondary outline -->
+<div class="flex items-center gap-3 pt-1">
+<button class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold text-[15px] shadow hover:bg-blue-700 active:scale-[0.99] transition text-center" type="button">
+            Confirmer
+          </button>
+<button class="flex-1 py-3 border border-blue-600 text-blue-600 rounded-xl font-semibold text-[15px] hover:bg-blue-50 active:scale-[0.99] transition text-center" type="button">
+            Refuser
+          </button>
+</div>
+</article>
+</section>
+</main>
+<!-- END: ChatThreadContainer -->
+<!-- BEGIN: BottomPromptBar -->
+<footer class="fixed bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-white via-white to-transparent pointer-events-none" data-purpose="footer-dock">
+<div class="pointer-events-auto max-w-lg mx-auto bg-white border border-[#E4E4E7] rounded-3xl p-3 shadow-xl">
+<!-- Input Placeholder Text -->
+<div class="px-2 pt-1 pb-2">
+<input class="w-full bg-transparent border-0 p-0 text-zinc-800 placeholder-zinc-500 text-[15px] focus:ring-0 focus:outline-none" placeholder="Demandez, ou tapez / pour un skill" type="text"/>
+</div>
+<!-- Controls and Submit Action Row -->
+<div class="flex items-center justify-between gap-1.5 pt-1">
+<!-- Left Tool Controls -->
+<div class="flex items-center gap-1.5">
+<!-- Add Attachment / Skill Button -->
+<button aria-label="Ajouter" class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-colors" type="button">
+<svg class="w-5 h-5 stroke-current stroke-[2] fill-none" viewbox="0 0 24 24">
+<line x1="12" x2="12" y1="5" y2="19"></line>
+<line x1="5" x2="19" y1="12" y2="12"></line>
+</svg>
+</button>
+<!-- Mode Selector Dropdown -->
+<button class="h-10 px-3 bg-blue-50 text-blue-600 font-semibold text-[14px] rounded-full flex items-center gap-1 hover:bg-blue-100 transition-colors" type="button">
+<span>Agent</span>
+<svg class="w-4 h-4 stroke-current stroke-[2] fill-none" viewbox="0 0 24 24">
+<polyline points="6 9 12 15 18 9"></polyline>
+</svg>
+</button>
+<!-- Web Search Mode Toggle -->
+<button aria-label="Web search" class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-colors" type="button">
+<svg class="w-4.5 h-4.5 stroke-current stroke-[1.8] fill-none" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<line x1="2" x2="22" y1="12" y2="12"></line>
+<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+</svg>
+</button>
+<!-- Automation Mode Pill Button -->
+<button class="h-10 px-3 border border-zinc-200 text-zinc-900 font-medium text-[13.5px] rounded-full flex items-center gap-1.5 hover:bg-zinc-50 transition-colors" type="button">
+<!-- Slider icon -->
+<svg class="w-4 h-4 stroke-current stroke-[1.8] fill-none" viewbox="0 0 24 24">
+<line x1="4" x2="20" y1="8" y2="8"></line>
+<line x1="4" x2="20" y1="16" y2="16"></line>
+<circle class="fill-white" cx="9" cy="8" r="2"></circle>
+<circle class="fill-white" cx="15" cy="16" r="2"></circle>
+</svg>
+<span>Auto</span>
+</button>
+</div>
+<!-- Voice / Microphone Action Button -->
+<button aria-label="Commande vocale" class="w-11 h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md hover:bg-blue-700 active:scale-95 transition" type="button">
+<svg class="w-5 h-5 stroke-current stroke-[2] fill-none" viewbox="0 0 24 24">
+<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+<path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+<line x1="12" x2="12" y1="19" y2="23"></line>
+<line x1="8" x2="16" y1="23" y2="23"></line>
+</svg>
+</button>
+</div>
+</div>
+</footer>
+<!-- END: BottomPromptBar -->
+</body></html>

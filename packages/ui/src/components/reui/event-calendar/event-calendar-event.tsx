@@ -503,7 +503,7 @@ function EventCalendarEvent<TData = unknown>({
             // a flat tint reads darker on a dark surface, so lift it there
             "dark:bg-(--ec-event-color)/20 dark:hover:bg-(--ec-event-color)/30",
             "inset-ring inset-ring-(--ec-event-color)/15",
-            "transition-[background-color,box-shadow] duration-150",
+            "transition-colors duration-150",
             "data-dragging:opacity-40",
             "data-selected:bg-(--ec-event-color)/30 data-selected:inset-ring-(--ec-event-color)/40",
             segment.continuesBefore && "rounded-s-none",

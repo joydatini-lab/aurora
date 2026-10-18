@@ -59,18 +59,23 @@ jobs:
         run: pnpm install
 
       # ----------------------------------------------------------------
-      # Diagnostics — le log du step ci-dessous est visible dans l'UI
-      # GitHub Actions (pas via l'API, qui exige admin). Chercher :
-      #   - "chromatic is not installed"  → npm step ci-dessous a échoué
-      #   - "project token" erreur        → secret CHROMATIC_PROJECT_TOKEN
-      #                                      vide/mal nommé dans
-      #                                      Settings → Secrets → Actions
-      #   - "build-storybook" failed      → build Vite (esbuild, OOM)
+      # Le CLI chromatic est installé localement (pas via chromaui/action)
+      # pour que le log complet soit lisible dans l'UI GitHub Actions.
+      # Il charge chromatic.config.js (storybookBuildDir:
+      # packages/ui/storybook-static) et lance le script racine
+      # build-storybook (pnpm --filter @aurora/ui build-storybook).
+      #
+      # Dialecte de debug si le run échoue : ouvrir le log du step
+      # "Run Chromatic" et chercher :
+      #   - "Missing project token"  → secret CHROMATIC_PROJECT_TOKEN
+      #     vide ou mal nommé dans Settings → Secrets → Actions
+      #   - "Storybook build failed" → build Vite (esbuild lock / OOM)
+      #   - "No stories found"       → glob .storybook/main.ts (stories)
       # ----------------------------------------------------------------
       - name: Install chromatic CLI
-        run: npm install --no-save chromatic@18.12.1
+        run: pnpm add -D chromatic@18.12.1
 
-      - name: Run Chromatic (local CLI, log lisible)
+      - name: Run Chromatic
         env:
           NODE_OPTIONS: --max-old-space-size=4096
-        run: npx chromatic --project-token="${{ secrets.CHROMATIC_PROJECT_TOKEN }}" --exit-on-zero
+        run: pnpm exec chromatic --project-token="${{ secrets.CHROMATIC_PROJECT_TOKEN }}" --exit-zero

@@ -20,6 +20,8 @@ import { cn } from "src/lib/utils";
 import { AppIcon, type IconKey } from "src/components/ui/AppIcon";
 import { Badge } from "src/components/ui/badge";
 import { Button } from "src/components/ui/button";
+import { useEditor, EditorContent } from "@tiptap/react";
+import { buildCanvasExtensions, type CanvasTiptapOptions } from "src/components/ui/tiptap-extensions";
 import {
   Dialog,
   DialogContent,
@@ -383,12 +385,17 @@ export function SlashCommandMenu({
 /* ------------------------------------------------------------------ */
 
 export interface TipTapEditorSurfaceProps {
-  /** Éditeur TipTap fourni par le parent (le composant ne gère pas TipTap). */
-  children?: React.ReactNode;
-  /** Contenu texte (pour le mode non-editable / fallback). */
+  /** Édition auto-portante (canvas-agentique) : le composant monte son propre
+   *  `useEditor` TipTap via `buildCanvasExtensions`. */
   content?: string;
-  /** Appelé quand on tape (fallback simple si pas d'enfant TipTap). */
+  /** Appelé à chaque frappe (le parent peut re-sérialiser en markdown). */
   onContentChange?: (content: string) => void;
+  /** Compat : éditeur TipTap injecté par le parent (prioritaire sur le mode
+   *  auto-portant). Garde les consommateurs existants (apps/mobile canvas)
+   *  fonctionnels pendant la migration Task 3bis. */
+  editorChildren?: React.ReactNode;
+  /** Optionnel : config avancée des extensions (mention / link / table). */
+  tiptapOptions?: CanvasTiptapOptions;
   /** Permet le menu « / ». */
   onSlashCommand?: (query: string, position: { top: number; left: number }) => void;
   slashOpen?: boolean;
@@ -396,27 +403,48 @@ export interface TipTapEditorSurfaceProps {
 }
 
 export function TipTapEditorSurface({
-  children,
   content,
   onContentChange,
+  editorChildren,
+  tiptapOptions,
   className,
 }: TipTapEditorSurfaceProps) {
+  // Mode auto-portant : le composant crée son éditeur TipTap (Task 3).
+  const autoEditor = useEditor(
+    {
+      extensions: buildCanvasExtensions(tiptapOptions),
+      content: content ?? "",
+      editorProps: {
+        attributes: {
+          class: "tiptap canvas-editor min-h-64 w-full resize-none bg-transparent text-sm leading-relaxed focus:outline-none",
+        },
+      },
+      onUpdate: ({ editor }) => {
+        onContentChange?.(editor.getHTML());
+      },
+      immediatelyRender: false,
+    },
+    [],
+  );
+
   return (
     <div
       data-slot="tiptap-editor-surface"
       className={cn(
         "relative flex-1 overflow-y-auto p-4",
-        className
+        className,
       )}
     >
-      {children ? children : null}
-      {onContentChange && content !== undefined && !children && (
-        <textarea
-          value={content}
-          onChange={(e) => onContentChange(e.target.value)}
-          placeholder="Commencez à écrire… utilisez « / » pour les commandes"
-          className="min-h-64 w-full resize-none bg-transparent text-sm leading-relaxed focus:outline-none"
-        />
+      {/* Priorité au parent (compat) */}
+      {editorChildren ? (
+        editorChildren
+      ) : autoEditor ? (
+        <EditorContent editor={autoEditor} />
+      ) : (
+        /* Fallback non-editable (si useEditor n'a pas encore monté) */
+        <div className="min-h-64 text-sm text-muted-foreground">
+          {content ?? ""}
+        </div>
       )}
     </div>
   );
@@ -871,9 +899,8 @@ export function CanvasView({
             <TipTapEditorSurface
               content={data.content}
               onContentChange={onContentChange}
-            >
-              {editorChildren}
-            </TipTapEditorSurface>
+              editorChildren={editorChildren}
+            />
             <SlashCommandMenu
               open={slashOpen}
               query={slashQuery}

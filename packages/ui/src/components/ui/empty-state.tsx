@@ -1,26 +1,18 @@
-// empty-state.tsx — état vide riche (Untitled UI v8 `empty-state`, option B)
-//
-// Ré-adapté : l'original importe des assets Untitled UI internes
-// (`@/components/foundations/featured-icon`, `@/components/shared-assets/...`,
-// `@untitledui/file-icons`, `@untitledui/icons`) que la batterie DS d'Aurora
-// n'a pas. On ne garde que la structure sémantique (contexte `RootContext`,
-// sous-composants `Title`/`Header`/`Content`/`Description`/`Footer` + les
-// variantes d'avatar) en reposant sur :
-//   - `AppIcon` (batterie DS, `components.json` `iconLibrary: lucide`) pour
-//     l'icône centrale, à la place de `FeaturedIconbase` + `SearchLg` ;
-//   - `empty.tsx` de la batterie pour le layout de base (`Empty`,
-//     `EmptyTitle`, …) — la version "riche" ici n'est qu'une couche
-//     optionnelle par-dessus (avatars, pattern, illustrations), jamais
-//     obligatoire.
-//
-// Zéro React-Aria, zéro `@untitledui/*` : ce composant est purement
-// présentationnel (contexte React + CSS), l'option B ne s'applique qu'à
-// `date-range-picker` (le seul vrai morceau React-Aria du lot).
+/**
+ * EmptyState — component d'état vide opérationnel
+ *
+ * Conçu selon les règles ReUI :
+ * - Empty state with action: titre (1-3 mots), description (~8 mots max), bouton d'action
+ * - Typographie sémantique: text-primary, text-muted-foreground
+ * - Espacement: gap-* sur les parents, grille 8pt
+ * - Couleurs: tokens sémantiques (bg-brand-secondary, text-success, etc.)
+ * - Compound component pattern: Root, Header, Content, Title, Description, Footer, AvatarRow, AvatarRadius
+ */
 import type { ComponentPropsWithRef, ReactNode } from "react";
 import { createContext, useContext } from "react";
 
 import { cn } from "src/lib/utils";
-import { AppIcon, type IconKey } from "./AppIcon";
+import { AppIcon, type IconKey, type IconSize } from "./AppIcon";
 import {
   Empty as EmptyBase,
   EmptyTitle,
@@ -37,13 +29,13 @@ interface RootContextProps {
   size?: "sm" | "md" | "lg";
 }
 
+export interface RootProps extends ComponentPropsWithRef<"div">, RootContextProps {}
+
 const RootContext = createContext<RootContextProps>({ size: "md" });
 
 /* ------------------------------------------------------------------ */
 /* Root                                                                */
 /* ------------------------------------------------------------------ */
-
-interface RootProps extends ComponentPropsWithRef<"div">, RootContextProps {}
 
 const Root = ({ size = "md", className, ...props }: RootProps) => (
   <RootContext.Provider value={{ size }}>
@@ -52,31 +44,34 @@ const Root = ({ size = "md", className, ...props }: RootProps) => (
 );
 
 /* ------------------------------------------------------------------ */
-/* Header (icône + contenu optionnel au-dessus du titre)               */
+/* Header (icône centrale, avatar row optionnel)                     */
 /* ------------------------------------------------------------------ */
 
-interface HeaderProps extends ComponentPropsWithRef<"div"> {
-  /** Icône centrale (clé de la batterie `AppIcon`, ex. `file`/`task`/…). */
+export interface HeaderProps extends ComponentPropsWithRef<"div"> {
+  /** Icône centrale (clé du registre `AppIcon`). */
   icon?: IconKey;
-  /** Teinte sémantique de l'icône (`AppIcon.tone` : `default`/`muted`/
-      `success`/`warning`/`danger`). */
+  /** Teinte sémantique de l'icône. */
   tone?: "default" | "muted" | "success" | "warning" | "danger";
-  /** Tailles de l'icône (`AppIcon` : `xs`/`sm`/`md`/`lg`). */
-  iconSize?: "xs" | "sm" | "md" | "lg";
-  /** Contenu additionnel (ex. un label) rendu sous l'icône. */
+  /** Taille de l'icône. Si non précisé, calculé selon la taille parent. */
+  iconSize?: IconSize;
+  /** Contenu additionnel (ex. AvatarRow). */
   children?: ReactNode;
 }
 
-const Header = ({ icon, tone, iconSize, children, className, ...props }: HeaderProps) => {
+const Header = ({ icon, tone = "muted", iconSize, children, className, ...props }: HeaderProps) => {
   const { size } = useContext(RootContext);
-  const resolvedIconSize = iconSize ?? (size === "sm" ? "md" : "lg");
+  // Logique d'adaptation de la taille de l'icône selon la taille de l'état vide
+  const resolvedIconSize: IconSize =
+    iconSize ?? (size === "sm" ? "sm" : size === "lg" ? "lg" : "md");
+
+  // aria-hidden: l'icône est décorative si pas d'enfants interactifs
+  const ariaHidden = children === undefined;
 
   return (
     <div
       data-slot="empty-state-header"
       className={cn(
-        "relative mb-3 flex flex-col items-center justify-center",
-        (size === "md" || size === "lg") && "mb-4",
+        "flex flex-col items-center justify-center gap-2",
         className
       )}
       {...props}
@@ -86,8 +81,7 @@ const Header = ({ icon, tone, iconSize, children, className, ...props }: HeaderP
           name={icon}
           size={resolvedIconSize}
           tone={tone}
-          className="mb-2"
-          aria-hidden
+          aria-hidden={ariaHidden ? true : undefined}
         />
       )}
       {children}
@@ -96,112 +90,235 @@ const Header = ({ icon, tone, iconSize, children, className, ...props }: HeaderP
 };
 
 /* ------------------------------------------------------------------ */
-/* Content / Footer / Title / Description (repose sur empty.tsx)       */
+/* Content                                                             */
 /* ------------------------------------------------------------------ */
 
-const Content = (props: ComponentPropsWithRef<"div">) => <EmptyContent {...props} />;
+export interface ContentProps extends ComponentPropsWithRef<"div"> {}
 
-const Footer = ({ className, ...props }: ComponentPropsWithRef<"div">) => (
-  <div data-slot="empty-state-footer" className={cn("z-10 flex gap-3", className)} {...props} />
+const Content = ({ className, ...props }: ContentProps) => {
+  const { size } = useContext(RootContext);
+  return (
+    <EmptyContent
+      data-slot="empty-state-content"
+      className={cn(
+        "flex w-full min-w-0 flex-col items-center gap-3 text-balance text-sm",
+        size === "sm" && "gap-2",
+        className
+      )}
+      {...props}
+    />
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/* Title                                                               */
+/* ------------------------------------------------------------------ */
+
+export interface TitleProps extends ComponentPropsWithRef<"h3"> {}
+
+const Title = ({ className, ...props }: TitleProps) => {
+  const { size } = useContext(RootContext);
+  return (
+    <EmptyTitle
+      data-slot="empty-state-title"
+      className={cn(
+        "text-lg font-medium tracking-tight text-primary",
+        size === "sm" && "text-base",
+        className
+      )}
+      {...props}
+    />
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/* Description                                                         */
+/* ------------------------------------------------------------------ */
+
+export interface DescriptionProps
+  extends ComponentPropsWithRef<"p"> {}
+
+const Description = ({ className, ...props }: DescriptionProps) => (
+  <EmptyDescription
+    data-slot="empty-state-description"
+    className={cn(
+      "text-sm text-muted-foreground [&>a:hover]:text-primary text-balance",
+      className
+    )}
+    {...props}
+  />
 );
 
-const Title = (props: ComponentPropsWithRef<"div">) => <EmptyTitle {...props} />;
-
-const Description = (props: ComponentPropsWithRef<"div">) => <EmptyDescription {...props} />;
-
 /* ------------------------------------------------------------------ */
-/* Avatar decorations (le motif "avatars concentriques/rows" de
-   l'original — ne repose QUE sur des <img>, pas d'asset Untitled UI)  */
+/* Footer                                                              */
 /* ------------------------------------------------------------------ */
 
-export interface EmptyAvatar {
-  src: string;
-  alt?: string;
+export interface FooterProps extends ComponentPropsWithRef<"div"> {}
+
+const Footer = ({ className, ...props }: FooterProps) => (
+  <div
+    data-slot="empty-state-footer"
+    className={cn("flex gap-2 justify-center", className)}
+    {...props}
+  />
+);
+
+/* ------------------------------------------------------------------ */
+/* AvatarRow (ligne d'avatars empilés)                                 */
+/* ------------------------------------------------------------------ */
+
+export interface AvatarProps {
+  /** URL de l'image. */
+  src?: string;
+  /** Nom pour l'accessibilité. */
+  alt: string;
+  /** Badge optionnel (ex. vérifié). */
+  badge?: ReactNode;
 }
 
-interface AvatarRowProps extends ComponentPropsWithRef<"div"> {
-  /** Avatars fanés de chaque côté du contenu central. */
-  avatars?: EmptyAvatar[];
-  /** Contenu central (ex. l'icône de l'état vide). */
-  children?: ReactNode;
+export interface AvatarRowProps extends ComponentPropsWithRef<"div"> {
+  /** Liste des avatars à afficher. */
+  avatars: AvatarProps[];
+  /** Nombre maximum d'avatars à afficher (reste Masqué avec +N). Par défaut: 3. */
+  maxVisible?: number;
+  /** Classe CSS additionnelle. */
+  className?: string;
 }
 
-const AvatarRow = ({ avatars = [], children, className, ...props }: AvatarRowProps) => {
-  const { size: rootSize } = useContext(RootContext);
-  const sizeKey = rootSize || "md";
-  // Du plus petit (bordure) vers le centre (plus grand).
-  const sizes =
-    sizeKey === "sm"
-      ? ["size-8 rounded-md", "size-9 rounded-[7px]", "size-10 rounded-lg", "size-11 rounded-[9px]"]
-      : sizeKey === "md"
-        ? ["size-10 rounded-lg", "size-11 rounded-[9px]", "size-12 rounded-[10px]"]
-        : ["size-10 rounded-lg", "size-11 rounded-[9px]", "size-12 rounded-[10px]"];
-
-  const count = sizes.length;
-  const leftAvatars = avatars.slice(0, count);
-  const rightAvatars = avatars.slice(count, count * 2);
-
-  const renderAvatar = (avatar: EmptyAvatar, sizeClass: string | undefined, key: number) => (
-    <div
-      key={key}
-      className={cn(
-        "relative shrink-0 overflow-hidden rounded-full ring-1 ring-black/10",
-        sizeClass,
-      )}
-    >
-      <img src={avatar.src} alt={avatar.alt || ""} className="size-full rounded-full object-cover" />
-    </div>
-  );
+const AvatarRow = ({
+  avatars,
+  maxVisible = 3,
+  className,
+  ...props
+}: AvatarRowProps) => {
+  const { size } = useContext(RootContext);
+  const visibleAvatars = avatars.slice(0, maxVisible);
+  const hiddenCount = Math.max(0, avatars.length - maxVisible);
 
   return (
     <div
-      aria-hidden="true"
+      data-slot="empty-state-avatar-row"
       className={cn(
-        "-m-1 flex items-center justify-center p-1",
-        sizeKey === "sm" ? "gap-4" : sizeKey === "md" ? "gap-5" : "gap-6",
+        "flex -space-x-2",
+        size === "sm" && "-space-x-1",
         className
       )}
       {...props}
     >
-      <div className={cn("flex items-center", sizeKey === "sm" ? "gap-2" : "gap-3")}>
-        {leftAvatars.map((a, i) => renderAvatar(a, sizes[i], i))}
-      </div>
-      {children}
-      <div className={cn("flex items-center", sizeKey === "sm" ? "gap-2" : "gap-3")}>
-        {rightAvatars.map((a, i) => renderAvatar(a, sizes[count - 1 - i], i + count))}
-      </div>
+      {visibleAvatars.map((avatar, index) => (
+        <EmptyAvatar
+          key={index}
+          src={avatar.src}
+          alt={avatar.alt}
+          badge={avatar.badge}
+          size={size}
+        />
+      ))}
+      {hiddenCount > 0 && (
+        <div
+          data-slot="empty-state-avatar-more"
+          className={cn(
+            "flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-muted text-xs font-medium text-muted-foreground",
+            size === "sm" && "h-6 w-6",
+          )}
+          aria-label={`${hiddenCount} autres membres masqués`}
+        >
+          +{hiddenCount}
+        </div>
+      )}
     </div>
   );
 };
 
-interface AvatarRadiusProps extends ComponentPropsWithRef<"div"> {
-  /** Avatars placés sur des cercles concentriques derrière l'état vide. */
-  avatars?: EmptyAvatar[];
+/* ------------------------------------------------------------------ */
+/* Avatar (composant interne pour AvatarRow)                           */
+/* ------------------------------------------------------------------ */
+
+export interface EmptyAvatarProps {
+  src?: string;
+  alt: string;
+  badge?: ReactNode;
+  size?: "sm" | "md" | "lg";
 }
 
-const AvatarRadius = ({ avatars = [], className, ...props }: AvatarRadiusProps) => (
+const EmptyAvatar = ({
+  src,
+  alt,
+  badge,
+  size = "md",
+}: EmptyAvatarProps) => {
+  const initials = alt
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  return (
+    <div
+      data-slot="empty-avatar"
+      className={cn(
+        "relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-gradient-to-br from-brand-100 to-brand-200",
+        size === "sm" && "h-6 w-6",
+        size === "lg" && "h-10 w-10",
+      )}
+      aria-label={alt}
+    >
+      {src ? (
+        <img
+          src={src}
+          alt={alt}
+          className={cn(
+            "h-full w-full rounded-full object-cover",
+            size === "sm" && "h-6 w-6",
+            size === "lg" && "h-10 w-10",
+          )}
+        />
+      ) : (
+        <span className="text-xs font-medium text-brand-700">
+          {initials}
+        </span>
+      )}
+      {badge && (
+        <div
+          data-slot="empty-avatar-badge"
+          className={cn(
+            "absolute -bottom-0 -right-0 flex h-4 w-4 items-center justify-center rounded-full bg-success text-white",
+            size === "sm" && "h-3 w-3",
+            size === "lg" && "h-5 w-5",
+          )}
+          aria-hidden="true"
+        />
+      )}
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/* AvatarRadius (bordure ronde personnalisée pour Avatar)              */
+/* ------------------------------------------------------------------ */
+
+export interface AvatarRadiusProps extends ComponentPropsWithRef<"div"> {
+  /** Rayon de bordure (pixels). Par défaut: 9999 (rond complet). */
+  radius?: number;
+  /** Contenu de l'avatar (image ou initiales). */
+  children: ReactNode;
+}
+
+const AvatarRadius = ({
+  radius = 9999,
+  children,
+  className,
+  style,
+  ...props
+}: AvatarRadiusProps) => (
   <div
-    aria-hidden="true"
-    className={cn(
-      "pointer-events-none relative flex size-40 items-center justify-center",
-      className
-    )}
+    data-slot="empty-avatar-radius"
+    className={cn("inline-flex", className)}
+    style={{ ...style, borderRadius: radius }}
     {...props}
   >
-    {avatars.slice(0, 3).map((a, i) => (
-      <img
-        key={i}
-        src={a.src}
-        alt=""
-        className={cn(
-          "absolute rounded-full ring-1 ring-black/10",
-          i === 0 ? "size-10" : i === 1 ? "size-8" : "size-6"
-        )}
-        style={{
-          transform: `translate(${i * 24 - 24}px, ${i % 2 === 0 ? -24 : 24}px)`,
-        }}
-      />
-    ))}
+    {children}
   </div>
 );
 
@@ -217,6 +334,7 @@ const EmptyState = Root as typeof Root & {
   Description: typeof Description;
   AvatarRow: typeof AvatarRow;
   AvatarRadius: typeof AvatarRadius;
+  EmptyAvatar: typeof EmptyAvatar;
 };
 
 EmptyState.Title = Title;
@@ -226,5 +344,6 @@ EmptyState.Content = Content;
 EmptyState.Description = Description;
 EmptyState.AvatarRow = AvatarRow;
 EmptyState.AvatarRadius = AvatarRadius;
+EmptyState.EmptyAvatar = EmptyAvatar;
 
 export { EmptyState };

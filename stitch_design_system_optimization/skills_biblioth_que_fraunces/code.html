@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-white" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>Skills — Bibliothèque</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Fraunces & Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Fraunces', 'serif'],
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              blue: '#2f65f6',
+              blueLight: '#eef3ff',
+              blueMuted: '#e8efff',
+              border: '#e4e7ed',
+              dark: '#0f172a',
+              amber: '#b45309',
+              amberBg: '#fef3c7',
+              graySub: '#525c76',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="base-layout">
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    
+    /* Support safe area insets on mobile devices */
+    .pt-safe {
+      padding-top: max(1rem, env(safe-area-inset-top));
+    }
+    .pb-safe {
+      padding-bottom: max(5rem, calc(4.5rem + env(safe-area-inset-bottom)));
+    }
+    .bottom-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  </style>
+</head>
+<body class="h-full bg-white text-slate-900 flex flex-col justify-between antialiased">
+<!-- BEGIN: MainContent -->
+<div class="flex-1 w-full max-w-md mx-auto px-5 pt-safe pb-safe" data-purpose="screen-container">
+<!-- BEGIN: TopHeader -->
+<header class="flex items-center justify-between mt-2 mb-5" data-purpose="header-section">
+<h1 class="font-serif font-bold text-3xl tracking-tight text-slate-950">Skills</h1>
+<button class="bg-[#2f65f6] hover:bg-[#2554d6] active:scale-95 transition-all text-white font-medium text-[15px] px-4 py-1.5 rounded-xl flex items-center shadow-sm" data-purpose="create-skill-button" type="button">
+<span>+ Créer</span>
+</button>
+</header>
+<!-- END: TopHeader -->
+<!-- BEGIN: SegmentedControl -->
+<div class="mb-5" data-purpose="tabs-segmented-control">
+<div class="grid grid-cols-2 p-1 bg-[#f1f3f8] rounded-xl border border-slate-200/50">
+<!-- Active Tab: Installés -->
+<button class="bg-[#2f65f6] text-white font-semibold text-sm py-2 rounded-lg text-center shadow-sm transition-all flex items-center justify-center space-x-1" data-purpose="tab-installed" type="button">
+<span>Installés • 6</span>
+</button>
+<!-- Inactive Tab: Parcourir -->
+<button class="text-slate-700 hover:text-slate-900 font-semibold text-sm py-2 rounded-lg text-center transition-colors flex items-center justify-center" data-purpose="tab-browse" type="button">
+<span>Parcourir</span>
+</button>
+</div>
+</div>
+<!-- END: SegmentedControl -->
+<!-- BEGIN: SkillCardsGrid -->
+<main class="grid grid-cols-2 gap-3.5" data-purpose="skills-grid">
+<!-- Card 1: Fiche de révision -->
+<article class="bg-white border border-[#e2e6ed] rounded-2xl p-4 flex flex-col justify-between shadow-[0_1px_3px_rgba(0,0,0,0.02)] min-h-[175px]">
+<div>
+<!-- Icon Container -->
+<div class="w-10 h-10 rounded-xl bg-[#ebf1fe] flex items-center justify-center text-[#2f65f6] mb-3">
+<svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<h2 class="font-bold text-[15px] text-slate-900 leading-snug tracking-tight mb-1">Fiche de révision</h2>
+<p class="text-xs text-[#525c76] leading-relaxed line-clamp-2">Structure un cours en fiche</p>
+</div>
+<div class="pt-3">
+<span class="inline-block px-2.5 py-0.5 rounded-md border border-[#2f65f6] text-[11px] font-semibold text-[#2f65f6] uppercase tracking-wider">INDEXÉ</span>
+</div>
+</article>
+<!-- Card 2: Rapport technique -->
+<article class="bg-white border border-[#e2e6ed] rounded-2xl p-4 flex flex-col justify-between shadow-[0_1px_3px_rgba(0,0,0,0.02)] min-h-[175px]">
+<div>
+<!-- Icon Container -->
+<div class="w-10 h-10 rounded-xl bg-[#ebf1fe] flex items-center justify-center text-[#2f65f6] mb-3">
+<svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<h2 class="font-bold text-[15px] text-slate-900 leading-snug tracking-tight mb-1">Rapport technique</h2>
+<p class="text-xs text-[#525c76] leading-relaxed line-clamp-2">Rédige avec sources numérotées</p>
+</div>
+<div class="pt-3">
+<span class="inline-block px-2.5 py-0.5 rounded-md border border-[#2f65f6] text-[11px] font-semibold text-[#2f65f6] uppercase tracking-wider">INDEXÉ</span>
+</div>
+</article>
+<!-- Card 3: Veille normative -->
+<article class="bg-white border border-[#e2e6ed] rounded-2xl p-4 flex flex-col justify-between shadow-[0_1px_3px_rgba(0,0,0,0.02)] min-h-[175px]">
+<div>
+<!-- Icon Container -->
+<div class="w-10 h-10 rounded-xl bg-[#ebf1fe] flex items-center justify-center text-[#2f65f6] mb-3">
+<svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm2.625-11.625-3.75 1.5-1.5 3.75 3.75-1.5 1.5-3.75Z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<h2 class="font-bold text-[15px] text-slate-900 leading-snug tracking-tight mb-1">Veille normative</h2>
+<p class="text-xs text-[#525c76] leading-relaxed line-clamp-2">Suit les normes et leur évolution</p>
+</div>
+<div class="pt-3">
+<span class="inline-block px-2.5 py-0.5 rounded-md border border-[#2f65f6] text-[11px] font-semibold text-[#2f65f6] uppercase tracking-wider">INDEXÉ</span>
+</div>
+</article>
+<!-- Card 4: Plan de semaine -->
+<article class="bg-white border border-[#e2e6ed] rounded-2xl p-4 flex flex-col justify-between shadow-[0_1px_3px_rgba(0,0,0,0.02)] min-h-[175px]">
+<div>
+<!-- Icon Container -->
+<div class="w-10 h-10 rounded-xl bg-[#ebf1fe] flex items-center justify-center text-[#2f65f6] mb-3">
+<svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<h2 class="font-bold text-[15px] text-slate-900 leading-snug tracking-tight mb-1">Plan de semaine</h2>
+<p class="text-xs text-[#525c76] leading-relaxed line-clamp-2">Répartit tâches et sessions Focus</p>
+</div>
+<div class="pt-3">
+<span class="inline-block px-2.5 py-0.5 rounded-md border border-[#a16207] text-[11px] font-semibold text-[#a16207] uppercase tracking-wider">NON INDEXÉ</span>
+</div>
+</article>
+<!-- Card 5: Explication Miroir -->
+<article class="bg-white border border-[#e2e6ed] rounded-2xl p-4 flex flex-col justify-between shadow-[0_1px_3px_rgba(0,0,0,0.02)] min-h-[175px]">
+<div>
+<!-- Icon Container -->
+<div class="w-10 h-10 rounded-xl bg-[#ebf1fe] flex items-center justify-center text-[#2f65f6] mb-3">
+<svg class="w-5 h-5 stroke-[2.2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8.25 9.75h-.375a3.375 3.375 0 1 0 0 6.75h.375m7.5-6.75h.375a3.375 3.375 0 1 1 0 6.75h-.375m-7.5-3.375h7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<h2 class="font-bold text-[15px] text-slate-900 leading-snug tracking-tight mb-1">Explication Miroir</h2>
+<p class="text-xs text-[#525c76] leading-relaxed line-clamp-2">Relance ciblée après une explication</p>
+</div>
+<div class="pt-3">
+<span class="inline-block px-2.5 py-0.5 rounded-md border border-[#2f65f6] text-[11px] font-semibold text-[#2f65f6] uppercase tracking-wider">INDEXÉ</span>
+</div>
+</article>
+<!-- Card 6: TD béton armé -->
+<article class="bg-white border border-[#e2e6ed] rounded-2xl p-4 flex flex-col justify-between shadow-[0_1px_3px_rgba(0,0,0,0.02)] min-h-[175px]">
+<div>
+<!-- Icon Container -->
+<div class="w-10 h-10 rounded-xl bg-[#ebf1fe] flex items-center justify-center text-[#2f65f6] mb-3">
+<svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<h2 class="font-bold text-[15px] text-slate-900 leading-snug tracking-tight mb-1">TD béton armé</h2>
+<p class="text-xs text-[#525c76] leading-relaxed line-clamp-2">Ma méthode de résolution pas à pas</p>
+</div>
+<div class="pt-3">
+<span class="inline-block px-2.5 py-0.5 rounded-md border border-[#2f65f6] text-[11px] font-semibold text-[#2f65f6] uppercase tracking-wider">PERSO</span>
+</div>
+</article>
+</main>
+<!-- END: SkillCardsGrid -->
+</div>
+<!-- END: MainContent -->
+<!-- BEGIN: BottomNavigation -->
+<nav class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 z-50 bottom-safe" data-purpose="bottom-navigation-bar">
+<div class="max-w-md mx-auto grid grid-cols-4 h-14 items-center px-2">
+<!-- Nav Item 1: Agent -->
+<button class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-800 transition-colors py-1" type="button">
+<svg class="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.74v6.02Z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[11px] font-medium mt-1">Agent</span>
+</button>
+<!-- Nav Item 2: Discovery -->
+<button class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-800 transition-colors py-1" type="button">
+<svg class="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="9"></circle>
+<path d="m14.25 9.75-3 1.5-1.5 3 3-1.5 1.5-3Z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[11px] font-medium mt-1">Discovery</span>
+</button>
+<!-- Nav Item 3: Focus -->
+<button class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-800 transition-colors py-1" type="button">
+<svg class="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="9"></circle>
+<circle cx="12" cy="12" r="4.5"></circle>
+<path d="M12 2.25v2.25m0 15v2.25M2.25 12h2.25m15 0h2.25" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[11px] font-medium mt-1">Focus</span>
+</button>
+<!-- Nav Item 4: Plus (Active State Pill) -->
+<button class="flex flex-col items-center justify-center text-[#2f65f6] py-1" type="button">
+<div class="bg-[#ebf1fe] px-4 py-0.5 rounded-full mb-0.5">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<circle cx="6" cy="12" r="1.75"></circle>
+<circle cx="12" cy="12" r="1.75"></circle>
+<circle cx="18" cy="12" r="1.75"></circle>
+</svg>
+</div>
+<span class="text-[11px] font-semibold">Plus</span>
+</button>
+</div>
+</nav>
+<!-- END: BottomNavigation -->
+</body></html>

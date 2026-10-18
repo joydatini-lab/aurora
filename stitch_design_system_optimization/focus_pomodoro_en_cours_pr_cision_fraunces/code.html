@@ -1,0 +1,171 @@
+<!DOCTYPE html><html class="h-full bg-white" lang="fr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<title>Focus — Pomodoro en cours</title>
+<!-- Google Fonts: Fraunces, Inter, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: '#2563EB',
+              blue: '#2563EB',
+              subtle: '#EEF2FF',
+            },
+            zinc: {
+              850: '#1e1e24',
+              950: '#09090B'
+            }
+          },
+          fontFamily: {
+            serif: ['Fraunces', 'serif'],
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom CSS for Circular Gauge and iOS Safe Areas -->
+<style data-purpose="custom-styling">
+    .ios-safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    .circular-progress {
+      transform: rotate(-90deg);
+    }
+  </style>
+</head>
+<body class="h-full bg-white font-sans text-zinc-950 antialiased selection:bg-blue-100 flex flex-col justify-between">
+<!-- BEGIN: MainContent -->
+<main class="w-full max-w-md mx-auto px-6 pt-12 pb-6 flex-1 flex flex-col justify-start">
+<!-- BEGIN: Header -->
+<header class="mb-6" data-purpose="header">
+<h1 class="font-serif font-bold text-[34px] leading-tight tracking-tight text-zinc-950">
+        Focus
+      </h1>
+</header>
+<!-- END: Header -->
+<!-- BEGIN: SegmentedControl -->
+<div class="p-1 rounded-[18px] border border-zinc-200/90 flex items-center justify-between gap-1 mb-8" data-purpose="mode-toggle" role="tablist" aria-label="Mode de minuterie">
+<!-- Active Segment: Pomodoro -->
+<button class="flex-1 py-3 bg-[#2563EB] text-white font-sans font-semibold text-[15px] rounded-xl text-center shadow-sm transition active:scale-[0.98]" type="button" role="tab" aria-selected="true">
+        Pomodoro
+      </button>
+<!-- Inactive Segment: Chronomètre -->
+<button class="flex-1 py-3 text-zinc-900 font-sans font-medium text-[15px] rounded-xl text-center transition hover:bg-zinc-50 active:scale-[0.98]" type="button" role="tab" aria-selected="false">
+        Chronomètre
+      </button>
+</div>
+<!-- END: SegmentedControl -->
+<!-- BEGIN: TimerGaugeSection -->
+<section class="flex flex-col items-center justify-center mb-7" data-purpose="circular-timer">
+<div class="relative w-[268px] h-[268px] flex items-center justify-center">
+<!-- SVG Circular Ring -->
+<svg class="circular-progress w-full h-full" viewBox="0 0 268 268" aria-hidden="true">
+<!-- Background Inactive Track -->
+<circle cx="134" cy="134" fill="none" r="118" stroke="#E4E4E7" stroke-linecap="round" stroke-width="12"></circle>
+<!-- Active Blue Progress Arc (~28% to 30% elapsed shown in reference) -->
+<!-- Circumference = 2 * PI * 118 ≈ 741.4 -->
+<!-- Dashoffset for ~28% progress = 741.4 * (1 - 0.28) ≈ 533.8 -->
+<circle cx="134" cy="134" fill="none" r="118" stroke="#2563EB" stroke-dasharray="741.4" stroke-dashoffset="533.8" stroke-linecap="round" stroke-width="12"></circle>
+</svg>
+<!-- Center Time & Session Info -->
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+<span class="font-mono font-bold text-[52px] leading-none text-zinc-950 tracking-tight mb-2" aria-label="Temps restant : 18 minutes 42 secondes" role="timer" aria-live="polite">
+            18:42
+          </span>
+<span class="font-sans font-medium text-[15px] text-[#52525B]" aria-label="Session actuelle : 2 sur 4">Session 2 sur 4</span>
+</div>
+</div>
+</section>
+<!-- END: TimerGaugeSection -->
+<!-- BEGIN: TaskDescription -->
+<div class="text-center mb-6" data-purpose="task-display">
+<p class="font-sans font-bold text-[17px] text-zinc-950">
+        Réviser le chapitre 4 : flexion
+      </p>
+</div>
+<!-- END: TaskDescription -->
+<!-- BEGIN: ActionButtons -->
+<div class="grid grid-cols-2 gap-3.5 mb-8" data-purpose="control-buttons">
+<!-- Pause Outline Button -->
+<button class="w-full py-3.5 border-2 border-[#2563EB] text-[#2563EB] font-sans font-semibold text-[17px] rounded-2xl flex items-center justify-center transition active:bg-blue-50/50" type="button" aria-label="Mettre en pause la session Pomodoro">
+        Pause
+      </button>
+<!-- Terminer Primary Button -->
+<button class="w-full py-3.5 bg-[#2563EB] text-white font-sans font-semibold text-[17px] rounded-2xl flex items-center justify-center transition active:bg-blue-700 shadow-sm" type="button" aria-label="Terminer la session Pomodoro">
+        Terminer
+      </button>
+</div>
+<!-- END: ActionButtons -->
+<!-- BEGIN: SummaryCard -->
+<section class="border border-zinc-200/90 rounded-2xl p-5 bg-white shadow-xs" data-purpose="session-statistics" aria-label="Statistiques et durées des pauses">
+<!-- Row 1: Pause courte -->
+<div class="flex items-center justify-between pb-4 border-b border-zinc-100">
+<span class="font-sans font-medium text-[16px] text-zinc-950">Pause courte</span>
+<span class="font-mono font-medium text-[16px] text-zinc-950 tracking-wider">5 min</span>
+</div>
+<!-- Row 2: Pause longue -->
+<div class="flex items-center justify-between py-4 border-b border-zinc-100">
+<span class="font-sans font-medium text-[16px] text-zinc-950">Pause longue</span>
+<span class="font-mono font-medium text-[16px] text-zinc-950 tracking-wider">15 min</span>
+</div>
+<!-- Row 3: Aujourd'hui -->
+<div class="flex items-center justify-between pt-4">
+<span class="font-sans font-medium text-[16px] text-zinc-950">Aujourd'hui</span>
+<span class="font-mono font-medium text-[16px] text-zinc-950">3 sessions · 1 h 15</span>
+</div>
+</section>
+<!-- END: SummaryCard -->
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: BottomNavigation -->
+<nav class="w-full border-t border-zinc-200/80 bg-white ios-safe-bottom" data-purpose="tab-bar" aria-label="Navigation principale">
+<div class="max-w-md mx-auto grid grid-cols-4 pt-2.5 pb-2">
+<!-- Tab: Agent -->
+<button class="flex flex-col items-center justify-center gap-1 text-zinc-500 hover:text-zinc-800 transition" type="button" aria-label="Agent">
+<svg class="w-6 h-6 stroke-[1.8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[11px] font-sans font-medium tracking-tight">Agent</span>
+</button>
+<!-- Tab: Discovery -->
+<button class="flex flex-col items-center justify-center gap-1 text-zinc-500 hover:text-zinc-800 transition" type="button" aria-label="Discovery">
+<svg class="w-6 h-6 stroke-[1.8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<circle cx="12" cy="12" r="9" stroke-linecap="round" stroke-linejoin="round"></circle>
+<polygon fill="currentColor" fill-opacity="0.1" points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" stroke-linecap="round" stroke-linejoin="round"></polygon>
+</svg>
+<span class="text-[11px] font-sans font-medium tracking-tight">Discovery</span>
+</button>
+<!-- Tab: Focus (Active) -->
+<button class="flex flex-col items-center justify-center gap-1 text-[#2563EB]" type="button" aria-current="page" aria-label="Focus (page actuelle)">
+<div class="px-5 py-1 rounded-full bg-blue-50 flex items-center justify-center">
+<svg class="w-6 h-6 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<circle cx="12" cy="12" r="9"></circle>
+<circle cx="12" cy="12" fill="currentColor" r="3"></circle>
+</svg>
+</div>
+<span class="text-[11px] font-sans font-bold tracking-tight text-[#2563EB]">Focus</span>
+</button>
+<!-- Tab: Plus -->
+<button class="flex flex-col items-center justify-center gap-1 text-zinc-500 hover:text-zinc-800 transition" type="button" aria-label="Plus d'options">
+<svg class="w-6 h-6 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<circle cx="6" cy="12" fill="currentColor" r="1.5"></circle>
+<circle cx="12" cy="12" fill="currentColor" r="1.5"></circle>
+<circle cx="18" cy="12" fill="currentColor" r="1.5"></circle>
+</svg>
+<span class="text-[11px] font-sans font-medium tracking-tight">Plus</span>
+</button>
+</div>
+</nav>
+<!-- END: BottomNavigation -->
+
+
+</body></html>

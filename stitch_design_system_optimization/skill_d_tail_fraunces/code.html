@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-white" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>Skill — Détail</title>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Fraunces, Inter & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<script data-purpose="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Fraunces', 'Georgia', 'serif'],
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Menlo', 'Courier New', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            },
+            neutral: {
+              850: '#1f242e',
+              900: '#0f172a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="base-styling">
+    body {
+      -webkit-tap-highlight-color: transparent;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* iOS Safe Area Inset Support */
+    .pb-safe {
+      padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+    }
+    .pt-safe {
+      padding-top: max(1rem, env(safe-area-inset-top));
+    }
+  </style>
+</head>
+<body class="h-full bg-white text-slate-900 font-sans selection:bg-brand-100 flex justify-center">
+<!-- Mobile Screen Container -->
+<div class="w-full max-w-md min-h-screen bg-white flex flex-col justify-between relative shadow-sm">
+<!-- Scrollable Content Container -->
+<div class="flex-1 pb-32">
+<!-- BEGIN: NavigationBar -->
+<nav aria-label="Navigation supérieure" class="pt-safe px-5 h-16 flex items-center justify-between">
+<!-- Back Button -->
+<button aria-label="Retour" class="p-2 -ml-2 text-brand-600 hover:bg-slate-50 active:scale-95 rounded-full transition-all" type="button">
+<svg class="w-6 h-6 stroke-[2.25]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.75 19.5L8.25 12l7.5-7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- More Options Menu Button -->
+<button aria-label="Plus d'actions" class="p-2 -mr-2 text-brand-600 hover:bg-slate-50 active:scale-95 rounded-full transition-all" type="button">
+<svg class="w-6 h-6 fill-current" viewbox="0 0 24 24">
+<circle cx="12" cy="5" r="1.75"></circle>
+<circle cx="12" cy="12" r="1.75"></circle>
+<circle cx="12" cy="19" r="1.75"></circle>
+</svg>
+</button>
+</nav>
+<!-- END: NavigationBar -->
+<!-- BEGIN: HeaderSection -->
+<header class="px-5 pt-2 pb-6">
+<!-- Icon Container -->
+<div class="w-14 h-14 rounded-2xl bg-[#eff5ff] flex items-center justify-center text-brand-600 mb-5 shadow-xs">
+<!-- Compass Icon -->
+<svg class="w-7 h-7 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="9"></circle>
+<polygon fill="currentColor" fill-opacity="0.1" points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" stroke-linejoin="round"></polygon>
+</svg>
+</div>
+<!-- Title -->
+<h1 class="font-serif text-[28px] sm:text-[30px] font-bold text-slate-950 tracking-tight leading-tight">
+          Veille normative
+        </h1>
+<!-- Status Badges -->
+<div class="flex items-center gap-2 mt-3" data-purpose="status-indicators">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold text-brand-600 border border-brand-500 tracking-wide">
+            INSTALLÉ
+          </span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold text-brand-600 border border-brand-500 tracking-wide">
+            INDEXÉ
+          </span>
+</div>
+</header>
+<!-- END: HeaderSection -->
+<!-- BEGIN: MainContent -->
+<main class="px-5 space-y-6">
+<!-- Active Switch Card -->
+<section aria-label="État du skill" class="w-full">
+<div class="flex items-center justify-between px-4 py-3.5 rounded-2xl border border-slate-200/90 shadow-[0_1px_2px_rgba(0,0,0,0.03)] bg-white">
+<span class="text-[16px] font-normal text-slate-900 tracking-tight">Actif pour l'agent</span>
+<!-- iOS-style Switch Toggle Button -->
+<label class="relative inline-flex items-center cursor-pointer select-none">
+<input aria-label="Activer ou désactiver pour l'agent" checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-[50px] h-[30px] bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-[20px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2.5px] after:left-[2.5px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-[25px] after:w-[25px] after:transition-all peer-checked:bg-brand-600 peer-checked:after:border-none shadow-inner"></div>
+</label>
+</div>
+</section>
+<!-- Context Description Section -->
+<section class="space-y-2" data-purpose="usage-context">
+<h2 class="text-[12px] font-semibold tracking-wider text-slate-500 uppercase">
+            Quand l'utiliser
+          </h2>
+<p class="text-[15.5px] text-slate-800 leading-relaxed font-normal">
+            Quand je demande de suivre une norme, une révision ou un texte réglementaire.
+          </p>
+</section>
+<!-- Instructions Code Block Section -->
+<section class="space-y-2" data-purpose="skill-instructions">
+<h2 class="text-[12px] font-semibold tracking-wider text-slate-500 uppercase">
+            Instructions
+          </h2>
+<div class="p-4 rounded-xl border border-slate-200/90 bg-white">
+<pre class="font-mono text-[13.5px] leading-relaxed text-slate-800 whitespace-pre font-normal tracking-tight">Lis d'abord le vault.
+Ne cherche que le delta.
+Cite chaque source avec sa crédibilité.</pre>
+</div>
+</section>
+<!-- Used Tools Tags Section -->
+<section class="space-y-2" data-purpose="tools-used">
+<h2 class="text-[12px] font-semibold tracking-wider text-slate-500 uppercase">
+            Utilise
+          </h2>
+<div class="flex flex-wrap gap-2.5">
+<span class="inline-flex items-center px-3.5 py-1.5 rounded-lg border border-slate-200 text-[14px] text-slate-700 font-normal">
+              Recherche web
+            </span>
+<span class="inline-flex items-center px-3.5 py-1.5 rounded-lg border border-slate-200 text-[14px] text-slate-700 font-normal">
+              Discovery
+            </span>
+</div>
+</section>
+<!-- Manual Command Callout -->
+<section class="space-y-2" data-purpose="manual-call">
+<h2 class="text-[12px] font-semibold tracking-wider text-slate-500 uppercase">
+            Appel manuel
+          </h2>
+<p class="font-mono text-[15px] text-slate-800">
+            /veille-normative
+          </p>
+</section>
+</main>
+<!-- END: MainContent -->
+</div>
+<!-- BEGIN: BottomActionBar -->
+<div class="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-100 pb-safe px-5 pt-3">
+<div class="max-w-md mx-auto grid grid-cols-2 gap-3.5">
+<!-- Secondary Button: Uninstall -->
+<button class="w-full h-12 rounded-xl border border-brand-600 text-brand-600 font-medium text-[15px] hover:bg-brand-50 active:scale-[0.98] transition-all flex items-center justify-center" type="button">
+          Désinstaller
+        </button>
+<!-- Primary Button: Edit -->
+<button class="w-full h-12 rounded-xl bg-brand-600 text-white font-medium text-[15px] shadow-sm hover:bg-brand-700 active:scale-[0.98] transition-all flex items-center justify-center" type="button">
+          Modifier
+        </button>
+</div>
+</div>
+<!-- END: BottomActionBar -->
+</div>
+</body></html>
