@@ -33,8 +33,38 @@
  * signatures) kept local so this package's `tsconfig` (references only
  * `@aurora/domain`) typechecks standalone — the two stay in sync by
  * the AD-15 "one contract, no drift" review, not by an import edge.
+ *
+ * S8.0 (plan 2026-10-17): NO static `node:crypto` import. This
+ * package's index re-exports this module and the mobile app bundles
+ * the package — a static `import { createHash } from 'node:crypto'`
+ * therefore reaches the mobile `vite build:web` and hard-fails: Vite
+ * externalizes `node:` builtins as `__vite-browser-external`, which
+ * exports neither `createHmac` nor `createHash`. The module is
+ * EF-side only (AD-3: presigning happens in the EF; the device ever
+ * holds a short-TTL URL, never credentials), so in the browser bundle
+ * `_loadNodeCrypto` resolves to `undefined` and any R2 call throws at
+ * use time instead of at import time. In the node runtime (Supabase
+ * EF, the `node --experimental-strip-types` test runner, plain `node`
+ * ESM) `import.meta.resolve('node:crypto')` resolves and a dynamic
+ * `import()` yields the real builtin.
  */
-import { createHmac, createHash } from 'node:crypto';
+async function _loadNodeCrypto(): Promise<typeof import('node:crypto')> {
+  // `import.meta.resolve` is a bare-specifier resolver available in
+  // every Node ≥ 20.6 ESM context (incl. strip-types) and in the
+  // browser (returns a shim URL — the dynamic import then either
+  // yields the external module or throws, both caught below). A bare
+  // `await import('node:crypto')` in browser source throws
+  // "Uncaught [module] not found", so the URL form keeps the browser
+  // path degrading instead of crashing the bundle at import time.
+  try {
+    const url: string = import.meta.resolve('node:crypto');
+    return await import(url);
+  } catch {
+    // browser bundle: degrade — EF-side only (AD-3). Every R2 call
+    // then throws at use time, which the app never does.
+    return {} as typeof import('node:crypto');
+  }
+}
 
 // ——— The SSoT contract (structural copy of R2StoragePort, AD-15) ———
 
@@ -133,12 +163,32 @@ export class R2NotConfiguredError extends Error {
 const R2_SIGV4_REGION = 'us-east-1';
 const R2_SIGV4_SERVICE = 's3';
 
-function sha256Hex(input: string): string {
-  return createHash('sha256').update(input).digest('hex');
+function _cryptoGuard(c: typeof import('node:crypto') | undefined, fn: 'createHash' | 'createHmac'): asserts c {
+  if (!c?.[fn]) {
+    throw new Error(
+      'R2 node:crypto unavailable in this runtime (browser bundle — AD-3: presigning is EF-side only)',
+    );
+  }
+}
+
+/**
+ * SHA-256 hex via `node:crypto` (loaded lazily — see `_loadNodeCrypto`
+ * and the S8.0 note). Async: the dynamic `import` is the only path that
+ * works in BOTH the strip-types node ESM context and the browser
+ * degrade path. Callers are already async (EF handlers, the test
+ * suite).
+ */
+async function sha256Hex(input: string): Promise<string> {
+  const c = await _loadNodeCrypto();
+  _cryptoGuard(c, 'createHash');
+  return c!.createHash('sha256').update(input).digest('hex');
 }
 
 /** The HMAC-SHA256 derived-key chain (the 4 SigV4 steps, synchronous node:crypto). */
-function deriveSigningKey(secret: string, dateStamp: string): string {
+async function deriveSigningKey(secret: string, dateStamp: string): Promise<string> {
+  const c = await _loadNodeCrypto();
+  _cryptoGuard(c, 'createHmac');
+  const createHmac = c!.createHmac;
   const hmacHex = (key: string, msg: string) =>
     createHmac('sha256', key).update(msg).digest('hex');
   const kDate = hmacHex(`AWS4${secret}`, dateStamp);
@@ -153,11 +203,15 @@ function deriveSigningKey(secret: string, dateStamp: string): string {
  * `ttlSec` = the `X-Amz-Expires` value. This is the ONLY surface a
  * device ever holds (a bounded-TTL URL, AD-3 — never the raw
  * credential).
+ *
+ * S8.0: async (the lazy `node:crypto` loader is async — see the file
+ * header). Every caller in this module + the EF + the round-trip test
+ * is already on a `Promise` path.
  */
-export function presignR2Url(
+export async function presignR2Url(
   source: R2CredentialSource,
   opts: { method: 'GET' | 'PUT' | 'HEAD'; bucket: string; key: string; ttlSec: number },
-): string {
+): Promise<string> {
   const { method, bucket, key, ttlSec } = opts;
   const { accessKey, secretKey, endpoint } = source;
 
@@ -186,18 +240,20 @@ export function presignR2Url(
     `${params.toString()}&X-Amz-Signature=UNSIGNED`,
     `host:${host}\n`,
     'host',
-    sha256Hex(''),
+    await sha256Hex(''),
   ].join('\n');
 
   const stringToSign = [
     'AWS4-HMAC-SHA256',
     amzDate,
     credentialScope,
-    sha256Hex(canonicalRequest),
+    await sha256Hex(canonicalRequest),
   ].join('\n');
 
-  const signingKey = deriveSigningKey(secretKey, dateStamp);
-  const signature = createHmac('sha256', signingKey).update(stringToSign).digest('hex');
+  const signingKey = await deriveSigningKey(secretKey, dateStamp);
+  const c = await _loadNodeCrypto();
+  _cryptoGuard(c, 'createHmac');
+  const signature = c!.createHmac('sha256', signingKey).update(stringToSign).digest('hex');
 
   return `${endpoint}/${bucket}/${encodedKey}?${params.toString()}&X-Amz-Signature=${signature}`;
 }
@@ -239,7 +295,7 @@ export class R2StorageAdapter implements R2StoragePort {
     ttlSec: number = R2_PRESIGN_TTL_UPLOAD_SEC,
   ): Promise<R2UploadPlan> {
     this.assertConfigured();
-    const uploadUrl = presignR2Url(this.source, {
+    const uploadUrl = await presignR2Url(this.source, {
       method: 'PUT',
       bucket: this.source.artifactsBucket,
       key: r2Key,
@@ -250,7 +306,7 @@ export class R2StorageAdapter implements R2StoragePort {
 
   async head(r2Key: string): Promise<{ sizeBytes: number; contentType?: string }> {
     this.assertConfigured();
-    const url = presignR2Url(this.source, {
+    const url = await presignR2Url(this.source, {
       method: 'HEAD',
       bucket: this.source.artifactsBucket,
       key: r2Key,

@@ -54,9 +54,11 @@ test('r2: unconfigured adapter → R2NotConfiguredError (AD-1 degradation)', asy
 /**
  * SigV4 presigning shape: the query string carries every X-Amz-* param
  * + the host-scoped credential + a 64-hex `X-Amz-Signature`.
+ * S8.0: `presignR2Url` is async (the lazy `node:crypto` loader — see
+ * the module header), so the tests await it.
  */
-test('r2: presignR2Url produces a SigV4 query-signed URL', () => {
-  const url = presignR2Url(FULL_SOURCE, {
+test('r2: presignR2Url produces a SigV4 query-signed URL', async () => {
+  const url = await presignR2Url(FULL_SOURCE, {
     method: 'GET',
     bucket: FULL_SOURCE.artifactsBucket,
     key: 'prod/u-1/knowledge/2026/10/14/01AX_sample.pdf',
@@ -78,8 +80,8 @@ test('r2: presignR2Url produces a SigV4 query-signed URL', () => {
  * same secret are identical (the SigV4 spec's property — what makes
  * the scheme verifiable server-side without a shared secret replay).
  */
-test('r2: presignR2Url is deterministic for a fixed instant', () => {
-  const a = presignR2Url(FULL_SOURCE, {
+test('r2: presignR2Url is deterministic for a fixed instant', async () => {
+  const a = await presignR2Url(FULL_SOURCE, {
     method: 'PUT',
     bucket: FULL_SOURCE.artifactsBucket,
     key: 'prod/u-1/artifact/2026/10/14/01AY_x.pdf',

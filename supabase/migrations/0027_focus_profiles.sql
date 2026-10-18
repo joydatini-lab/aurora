@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS public.focus_profiles (
     rest_minutes int NOT NULL DEFAULT 5 CHECK (rest_minutes >= 0),
     rounds      int NOT NULL DEFAULT 1 CHECK (rounds >= 1),
     task_id     uuid, -- FK logique vers tasks (0002, non schema-qualifié) ON DELETE SET NULL
+    -- S5 M-52 : affichage sur la page Focus (un profil masqué reste utilisable)
+    display_on_focus_page boolean NOT NULL DEFAULT true,
     created_at  timestamptz NOT NULL DEFAULT now(),
     updated_at  timestamptz NOT NULL DEFAULT now()
 );

@@ -6,5 +6,12 @@
   "include": [
     "capacitor.config.ts"
   ],
+  "files": [
+    /* M-62 (S6) : le shim .tsx + le module .ts sont listés dans le projet
+       principal (tsconfig.json) — le projet capacitor ne typecheck PAS
+       src/, il ne couvre que capacitor.config.ts. Ne pas re-listez ici
+       sinon le composite hérité pousse les .aui de packages/ui hors
+       rootDir (TS6059/TS6307 en cascade). */
+  ],
   "references": []
 }

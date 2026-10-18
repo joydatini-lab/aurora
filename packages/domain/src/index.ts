@@ -79,6 +79,12 @@ export interface FocusProfile {
   rounds: number;
   /** tâche Q11 liée (FK tasks, 0002, NULL = pas de tâche, 0027). */
   taskId?: string;
+  /**
+   * Affichage sur la page Focus (S5 M-52) : un profil peut être masqué de
+   * la liste de l'écran 9 tout en restant utilisable (lancement direct,
+   * session, …). Défaut `true` = affiché.
+   */
+  displayOnFocusPage?: boolean;
   createdAt: string;
   updatedAt: string;
 }

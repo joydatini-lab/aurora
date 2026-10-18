@@ -33,7 +33,6 @@ import type { FocusSessionOptions } from '@aurora/focus';
  */
 export type { FocusProfileDomain as FocusProfile };
 export type { FocusMethod } from '@aurora/domain';
-export type { FocusProfile };
 
 /** Le miroir local du profil (AD-7 : single-writer = ce module). */
 const ENTITY = 'focus_profiles';
@@ -69,7 +68,7 @@ type RawRow = Record<string, unknown>;
 
 function toRow(p: FocusProfileDomain): LocalRow {
   const nowIso = p.updatedAt || p.createdAt || new Date().toISOString();
-  return {
+  const row = {
     id: p.id,
     user_id: p.userId,
     name: p.name,
@@ -78,11 +77,13 @@ function toRow(p: FocusProfileDomain): LocalRow {
     rest_minutes: p.restMinutes,
     rounds: p.rounds,
     task_id: p.taskId ?? null,
+    display_on_focus_page: p.displayOnFocusPage ?? true,
     created_at: p.createdAt,
     updated_at: nowIso,
     local_mutation_id: p.id,
     local_ts_ms: Date.now(),
-  } as LocalRow;
+  };
+  return row as unknown as LocalRow;
 }
 
 /** row miroir snake_case → entité domain camelCase (le shape SSoT). */
@@ -104,6 +105,8 @@ function fromRow(row: LocalRow | undefined): FocusProfileDomain | undefined {
     restMinutes: num(r.rest_minutes),
     rounds: num(r.rounds),
     taskId: r.task_id == null ? undefined : String(r.task_id),
+    displayOnFocusPage:
+      r.display_on_focus_page == null ? true : r.display_on_focus_page === true,
     createdAt: str(r.created_at) ?? '',
     updatedAt: str(r.updated_at) ?? str(r.created_at) ?? '',
   };

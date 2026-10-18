@@ -89,7 +89,7 @@ import { parseSkillSlashCall, withForcedSkill, type SkillCandidate } from './ski
 // .tsx est un shim temporaire, S6 le supprimera + le composant vivra
 // dans le .ts final).
 import { MirrorFindingsCard } from '../../components/agent/mirror-findings-card.tsx';
-import type { MirrorCardFinding } from '../../components/agent/mirror-findings-card';
+import type { MirrorCardFinding } from '../../components/agent/mirror-findings-card.tsx';
 
 // ——— Model picker catalog (AD-3: static, public config — no key here). ———
 const MODEL_CATALOG: Array<{ provider: string; name: string; models: string[] }> = [

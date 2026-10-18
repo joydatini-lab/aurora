@@ -335,13 +335,44 @@ indexés + appel `/` ; bibliothèque de skills au design v2 ; tests verts.
 
 ## S3 — Intégrations (L) — écran 7
 
-**M-31 Page Intégrations v2 (écran 7)** : Connectées (Google Agenda lecture +
-écriture, Google Docs lecture + création — chaque ligne mène aux
-permissions) ; Disponibles (Drive, Gmail, Notion — bouton « Connecter ») ;
-rappel « chaque écriture demande confirmation » ; AD-3 (aucune clé sur
-l'appareil, auth serveur). C'est la page `pages/integrations/index.tsx`
-existante (Composio, `integrations-client.ts`) à restructurer (connectées /
-disponibles + permissions par service, Q6).
+**Règle logo (gelée S3) : les intégrations s'affichent avec le LOGO de l'app
+concernée — jamais d'icône hardcodée.** Source du logo :
+- SSoT : la métadonnée du toolkit Composio — le champ `image_url` (ou `logo`)
+  du toolkit, lu au runtime via le nouveau verb **`browse_integrations`**
+  (voir M-34) : chaque ligne du catalog = `{ app (toolkit_slug), name,
+  logoUrl, defaultOn? }`.
+- Fallback strict : si `logoUrl` est absent/`null` OU si l'image échoue à
+  charger (`onError`), afficher une pastille initiale (les 2 premières
+  lettres de `name`, fond `#EAF0FF`, texte `#2F5BEA`) — jamais un
+  `lucide` brand icon, jamais un asset local par app.
+- **Interdiction** : tout asset `assets/*logo*.png` par app intégration,
+  toute table statique `app → icône lucide` hardcodée. Le statique existe
+  UNIQUEMENT pour le preset par défaut (noms + `defaultOn`, ci-dessous) —
+  les logos viennent TOUJOURS du live catalog.
+
+**M-31 Page Intégrations v2 (écran 7)** :
+- **Section « Recommandées » (le preset par défaut, SSoT
+  `INTEGRATION_CATALOG` de `pages/integrations/data.ts`)** : TOUT le Google
+  Workspace — Gmail, Google Calendar (Agenda, 1ᵉʳ branché M-33), Google
+  Docs, Google Drive, Google Sheets, Google Slides — + une courte liste
+  prod : Notion, Slack, GitHub (le reste est accessible via M-34,
+  jamais par ce preset).
+- **Section « Connectées »** : les comptes live `state === 'connected'`
+  ( lus `listAccounts()`, AD-3 — jamais depuis l'appareil ) ; chaque ligne
+  mène aux PERMISSIONS du service.
+- **Section « Parcourir les intégrations » (M-34)** : une recherche
+  (input, filtrage live local sur le catalog `browse_integrations` +
+  bouton « Recharger » si le client EF est live) sur le CATALOG COMPLET
+  Composio ; chaque résultat = `app + name + logoUrl` ; un CTA « Ajouter »
+  par app → le verb `connect` (M-32, confirmation d'écriture identique) +
+  l'app rejoint le catalog local ajouté par l'utilisateur (persistance
+  `@capacitor/preferences`, clé `integrations.userAdded` — le preset par
+  défaut reste immuable, seul cet ajout est persistant device-side ;
+  AD-3 : aucun secret, jamais de liste de comptes sur l'appareil).
+- rappel « chaque écriture demande confirmation » ; AD-3 (aucune clé sur
+  l'appareil, auth serveur). C'est la page `pages/integrations/index.tsx`
+  existante (Composio, `integrations-client.ts`) à restructurer
+  (recommandées / connectées / parcourir + permissions par service, Q6).
 
 **M-32 `IntegrationProvider` + confirmation d'écriture** : le port
 `IntegrationProvider` (Composio, `packages/integrations`). **Test**
@@ -353,11 +384,41 @@ sans confirmation ; une intégration absente dégrade (AD-1), ne plante pas.
 premier branché (le socle Composio existe — `fn-integrations` +
 `integrations-client.ts` ; ici on fiabilise le service + la confirmation
 d'écriture). (Là où le budget le permet ; le reste des services est
-configurable.)
+configurable via M-34.)
 
-Critère de sortie S3 : page v2 (connectées/disponibles/permissions) ; écriture
-TOUJOURS confirmée, lecture non ; dégradée proprement si le service est absent ;
-Google Agenda branché.
+**M-34 Verb `browse_integrations` sur `fn-integrations` (S3)** :
+- `supabase/functions/fn-integrations/index.ts` : nouveau cas
+  `switch (verb)` `browse_integrations` → `GET
+  {baseUrl}/toolkits?limit=500` (l'endpoint public v3.1, NON par
+  session : le catalog toolkits est global, pas par-utilisateur ; la
+  session n'est requise que pour `tools`/`execute`) ; réponse
+  `{ toolkits: Array<{ slug, name, image_url?, description? }> }`.
+- `packages/integrations/src/composio.ts` : nouveau method
+  `listToolkits(opts?: { limit?: number }): Promise<Toolkit[]>` + le type
+  `Toolkit { app: string; name: string; logoUrl?: string;
+  description?: string }` (le mapping `slug → app`, `name`, `image_url →
+  logoUrl` — le champ s'appelle exactement `image_url` dans la réponse
+  Composio v3.1 ; le fallback pastille initiale gère le cas absent).
+- L'EF retourne le catalog BRUT (pas le parse) quand non configuré :
+  `browse_integrations` ne dépend PAS de la session (le `toolkits`
+  endpoint est un list global) → il marche même si le preset
+  `defaultOn` seul est affiché à l'app quand l'EF est 503 (dégradé
+  AD-1 : le SSoT statique du M-31, sans logos, reste l'arrière-plan —
+  l'app ne plante jamais sur une liste de catalog).
+- **Test** (`packages/integrations/test/composio.test.ts` ou nouveau
+  `toolkits.test.ts`) : `listToolkits()` map `image_url → logoUrl`,
+  renvoie `[]` quand unconfigured ; le EF verb `browse_integrations`
+  retourne 503 quand `COMPOSIO_API_KEY` est absent (pas un crash), et
+  retourne le parsed catalog quand configuré (testEF avec un
+  `baseUrl` pointant un `http.createServer` mock, comme le testEF
+  existant).
+
+Critère de sortie S3 : page v2 (recommandées = Google Workspace entier +
+prod, connectées, parcourir/recherche + « Ajouter », permissions) ; **chaque
+ligne du catalog porte le LOGO live (pas un asset hardcodé, pastille
+initiale seulement en fallback strict)** ; écriture TOUJOURS confirmée,
+lecture non ; dégradée proprement si le service est absent ; Google Agenda
+branché.
 
 ---
 

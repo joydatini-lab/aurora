@@ -45,11 +45,10 @@ export function NewFocusProfileBody({
   onCancel,
 }: NewFocusProfileBodyProps) {
   const [title, setTitle] = useState('');
-  const [method, setMethod] = useState<'pomodoro' | 'chrono'>('pomodoro');
+  const [method, setMethod] = useState<'pomodoro' | 'chrono' | 'tours'>('pomodoro');
   const [baseMin, setBaseMin] = useState(25);
   const [restMin, setRestMin] = useState(5);
   const [rounds, setRounds] = useState(4);
-  const [taskId, setTaskId] = useState<string>('');
   const [taskId, setTaskId] = useState<string>('');
   const [display, setDisplay] = useState(true);
 
@@ -69,6 +68,7 @@ export function NewFocusProfileBody({
       restMinutes: method === 'pomodoro' ? restMin : 0,
       rounds: method === 'pomodoro' ? rounds : 1,
       taskId: taskId || undefined,
+      displayOnFocusPage: display,
       createdAt: ts,
       updatedAt: ts,
     };

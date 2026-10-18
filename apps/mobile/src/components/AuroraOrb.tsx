@@ -17,7 +17,7 @@
  * surécrit les variables sur le `<html>` → l'orbe suit la palette de
  * l'app sans autre code.
  */
-import '../../styles/aurora-orb.css';
+import '../styles/aurora-orb.css';
 
 export function AuroraOrb({ label = 'Aurora' }: { label?: string }) {
   return (
