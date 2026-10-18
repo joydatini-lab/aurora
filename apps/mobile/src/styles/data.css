@@ -1177,6 +1177,301 @@
 .veille-card-relevance--muted {
   color: var(--aurora-text-tertiary, var(--aurora-text-secondary));
 }
+/* ── M-44 (S4, rapport de veille + menu des sources, écrans 13/14) :
+   le rapport du VAULT.md (le « style édition » Stitch
+   `discovery_rapport_de_veille_pr_cision_fraunces`) + la feuille des
+   sources (le Stitch `discovery_menu_des_sources_pr_cision_fraunces`).
+   COULEUR DYNAMIQUE (AD-17) : tous les styles sont en
+   `var(--aurora-*)`, zéro hex hardcodé. Le tap-target minimum mobile
+   (44 px, 02 S6.1) est porté par `min-height: 44px` sur les
+   cibles de tap (le bouton `Sources · N`, les chips de filtre,
+   les items de la feuille, les renvois `[n]`). ── */
+.veille-rapport__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--aurora-border);
+}
+.veille-rapport__bar-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--aurora-text-primary);
+}
+.vault-rapport {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px;
+}
+.vault-rapport__readonly {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--aurora-border);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--aurora-text-tertiary, var(--aurora-text-secondary));
+}
+.vault-rapport__header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.vault-rapport__meta {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--aurora-text-secondary);
+}
+.vault-rapport__dot {
+  margin: 0 4px;
+  color: var(--aurora-text-tertiary, var(--aurora-text-secondary));
+}
+.vault-rapport__title {
+  margin: 0;
+  font-family: var(--font-serif, Georgia, 'Times New Roman', serif);
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--aurora-text-primary);
+}
+.vault-rapport__runrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  color: var(--aurora-text-secondary);
+}
+.vault-rapport__relevance {
+  font-family: var(--font-sans, inherit);
+}
+.vault-rapport__body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.vault-rapport__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.vault-rapport__section-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--aurora-text-primary);
+}
+.vault-rapport__section-body {
+  font-size: 15px;
+  line-height: 1.62;
+  color: var(--aurora-text-secondary);
+}
+/* Le renvoi `[n]` du rapport (le SSoT de l'écran 14 : le tap ouvre
+   la feuille des sources + surbrille la source N — le SSoT du
+   Stitch « precise superscript citation »). Le tap-target est ≥
+   44 px (le SSoT du design system mobile). */
+.vault-rapport__sources {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.vault-rapport__ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px; /* le SSoT du 44 px tap-target mobile */
+  padding: 4px 6px;
+  border: none;
+  background: transparent;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 14px;
+  color: var(--aurora-accent-primary, var(--aurora-brand-primary));
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+.vault-rapport__ref:hover {
+  text-decoration: underline;
+}
+.vault-rapport__ref:focus-visible {
+  outline: 2px solid var(--aurora-accent-primary, var(--aurora-brand-primary));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* La feuille des sources (le SSoT de l'écran 14, le Stitch
+   `discovery_menu_des_sources_pr_cision_fraunces`) : le titre
+   « Sources · N », les chips de filtre, la liste des sources
+   (le `[n]` + le titre + le chip de crédibilité + l'ExternalLink),
+   le « Copier les références ». Le `min-h-[44px]` de chaque cible
+   de tap (le SSoT du design system mobile). */
+.vault-sources-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+.vault-sources-sheet__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--aurora-text-primary);
+}
+.vault-sources-sheet__title-icon {
+  color: var(--aurora-accent-primary, var(--aurora-brand-primary));
+}
+.vault-sources-sheet__count {
+  color: var(--aurora-text-tertiary, var(--aurora-text-secondary));
+}
+.vault-sources-sheet__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--aurora-accent-primary, var(--aurora-brand-primary));
+  cursor: pointer;
+}
+.vault-sources-sheet__close:focus-visible {
+  outline: 2px solid var(--aurora-accent-primary, var(--aurora-brand-primary));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.vault-sources-sheet__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vault-sources-sheet__filter {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--aurora-border);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--aurora-text-secondary);
+  cursor: pointer;
+}
+.vault-sources-sheet__filter.is-active {
+  border-color: var(--aurora-accent-primary, var(--aurora-brand-primary));
+  background: var(--aurora-surface-bg);
+  color: var(--aurora-accent-primary, var(--aurora-brand-primary));
+  font-weight: 600;
+}
+.vault-sources-sheet__filter:focus-visible {
+  outline: 2px solid var(--aurora-accent-primary, var(--aurora-brand-primary));
+  outline-offset: 2px;
+}
+.vault-sources-sheet__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.vault-sources-sheet__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 44px; /* le SSoT du 44 px tap-target mobile */
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--aurora-border-tertiary, var(--aurora-border));
+  cursor: default;
+}
+.vault-sources-sheet__item[data-highlight="true"] {
+  background: var(--aurora-surface-bg);
+}
+.vault-sources-sheet__empty {
+  padding: 12px 8px;
+  font-size: 13px;
+  color: var(--aurora-text-tertiary, var(--aurora-text-secondary));
+}
+.vault-sources-sheet__refnum {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--aurora-accent-primary, var(--aurora-brand-primary));
+  white-space: nowrap;
+}
+.vault-sources-sheet__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.vault-sources-sheet__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.vault-sources-sheet__source-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--aurora-text-primary);
+}
+.vault-sources-sheet__credibility {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--aurora-border);
+  color: var(--aurora-text-secondary);
+  text-transform: capitalize;
+}
+.vault-sources-sheet__credibility[data-credibility="haute"] {
+  border-color: var(--aurora-accent-primary, var(--aurora-brand-primary));
+  color: var(--aurora-accent-primary, var(--aurora-brand-primary));
+}
+.vault-sources-sheet__credibility[data-credibility="moyenne"] {
+  border-color: var(--aurora-warning, var(--aurora-text-secondary));
+  color: var(--aurora-warning, var(--aurora-text-secondary));
+}
+.vault-sources-sheet__meta {
+  font-size: 12px;
+  color: var(--aurora-text-tertiary, var(--aurora-text-secondary));
+}
+.vault-sources-sheet__open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--aurora-accent-primary, var(--aurora-brand-primary));
+  text-decoration: none;
+}
+.vault-sources-sheet__open.is-disabled {
+  color: var(--aurora-text-quaternary, var(--aurora-text-tertiary, var(--aurora-text-secondary)));
+  pointer-events: none;
+}
+.vault-sources-sheet__copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 16px;
+}
 /* Le SSoT document (VAULT.md) du programme, rendu « style Notion »
    dans la carte (Lot 4.1) — le document évolutif que l'élève consulte
    page par page (le SSoT, pas un lien externe vers l'agent).
