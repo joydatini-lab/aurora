@@ -151,3 +151,79 @@ export function buildCanvasDiff(
   if (proposed === '' && now === '') return null;
   return { canvasId, blockId, current: now, proposed };
 }
+
+// ---------------------------------------------------------------------------
+// 3 — L'état courant du tool (le minimum du « Tool Streaming » du doc
+//    Tiptap, SANS le protocole de streaming des chunks du provider)
+// ---------------------------------------------------------------------------
+
+/**
+ * Un état de tool courant lisible par l'UI (la page agent le branche
+ * sous la carte de confirmation : « le tool X est en cours d'exécution,
+ * dernier résultat connu = … »).
+ *
+ * Le SSoT de l'état du tool vit dans le step JSON du prompt de
+ * confirmation (le champ `confirmationStepRaw` de `agent-client.ts`) :
+ * le miroir `agent_runs.steps_json` est la seule source de vérité
+ * device (AD-7 local read) — ce module est le subset typé qui l'expose
+ * à l'UI, zéro dépendance réseau/UI (testé comme le reste du module,
+ * le doc « Tool Streaming » n'implique PAS de nouveau protocole de
+ * streaming, seulement de monTRER l'état du step déjà persisté).
+ */
+export interface CanvasToolState {
+  /** l'étiquette du tool (ex: `canvas_read`, `canvas_write`). */
+  tool: string;
+  /** le statut persisté du step (`running` / `pending` / …). */
+  status: string;
+  /** le `result` du step si déjà produit (sinon `undefined` = en cours). */
+  result?: unknown;
+  /**
+   * L'étiquette courte affichable par l'UI (ex: « L'agent lit le canvas »
+   * / « L'agent écrit le canvas »). Le mapping tool → phrase vit ICI,
+   * jamais dans le composant.
+   */
+  label: string;
+}
+
+/**
+ * L'état courant lisible du tool cible du prompt de confirmation :
+ * quand le run est STOPPÉ sur ce point (le step `pending`), on expose
+ * son `tool` / `status` / le `result` déjà produit (si le step a déjà
+ * exécuté un sous-résultat persisté) — c'est le minimum du « Tool
+ * Streaming » : l'utilisateur voit QUEL tool est en jeu et son dernier
+ * résultat connu, SANS le protocole de streaming des chunks du
+ * provider (le miroir `agent_runs` est déjà la source de vérité, AD-7,
+ * pas de nouveau canal à ajouter ici).
+ *
+ * Retourne `null` quand il n'y a rien à montrer (pas de prompt, ou un
+ * tool inconnu / sans label).
+ */
+export function currentToolStateOf(
+  row: RawCanvasRunRow & { confirmationStepRaw?: Record<string, unknown> | null },
+): CanvasToolState | null {
+  const raw = row.confirmationStepRaw;
+  if (!raw) return null;
+  const tool = typeof raw.tool === 'string' ? raw.tool : '';
+  if (tool === '') return null;
+  const status = typeof raw.status === 'string' ? raw.status : 'pending';
+  const result = raw.result !== undefined && raw.result !== null ? raw.result : undefined;
+  const label = canvasToolLabel(tool);
+  if (label === null) return null;
+  return { tool, status, result, label };
+}
+
+/**
+ * Le mapping tool → étiquette lisible (« L'agent lit le canvas » …) —
+ * SSoT du label court (la page agent n'en invente aucun). Un tool
+ * inconnu → `null` (pas d'étiquette, l'UI ne montre alors que le
+ * générique, jamais un label inventé).
+ */
+function canvasToolLabel(tool: string): string | null {
+  if (tool === 'canvas_read' || tool === 'canvas.get') return "L'agent lit le canvas";
+  if (tool === 'canvas_write' || tool === 'canvas.write') return "L'agent ecrit le canvas";
+  if (tool === 'canvas_comment' || tool === 'canvas.comment') return "L'agent commente le canvas";
+  if (tool === 'canvas_create' || tool === 'canvas.create') return "L'agent cree un canvas";
+  if (tool === 'canvas_lock' || tool === 'canvas.lock') return "L'agent verrouille le canvas";
+  if (tool === 'canvas_rename' || tool === 'canvas.rename') return "L'agent renomme le canvas";
+  return null;
+}

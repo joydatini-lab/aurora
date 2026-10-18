@@ -100,6 +100,7 @@ import {
   canvasIdsOf,
   buildCanvasUrl,
   buildCanvasDiff,
+  currentToolStateOf,
   type CanvasDiff,
 } from '../../lib/canvas-run-wiring';
 
@@ -1055,10 +1056,34 @@ export function AgentPage() {
                     inFlightRow,
                     currentCanvas.data?.session ?? null,
                   );
+                  // M-2-canvas (le minimum du « Tool Streaming » du doc
+                  // Tiptap, SANS le protocole de streaming des chunks) —
+                  // l'état courant du tool cible du prompt (le tool qui
+                  // est en jeu + le dernier résultat connu, lu du step
+                  // JSON persisté dans `agent_runs.steps_json`, AD-7) :
+                  // l'utilisateur voit QUEL tool est en jeu AVANT de
+                  // Confirmer/Refuser, jamais un label inventé par
+                  // l'UI (le SSoT canvas-run-wiring `currentToolStateOf`).
+                  const toolState = currentToolStateOf(inFlightRow);
                   return (
                     <div className="agent-confirm" data-confirmation={p.stepId}>
                       {p.tool && <div className="agent-confirm-label">{p.tool}</div>}
                       {p.message && <div className="agent-confirm-message">{p.message}</div>}
+                      {toolState && (
+                        <div
+                          className="agent-canvas-tool-state"
+                          data-tool={toolState.tool}
+                          data-status={toolState.status}
+                          aria-label={`État courant du tool : ${toolState.label}`}
+                        >
+                          <span className="agent-canvas-tool-state-label">{toolState.label}</span>
+                          {toolState.result !== undefined && (
+                            <span className="agent-canvas-tool-state-result">
+                              {JSON.stringify(toolState.result)}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {diff && (
                         <div
                           className="agent-canvas-diff"

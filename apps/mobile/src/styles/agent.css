@@ -246,6 +246,37 @@
   color: var(--aurora-accent-on-primary);
 }
 
+/* M-2-canvas (le minimum du « Tool Streaming » du doc Tiptap, SANS le
+   protocole de streaming des chunks du provider) : l'état courant du
+   tool cible du prompt de confirmation, lu du step JSON persisté dans
+   `agent_runs.steps_json` (AD-7, le miroir est déjà la source de
+   vérité device). On montre le label du tool en jeu + le dernier
+   résultat connu si le step a déjà exécuté un sous-résultat. */
+.agent-canvas-tool-state {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--aurora-bg-subtle);
+  border: 1px solid var(--aurora-border);
+  border-radius: var(--aurora-radius, 0.5rem);
+  font-size: 12px;
+  color: var(--aurora-text-secondary);
+}
+.agent-canvas-tool-state-label {
+  font-weight: 600;
+  color: var(--aurora-text-primary);
+}
+.agent-canvas-tool-state-result {
+  font-family: var(--aurora-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 11px;
+  color: var(--aurora-text-muted);
+  word-break: break-word;
+  white-space: pre-wrap;
+  max-height: 120px;
+  overflow: auto;
+}
+
 /* Composer (pinned). */
 /* M-12 (v2 MVP S1) : la carte de saisie = colonne (puce de mode en
    tête → row [puce Auto + input + envoi] → texte d'aide « / »). */

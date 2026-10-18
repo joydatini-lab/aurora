@@ -23,6 +23,7 @@ import {
   canvasIdOfStep,
   buildCanvasUrl,
   buildCanvasDiff,
+  currentToolStateOf,
   type RawCanvasRunRow,
 } from '../src/lib/canvas-run-wiring';
 
@@ -130,4 +131,71 @@ test('buildCanvasDiff: markdown vide proposé → le contenu est identique au co
   };
   const current = { blocks: [{ id: 'b1', kind: 'md', content: '' }] };
   assert.equal(buildCanvasDiff(row, current), null); // rien à confirmer
+});
+
+// ——— État courant du tool (le minimum du « Tool Streaming » du doc
+//     Tiptap, SANS le protocole de streaming des chunks) ————————————————
+
+test('currentToolStateOf: expose le tool/status/label d un step pending', () => {
+  const row: RawCanvasRunRow & { confirmationStepRaw?: Record<string, unknown> | null } = {
+    confirmationStepRaw: { tool: 'canvas_write', status: 'pending' },
+  };
+  const st = currentToolStateOf(row);
+  assert.ok(st);
+  assert.equal(st.tool, 'canvas_write');
+  assert.equal(st.status, 'pending');
+  assert.equal(st.label, "L'agent ecrit le canvas");
+  assert.equal(st.result, undefined);
+});
+
+test('currentToolStateOf: un step déjà terminé porte son result (le dernier etat connu)', () => {
+  const row: RawCanvasRunRow & { confirmationStepRaw?: Record<string, unknown> | null } = {
+    confirmationStepRaw: {
+      tool: 'canvas_read',
+      status: 'completed',
+      result: { blockCount: 4 },
+    },
+  };
+  const st = currentToolStateOf(row);
+  assert.ok(st);
+  assert.equal(st.tool, 'canvas_read');
+  assert.deepEqual(st.result, { blockCount: 4 });
+  assert.equal(st.label, "L'agent lit le canvas");
+});
+
+test('currentToolStateOf: pas de prompt (raw absent) → null', () => {
+  assert.equal(currentToolStateOf({}), null);
+  assert.equal(
+    currentToolStateOf({ confirmationStepRaw: null }),
+    null,
+  );
+});
+
+test('currentToolStateOf: un tool inconnu (sans label) → null', () => {
+  const row: RawCanvasRunRow & { confirmationStepRaw?: Record<string, unknown> | null } = {
+    confirmationStepRaw: { tool: 'progress.evidence_create', status: 'pending' },
+  };
+  assert.equal(currentToolStateOf(row), null);
+});
+
+test('currentToolStateOf: les 6 labels des verb canvas (SSoT du mapping)', () => {
+  const rows: Array<{ raw: Record<string, unknown>; expected: string | null }> = [
+    { raw: { tool: 'canvas_read', status: 'pending' }, expected: "L'agent lit le canvas" },
+    { raw: { tool: 'canvas_write', status: 'pending' }, expected: "L'agent ecrit le canvas" },
+    { raw: { tool: 'canvas_comment', status: 'pending' }, expected: "L'agent commente le canvas" },
+    { raw: { tool: 'canvas_create', status: 'pending' }, expected: "L'agent cree un canvas" },
+    { raw: { tool: 'canvas_lock', status: 'pending' }, expected: "L'agent verrouille le canvas" },
+    { raw: { tool: 'canvas_rename', status: 'pending' }, expected: "L'agent renomme le canvas" },
+    { raw: { tool: 'canvas.get', status: 'pending' }, expected: "L'agent lit le canvas" },
+    { raw: { tool: 'tool_ineconnu', status: 'pending' }, expected: null },  ];
+  for (const { raw, expected } of rows) {
+    const st = currentToolStateOf({ confirmationStepRaw: raw } as RawCanvasRunRow & {
+      confirmationStepRaw?: Record<string, unknown> | null;
+    });
+    if (expected === null) {
+      assert.equal(st, null);
+    } else {
+      assert.equal(st?.label, expected);
+    }
+  }
 });

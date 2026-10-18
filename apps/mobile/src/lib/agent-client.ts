@@ -149,6 +149,14 @@ export interface AgentRunRow {
    * `/canvas/<id>` (au lieu de toujours `/canvas/new`).
    */
   canvasIds?: string[];
+  /**
+   * M-73 — le step JSON (raw) du prompt de confirmation pending :
+   * expose ses champs de progression (ex: le `result` du step précédent
+   * sur `canvas_read`, ou le champ en cours d'exécution) au lieu de
+   * renvoyer le string du message. Le SSoT de l'état du tool vit là,
+   * jamais côté UI.
+   */
+  confirmationStepRaw?: Record<string, unknown> | null;
   startedAt: string;
   completedAt?: string;
 }
@@ -261,6 +269,12 @@ function mapAgentRunRow(row: Record<string, unknown>): AgentRunRow {
     confirmationStepInput:
       pending?.input !== null && pending?.input !== undefined && typeof pending.input === 'object'
         ? (pending.input as Record<string, unknown>)
+        : undefined,
+    // M-2-canvas : le step raw du prompt (le SSoT de l'état du tool ;
+    // la page agent en lit les champs de progression).
+    confirmationStepRaw:
+      pending !== null && pending !== undefined && typeof pending === 'object'
+        ? (pending as Record<string, unknown>)
         : undefined,
     canvasIds: canvasIds.length > 0 ? canvasIds : undefined,
     startedAt: String(row.started_at ?? ''),
