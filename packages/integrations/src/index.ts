@@ -14,6 +14,11 @@ export * from './research-provider.ts';
 export * from './composio.ts';
 export * from './notifications.ts';
 export * from './automations.ts';
+// M-41 (S4 plan veille 2026-10-17) — AD-7 single-writer port :
+// le module Integrations est le SEUL qui écrit `automations` ; le
+// kernel émet des thin commands `integrations.automation_*` que
+// `applyAutomationCommand` applique sur le port `AutomationWriter`.
+export * from './automation-writer.ts';
 // OQ-03 (2026-10-14) — the R2 storage adapter (AD-1 vendor isolation +
 // AD-3 no-credential-on-device): the real SigV4 presigned-URL path for
 // the `R2StoragePort` SSoT contract from @aurora/scientific-engine.
