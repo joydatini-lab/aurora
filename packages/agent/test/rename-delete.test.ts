@@ -226,3 +226,27 @@ test('G12: skill_delete émet agent.skill_delete', async () => {
   assert.equal(r.command, 'agent.skill_delete');
   assert.equal(r.payload.skillId, 's1');
 });
+
+// M-23 (plan v2 S2) : skill_update = le thin emitter AD-7 de l'édition
+// des instructions d'un skill existant (le nom aussi, via l'option
+// `name`). Non-destructif : le registre le fige `requiresConfirmation:
+// false` (ADR §5 : seule la suppression exige une confirmation).
+test('M-23: skill_update est dans KERNEL_TOOLS, non-destructif, pas de confirmation', () => {
+  assert.ok('skill_update' in KERNEL_TOOLS, 'skill_update est enregistré dans KERNEL_TOOLS');
+  const e = reg.get('skill.update');
+  assert.ok(e, 'registry skill.update');
+  assert.equal(e?.destructive, false, 'l\'édition d\'un skill n\'est pas destructive');
+  assert.equal(e?.requiresConfirmation, false, 'non-destructif → pas de confirmation (ADR §5)');
+});
+
+test('M-23: skill_update émet agent.skill_update (thin emitter AD-7, zéro write)', async () => {
+  const { skillUpdate } = await import('../src/tools.ts');
+  const r = (await skillUpdate.execute(
+    { skillId: 's1', name: 'S1 v2', trigger: 'T', goal: 'G', steps: ['a', 'b'], userId: 'u1' },
+    {} as never,
+    undefined as never,
+  )) as { ok: boolean; command: string; payload: Record<string, unknown> };
+  assert.equal(r.ok, true);
+  assert.equal(r.command, 'agent.skill_update');
+  assert.equal(r.payload.skillId, 's1');
+});

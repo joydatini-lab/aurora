@@ -18,6 +18,11 @@ import type {
 import {
   clamp01,
   evidenceFromFlashcardReviewed,
+  // M-63 (S6) : l'applyer de `progress.evidence_create` branchera ce
+  // constructeur ici ; import pré-positionné par S6 (le verbe n'est pas
+  // encore consommé côté recompute — tsc le signale tant que l'usage n'est
+  // pas branché).
+  evidenceFromMirrorValidation,
   evidenceFromTaskCompleted,
   levelIndex,
   type EvidenceLevel,
