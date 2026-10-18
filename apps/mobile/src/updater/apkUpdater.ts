@@ -88,7 +88,22 @@ interface DownloadProgressEvent {
   totalBytes: number;
 }
 
-const impl = {
+// Le retour de `registerPlugin` est l'impl Capacitor core (le
+// PluginWithReturnValues) — le wrapper `ApkUpdater` ci-dessous expose
+// l'interface EXACTE du plan (L650) : les no-ops web/iOS SONT les
+// méthodes de l'interface, le JS n'a pas de raison d'appeler
+// `currentVersionCode()` / `canInstall()` hors Android (le hook M-85
+// court-circuite avant).
+interface NativeApkUpdater extends ApkUpdaterPlugin {
+  // Le abonnement Capacitor core au downloadProgress (le `notifyEvent`
+  // du plugin Java l'émet) — l'impl web no-op ne l'expose pas.
+  addListener(
+    eventName: 'downloadProgress',
+    listener: (evt: DownloadProgressEvent) => void,
+  ): { remove: () => Promise<void> };
+}
+
+const webFallback: Omit<NativeApkUpdater, 'addListener'> = {
   async canInstall(): Promise<{ canInstall: boolean }> {
     return { canInstall: false };
   },
@@ -110,14 +125,38 @@ const impl = {
   },
 };
 
+let nativePlugin: NativeApkUpdater | undefined;
 if (Capacitor.isNativePlatform()) {
-  const nativePlugin = registerPlugin<ApkUpdaterPlugin>('ApkUpdater');
-  // Le `registerPlugin` renvoie l'impl native — on la merge sur le no-op
-  // web (le pattern Capacitor : les méthodes natives surchargent).
-  Object.assign(impl, nativePlugin);
+  // Le registerPlugin renvoie l'impl native (le register est lazy — le
+  // premier call JS l'exécute) ; l'abonnement downloadProgress vient
+  // de l'API core Capacitor (`addListener` du plugin, l'événement
+  // `downloadProgress` est émis par le Java M-82 via `notifyEvent`).
+  nativePlugin = registerPlugin('ApkUpdater') as NativeApkUpdater;
 }
 
-export const ApkUpdater: ApkUpdaterPlugin = impl;
+export const ApkUpdater: ApkUpdaterPlugin = {
+  canInstall: () => (nativePlugin ? nativePlugin.canInstall() : webFallback.canInstall()),
+  openInstallSettings: () =>
+    nativePlugin ? nativePlugin.openInstallSettings() : webFallback.openInstallSettings(),
+  download: (o) => (nativePlugin ? nativePlugin.download(o) : webFallback.download(o)),
+  install: (o) => (nativePlugin ? nativePlugin.install(o) : webFallback.install(o)),
+  currentVersionCode: () =>
+    nativePlugin ? nativePlugin.currentVersionCode() : webFallback.currentVersionCode(),
+  // L'abonnement downloadProgress (le plan L645) : sur Android, l'API
+  // core Capacitor (`addListener` de l'impl native, l'événement
+  // `downloadProgress` est émis par le Java M-82 via `notifyEvent`) ;
+  // sur web/iOS, l'unsubscribe est un no-op (le plan L723–724 : ne
+  // fait rien, ne génère AUCUNE erreur).
+  addEventListener: (eventName, listener) => {
+    if (nativePlugin?.addListener) {
+      const sub = nativePlugin.addListener(eventName, listener);
+      return () => {
+        void sub.remove();
+      };
+    }
+    return webFallback.addEventListener(eventName, listener);
+  },
+};
 
 // ————————————————————————————————————————————————————————————————
 // Le cache 6 h (`@capacitor/preferences`) — l'impl concrète injectée dans
