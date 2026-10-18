@@ -30,6 +30,11 @@ import {
 } from './mirror-findings-card.ts';
 import '../../styles/agent.css';
 
+// Re-export du type SSoT (les pures fonctions du .ts) — les consumers
+// (`pages/agent`, les tests S6) importent le composant + le type d'ici.
+// (Le `export *` ne re-exporte PAS les types importés localement ici.)
+export type { MirrorCardFinding } from './mirror-findings-card.ts';
+
 export interface MirrorFindingsCardProps {
   /** Le sujet de l'analyse (le dernier cours / la veille du M-62 flow). */
   subjectLabel?: string;

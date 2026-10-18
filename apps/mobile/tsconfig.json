@@ -12,6 +12,13 @@
      * passes. The `build` script emits with noEmit=false (no conflict).
      */
     "allowImportingTsExtensions": true,
+    /* M-62 (S6, plan v2) : le composant React `mirror-findings-card.tsx`
+       est importé avec son extension `.tsx` explicite — le fichier .ts
+       voisin a le même stem (les pures fonctions), le TS résout `.ts`
+       d'abord → l'import sans extension ne voit PAS le composant.
+       `allowArbitraryExtensions` autorise l'import explicite `.tsx`
+       (le bundler/vite résout de même). */
+    "allowArbitraryExtensions": true,
     "lib": [
       "ES2022",
       "DOM",
@@ -32,6 +39,13 @@
   },
   "include": [
     "src"
+  ],
+  "files": [
+    /* M-62 (S6) : le .tsx du bloc miroir est importé avec son extension
+       explicite (`allowArbitraryExtensions`) — un import arbitraire doit
+       lister le fichier dans le projet (TS6307 sinon ; le glob `src` ne
+       suffit pas en mode composite/incremental hérité du base). */
+    "src/components/agent/mirror-findings-card.tsx"
   ],
   "exclude": [
     "dist"

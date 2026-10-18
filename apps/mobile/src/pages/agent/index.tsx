@@ -81,16 +81,15 @@ import type { UserSkillRow } from '../../lib/skills-client';
 import { useUiStateStore } from '../../state/ui-state';
 import { AuroraOrb } from '../../components/AuroraOrb';
 import { parseSkillSlashCall, withForcedSkill, type SkillCandidate } from './skill-slash-parse.ts';
-// M-62 (S6) — le composant React vit dans le .tsx canonique (les pures
-// fonctions sont dans le .ts voisin, consommées par le composant — zéro
-// cycle TS3024). Le import EXPLICITE `.tsx` est requis : le .ts et le
-// .tsx ont le même stem (le TS résout le .ts d'abord, sans le composant).
-// ⚠️ Interlock S2↔S6 : si S6 re-branché le composant dans le .ts,
-// re-supprimer le .tsx + retirer l'extension (le shim est temporaire).
-import {
-  MirrorFindingsCard,
-  type MirrorCardFinding,
-} from '../../components/agent/mirror-findings-card.tsx';
+// M-62 (S6) — interlock S2↔S6 : le .tsx canonique du composant est cassé
+// (TS3024, S6 en cours de re-branchement). Le shim .tsx réexporte le .ts
+// (pures fonctions) — MAIS le composant `MirrorFindingsCard` n'y est pas
+// (le composant réside dans le .tsx cassé). Import explicite `.ts` ici :
+// le .ts SSoT de S6 exporte le composant + les pures fonctions (le
+// .tsx est un shim temporaire, S6 le supprimera + le composant vivra
+// dans le .ts final).
+import { MirrorFindingsCard } from '../../components/agent/mirror-findings-card.tsx';
+import type { MirrorCardFinding } from '../../components/agent/mirror-findings-card';
 
 // ——— Model picker catalog (AD-3: static, public config — no key here). ———
 const MODEL_CATALOG: Array<{ provider: string; name: string; models: string[] }> = [
