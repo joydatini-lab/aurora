@@ -817,6 +817,53 @@ export const progressCause: KernelTool = tool({
   execute: async (input) => ({ ok: true, jobKind: 'skill_recompute', payload: input }),
 });
 
+/**
+ * M-63 (S6, plan v2 Veille + Chat agentique) — progress.evidence_create :
+ * thin emitter (AD-7 / F-07) de la commande `progress.evidence_create`.
+ *
+ * La validation d'une détection Miroir (le bouton « Valider » de la carte
+ * du chat, M-62) n'écrit JAMAIS la row `progress_evidences` ici : le
+ * kernel émet la commande typée (le payload porte le sujet = le `skillId`
+ * du run + le `kind` SSoT de la finding Learning `gap | contradiction |
+ * error` (M-61, ADR mirror-contract.md) + la provenance optionnelle
+ * `sourceNode` du corpus du miroir (AD-11 : le `nodeId` de la claim qui
+ * a déclenché la détection — le module Progress la qualifie dans la row).
+ * Le module Progress (le seul producteur de `ProgressEvidence`, AD-2)
+ * reçoit la commande, qualifie la preuve en type `personal-explanation`
+ * + écrit la row + émet `ProgressEvidenceCreated` (AD-9). La capacité
+ * exige une confirmation utilisateur (ADR §5, briefing §12 : la
+ * validation d'une preuve = action importante / irréversible) — la
+ * commande n'est appliquée qu'après OUI.
+ */
+export const progressEvidenceCreate: KernelTool = tool({
+  description:
+    'Emit the `progress.evidence_create` command for a validated Mirror detection (M-63, plan v2 Veille + Chat agentique). Thin AD-7 emitter: the Progress module owns the row (`progress_evidences`) + the `ProgressEvidenceCreated` event (F-07 single-writer; the kernel never writes a module table). CONFIRMATION_REQUIRED (ADR §5, M-63: validating an evidence = irreversible important action — the command applies only after the user confirms OUI).',
+  inputSchema: z.object({
+    /** le sujet de la détection (le `skillId` du run miroir, M-62). */
+    skillId: z.string(),
+    /** le `kind` SSoT de la finding Learning (M-61, ADR mirror-contract.md). */
+    kind: z.enum(['gap', 'contradiction', 'error']),
+    /** la provenance AD-11 optionnelle (le `nodeId` du corpus qui a
+        déclenché la détection) — le module Progress la qualifie dans
+        la row (`sourceEventId` / `context`). */
+    sourceNode: z.string().optional(),
+  }),
+  execute: async (input) => {
+    // AD-7 / F-07 : le kernel EMET, le module Progress APPLIQUE.
+    // Le payload optionnel `sourceNode` est omis si absent (le zod ne
+    // porte que les champs fournis — le module Progress n'en a pas
+    // besoin pour écrire la row, AD-1 optional capability).
+    const payload: Record<string, unknown> = {
+      skillId: input.skillId,
+      kind: input.kind,
+    };
+    if (input.sourceNode !== undefined) {
+      payload.sourceNode = input.sourceNode;
+    }
+    return { ok: true, command: 'progress.evidence_create', payload };
+  },
+});
+
 /** artifact.generate — generic export (matrix row artifact.generate; sibling of the 4 docs.* document tools). */
 export const artifactGenerate: KernelTool = tool({
   description:
@@ -1511,6 +1558,8 @@ export const KERNEL_TOOLS = {
   progress_analyze: progressAnalyze,
   progress_trajectories: progressTrajectories,
   progress_cause: progressCause,
+  // M-63 (S6, plan v2) : validation Miroir → preuve Progress (thin AD-7).
+  progress_evidence_create: progressEvidenceCreate,
   artifact_generate: artifactGenerate,
   artifact_preview: artifactPreview,
   coach_checkin: coachCheckin,

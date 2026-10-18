@@ -420,6 +420,17 @@ export class DefaultCapabilityRegistry {
         offlineClass: 'online-required',
       },
       {
+        id: 'progress.evidence_create',
+        tool: 'progress_evidence_create',
+        description:
+          'Valide une détection Miroir (M-63, plan v2) : émet `progress.evidence_create` (thin AD-7) — le module Progress qualifie la preuve en `personal-explanation` + écrit la row + émet `ProgressEvidenceCreated` (F-07 single-writer). La validation est une action importante / irréversible : confirmation OBLIGATOIRE (ADR §5, briefing §12). La provenance AD-11 (le corpus du miroir) est lue via `learning:read`.',
+        writeScopes: ['progress:write'],
+        readScopes: ['progress:read', 'learning:read'],
+        destructive: false,
+        requiresConfirmation: true,
+        offlineClass: 'offline-capable',
+      },
+      {
         id: 'artifact.generate',
         tool: 'artifact_generate',
         description: 'Export a sheet / item as a document (artifact_gen job, AD-8; F-06 post-R2 blob)',

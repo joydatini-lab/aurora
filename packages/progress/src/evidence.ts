@@ -95,6 +95,69 @@ export function evidenceFromFlashcardReviewed(
 }
 
 /**
+ * M-63 (S6, plan v2 Veille + Chat agentique, ADR mirror-contract.md) —
+ * qualifie une détection Miroir validée (la commande `progress.evidence_create`
+ * du kernel, M-63) en une `ProgressEvidence` de type `personal-explanation`.
+ *
+ * Le miroir produit une REFORMULATION explicite du sujet (le bloc « Ce que
+ * j'ai compris » de la carte M-62) : c'est une preuve d'explication
+ * personnelle (le doc `learning/overview.md` §21, le SSoT M-61) — pas un
+ * QCM ni un exercice. La provenance AD-11 (le `nodeId` du corpus qui a
+ * déclenché la détection) traverse le payload (`sourceNode`) et est
+ * qualifiée dans `sourceEventId` + `context` de la row : le downstream
+ * (l'événement `ProgressEvidenceCreated` AD-9, les recomputes) lit
+ * l'origine sans relire le corpus.
+ *
+ * Invariant F-07 (le plus critique du sprint) : une détection NON validée
+ * n'émet JAMAIS de preuve. Le bouton « Valider » du chat M-62 porte
+ * `validated: true` (la confirmation utilisateur, ADR §5) — sans ce flag,
+ * le module Progress refuse (zéro row `progress_evidences`). C'est le
+ * module Progress qui écrit la row + émet l'événement (AD-2 single-writer)
+ * : le kernel n'émet que la commande typée.
+ */
+export function evidenceFromMirrorValidation(
+  input: {
+    /** le sujet de la détection (le `skillId` du run miroir, M-62). */
+    skillId?: string;
+    /** le `kind` SSoT de la finding (le vocabulaire Learning, M-61). */
+    kind?: string;
+    /** la confirmation utilisateur (le bouton « Valider », ADR §5). */
+    validated?: boolean;
+    /** la provenance AD-11 optionnelle (le `nodeId` du corpus). */
+    sourceNode?: string;
+    /** l'identité du propriétaire de la row (le kernel ne porte PAS de
+     *  userId — c'est le module Progress qui le sait, AD-7). */
+    userId?: string;
+  },
+  opts: { now: string; userId: string },
+): ProgressEvidence {
+  // Invariant F-07 : la validation est la SEULE entrée qui produit une
+  // preuve miroir. Le payload sans le flag `validated: true` = zéro row.
+  if (input.validated !== true) {
+    throw new Error('progress/mirror_unvalidated: zéro preuve sans validation (F-07)');
+  }
+  const context = [
+    'mirror',
+    input.sourceNode ? `node:${input.sourceNode}` : undefined,
+    input.kind ? `kind:${input.kind}` : undefined,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  return {
+    id: '',
+    userId: opts.userId,
+    skillId: input.skillId,
+    goalId: undefined,
+    type: 'personal-explanation',
+    level: 'comprehended',
+    confidence: 0.7,
+    sourceEventId: input.sourceNode,
+    observedAt: opts.now,
+    context,
+  };
+}
+
+/**
  * The sole-writer factory for a raw `ProgressEvidence` (AD-7): Progress is
  * the only module that inserts `progress_evidences` rows. `id` + row ids
  * are allocated by the persisting side (server ULID). `now` injectable

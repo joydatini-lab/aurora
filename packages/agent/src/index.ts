@@ -205,6 +205,10 @@ export {
   // recherches archivées (caching), AD-7 : Discovery est le seul
   // reader/writer de son vault.
   discoveryVaultRead,
+  // M-63 (S6, plan v2 Veille + Chat agentique) : validation Miroir →
+  // preuve Progress (thin AD-7 : le kernel émet `progress.evidence_create`,
+  // le module Progress qualifie + écrit la row + émet l'événement AD-9).
+  progressEvidenceCreate,
   isJobKind,
 } from './tools.ts';
 
