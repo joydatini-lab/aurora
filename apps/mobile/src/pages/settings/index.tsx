@@ -23,7 +23,6 @@ import {
   Brain,
   Calendar,
   Compass,
-  Download,
   Inbox,
   LogIn,
   Moon,
@@ -603,12 +602,12 @@ export function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <Button
-                  iconLeading={RefreshCw}
                   onClick={() => {
                     void checkForUpdate();
                   }}
-                  isLoading={checking || updater.status === 'checking'}
+                  disabled={checking || updater.status === 'checking'}
                 >
+                  <RefreshCw size={14} aria-hidden />
                   Rechercher une mise à jour
                 </Button>
                 {updater.status === 'error' && updater.error && (
