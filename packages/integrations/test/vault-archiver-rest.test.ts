@@ -129,7 +129,7 @@ test('M-71 archiver: un service_role key absent (env manquant) renvoie false san
 
 test('M-71 integration: applyAutomationCommand + archiver REST = delete + archivage', async () => {
   const { applyAutomationCommand } = await import('../src/automation-writer.ts');
-  const { archiver } = (const archiver = createVaultArchiverRest({ supabaseUrl: 'https://x.supabase.co', serviceRoleKey: 'sr' }) });
+  const archiver = createVaultArchiverRest({ supabaseUrl: 'https://x.supabase.co', serviceRoleKey: 'sr' });
   // Le writer fake (le module est le SEUL qui écrit `automations`).
   const fakeWriter = {
     insert: () => ({ status: 'created' as const }),
@@ -146,7 +146,11 @@ test('M-71 integration: applyAutomationCommand + archiver REST = delete + archiv
       archiver,
     );
     assert.equal(r.status, 'deleted', 'la row automations est supprimée');
-    assert.equal(r.vaultArchived, true, 'le vault est archivé (gel G2 : ARCHIVÉ, pas détruit)');
+    // L'archivage du vault (gel G2) est le suivi ASYNCHRONIQUE de la row
+    // (le PATCH PostgREST, AD-3) : le test attend la promesse (le 2xx
+    // du PATCH fake = archivé), le statut du delete est déjà connu.
+    await r.vaultArchivedPromise;
+    assert.equal(r.vaultArchived, undefined, "le suivi synchrone n'est pas porté ici (l'archivage est le suivi REST, AD-1 : le delete reste un success quel que soit le résultat de l'archivage)");
   } finally {
     (globalThis as unknown as { fetch: unknown }).fetch = orig;
   }

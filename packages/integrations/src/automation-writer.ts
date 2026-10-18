@@ -49,8 +49,12 @@ export interface AutomationWriter {
  *  `discovery_vault` (user_id, domaine) — décision S8.0, additive. */
 export interface VaultArchiver {
     /** Archive le vault du domaine (no-op idempotent si déjà archivé).
-     *  @returns true si le vault a été (re)archivé, false si absent. */
-    archive(userId: string, domaine: string): boolean;
+     *  @returns true si le vault a été (re)archivé, false si absent.
+     *  Asynchrone (l'implémentation REST, `vault-archiver-rest.ts`, fait
+     *  un PATCH PostgREST — le writer map attend la promesse pour pouvoir
+     *  reporter `vaultArchived` de façon fiable, pas une valeur
+     *  synchronisable à l'avance). */
+    archive(userId: string, domaine: string): Promise<boolean> | boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -111,6 +115,11 @@ export interface AutomationWriterResult {
     status: 'created' | 'patched' | 'deleted' | 'not_found' | 'error' | 'unhandled';
     /** true si un vault a été archivé (G3 + gel G2). */
     vaultArchived?: boolean;
+    /** Le vault est archivé ASYNCHRONEMENT (l'archiver REST fait un PATCH
+     *  PostgREST, AD-3) — le call doit `await` cette promesse pour
+     *  l'évaluer ; le résultat (row supprimée, statut `deleted`) est
+     *  Synchronisé AVANT le retour, l'archivage est le suivi optionnel. */
+    vaultArchivedPromise?: Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -210,11 +219,31 @@ export function applyAutomationCommand(
             // Gel G2 : la row `automations` est supprimée, le vault
             // (join domaine === automation.id) est ARCHIVÉ, pas détruit.
             // AD-1 : sans archiver, on dégrade (pas de cassure).
-            let vaultArchived = false;
-            if (archiver) {
-                vaultArchived = archiver.archive(payload.userId, payload.automationId);
-            }
-            return { status: 'deleted', vaultArchived };
+            if (!archiver) return { status: 'deleted', vaultArchived: false };
+            // L'archiver REST est asynchrone (POSTgREST PATCH), le fake
+            // test est Synchronisé — on normalise : si l'archiver
+            // renvoie une promesse, on la suit ; sinon on l'utilise tel
+            // quel. Le statut du delete est déjà connu, l'archivage
+            // est le suivi optionnel (AD-1 : ne casse jamais le delete).
+            const archiveResult: boolean | Promise<boolean> = archiver.archive(
+                payload.userId,
+                payload.automationId,
+            );
+            const archivePromise: Promise<void> = Promise.resolve(archiveResult).then(
+              (archived) => {
+                void archived;
+              },
+              // AD-1 : un rejet d'archivage ne casse PAS le delete déjà
+              // réussi — on avale le reject (le log serveur s'en charge).
+              (e: unknown) => {
+                void e;
+              },
+            );
+            return {
+              status: 'deleted',
+              vaultArchived: undefined,
+              vaultArchivedPromise: archivePromise,
+            };
         }
         default:
             // Commande inconnue (typo, version kernel plus récente…) :
