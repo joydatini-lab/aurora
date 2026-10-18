@@ -38,7 +38,7 @@ import { LearnPage, LearnDetailPage } from './pages/learn';
 import { KnowledgePage, KnowledgeNodePage } from './pages/knowledge';
 import { DiscoveryPage } from './pages/discovery';
 import { ProgressPage, ProgressDetailPage } from './pages/progress';
-import { FocusRoute } from './pages/focus';
+import { FocusProfilesRoute } from './pages/focus/profiles';
 import { ArtifactPage } from './pages/artifacts';
 import { AgentPage } from './pages/agent';
 import { AgentConversationsPage } from './pages/agent/conversations';
@@ -113,7 +113,7 @@ export const appRouter: AppRouter = createBrowserRouter([
       { path: '/goals/:id/ascent', element: <SlideAscentPage userId="me" /> },
 
       // --- Focus + calendar family views (G-M7 gated) ---
-      { path: '/focus', element: <FeatureGate feature="focus"><FocusRoute /></FeatureGate> },
+      { path: '/focus', element: <FeatureGate feature="focus"><FocusProfilesRoute /></FeatureGate> },
       { path: '/calendar', element: <FeatureGate feature="calendar"><CalendarPage /></FeatureGate> },
 
       // --- Projects family view ---

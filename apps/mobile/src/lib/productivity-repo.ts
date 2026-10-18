@@ -418,6 +418,65 @@ export function createProductivityRepo(
 }
 
 // ---------------------------------------------------------------------------
+// Minimal task writer (S5, M-52 — Q11 : tâches minimales = titre + état +
+// profil). AD-7 local-first : la row `tasks` est écrite côté appareil ; le
+// rebranchement sur le miroir `productivity.tasks` + upsync se fait au
+// checkpoint lead (le modèle de tâche Q11 reste compatible `productivity.tasks`).
+// On ne modifie PAS le reader ci-dessus, on ajoute le writer minimal.
+// ---------------------------------------------------------------------------
+
+/** Le miroir tasks (single module owner = productivity). */
+const TASKS_ENTITY = 'tasks';
+
+/** La tâche minimale Q11 (titre + état, le profil est le lien app-side). */
+export interface MinimalTaskInput {
+  userId: string;
+  /** titre (la seule donnée obligatoire) */
+  title: string;
+  /** état (défaut `todo`) */
+  status?: TaskStatus;
+}
+
+/**
+ * Créer une tâche minimale Q11 dans le store local (`tasks` miroir).
+ * Retourne le `Task` créé (id généré, shape miroir snake_case upsert).
+ * Le profil assigné vit côté app (`focus_profiles.task_id`) — la tâche
+ * elle-même ne porte PAS de nouvelle colonne (le modèle Q11 reste
+ * compatible `productivity.tasks`).
+ */
+export function createMinimalTask(
+  store: LocalStore,
+  input: MinimalTaskInput,
+  id?: string,
+): Task {
+  const nowIso = new Date().toISOString();
+  const taskId = id ?? `task-${Math.random().toString(36).slice(2, 10)}`;
+  store.upsert(TASKS_ENTITY, {
+    id: taskId,
+    user_id: input.userId,
+    userId: input.userId,
+    subject: input.title,
+    title: input.title,
+    status: input.status ?? 'todo',
+    created_at: nowIso,
+    updated_at: nowIso,
+    local_mutation_id: taskId,
+    local_ts_ms: Date.now(),
+  });
+  return {
+    id: taskId,
+    userId: input.userId,
+    title: input.title,
+    status: input.status ?? 'todo',
+    tags: [],
+    dependencies: [],
+    evidenceRefs: [],
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Public compute surface (thin wrappers over the @aurora/productivity module)
 // ---------------------------------------------------------------------------
 
