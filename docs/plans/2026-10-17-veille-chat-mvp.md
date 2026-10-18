@@ -706,6 +706,12 @@ gh secret list
 > Le workflow lit les secrets via `secrets.KEYSTORE_BASE64` (decode dans le
 > CI, jamais sur la machine de l'utilisateur).
 
+> **État au 2026-10-18** : les 4 secrets `gh secret set` **ne sont PAS
+> encore posés** (le workflow `.github/workflows/release-apk.yml` a été
+> ajouté au S8 mais le lead n'a pas encore lancé les commandes ci-dessus).
+> C'est l'action manuelle 2/2 du checkpoint final du lot (voir le plan
+> L765–779 « Règle de déploiement PowerSync » + le checkpoint ci-dessous).
+
 **M-88 Étape 8 — Page de téléchargement** :
 `updater/download-page.html` (GitHub Pages, bouton + 3 lignes
 d'instructions) — PAS dans `docs/` (qui est le dossier de plans du repo).
