@@ -45,6 +45,13 @@ export interface AgentRunRequest {
     thinkingLevel?: 'low' | 'medium' | 'high' | 'max';
     researchMode?: 'off' | 'standard' | 'deep';
     agentMode?: 'chat' | 'agent' | 'mirror' | 'ascent';
+    /**
+     * M-21 (plan v2 S2, ADR §6 / Q12) — the device's typed model tier
+     * (Auto / Léger / Standard / Avancé). Typed param, never prompt
+     * keywords: the router resolves it to a pinned (provider, model) —
+     * `auto` = the S2.6 Agnes-first chain decides.
+     */
+    modelTier?: 'auto' | 'light' | 'standard' | 'advanced';
   };
 }
 

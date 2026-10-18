@@ -81,6 +81,20 @@ export {
   type RouterRegistry,
 } from './router.ts';
 
+// 9b. M-21 (plan v2 S2, ADR §6 / Q12) — typed model tiers. The tier is a
+// typed task-profile parameter (never prompt keywords); the router folds
+// it into the chain as a pinned (provider, model) resolution.
+export {
+  resolveModelTier,
+  applyModelTierToProfile,
+  MODEL_TIER_CATALOG,
+  MODEL_TIERS,
+  MODEL_TIER_LABELS,
+  MODEL_TIER_CATALOG_TIERS,
+  type ModelTier,
+  type ModelTierPin,
+} from './model-tier.ts';
+
 // 10. Execution Engine
 export {
   ExecutionEngine,

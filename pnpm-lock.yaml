@@ -301,19 +301,25 @@ importers:
       '@aurora/domain':
         specifier: workspace:*
         version: link:../domain
+<<<<<<< Updated upstream
       '@aurora/platform':
         specifier: workspace:*
         version: link:../platform
+=======
+>>>>>>> Stashed changes
       '@aurora/productivity':
         specifier: workspace:*
         version: link:../productivity
 
+<<<<<<< Updated upstream
   packages/goal-engine:
     dependencies:
       '@aurora/domain':
         specifier: workspace:*
         version: link:../domain
 
+=======
+>>>>>>> Stashed changes
   packages/integrations:
     dependencies:
       '@aurora/domain':

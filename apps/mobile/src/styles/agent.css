@@ -183,8 +183,11 @@
 }
 
 /* Composer (pinned). */
+/* M-12 (v2 MVP S1) : la carte de saisie = colonne (puce de mode en
+   tête → row [puce Auto + input + envoi] → texte d'aide « / »). */
 .agent-composer {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   background: var(--aurora-surface);
@@ -216,6 +219,19 @@
 }
 .agent-composer button:disabled {
   opacity: 0.5;
+}
+/* Le bouton d'envoi de la row (M-12) — pas un 44 px carré par défaut,
+   un rond 44 px comme la maquette Stitch (rounded-2xl sur l'accent). */
+.agent-composer .agent-composer-send {
+  border-radius: 50%;
+  background: var(--aurora-accent-primary);
+  color: var(--aurora-accent-on-primary);
+  border: none;
+  cursor: pointer;
+}
+.agent-composer .agent-composer-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ——— Model picker (AD-3 public config; AD-5 fallback enforced server-side) ——— */
@@ -340,11 +356,14 @@
   color: var(--aurora-text-muted);
 }
 
-/* ——— Agent mode tabs (chat / agent / mirror) ——— */
+/* ——— Agent mode tabs (chat / agent / mirror) ———
+   M-12 (v2 MVP S1) : `.agent-mode-tabs` (le tablist EN HAUT de page)
+   est remplace par `.agent-mode-pill` (le segment control DANS la carte
+   de saisie, maquette Stitch « mode pill = segment control 3 options
+   Ask/Agent/Miroir »). Le CSS legacy est CONSERVÉ (le swipe-gesture
+   doc-header de la page + les éventuelles inclusions tierces). */
 .agent-mode-tabs {
-  display: flex;
-  gap: 6px;
-  padding: 10px 12px 0;
+  display: none;
 }
 .agent-mode-tab {
   flex: 1;
@@ -365,6 +384,73 @@
   color: var(--aurora-accent-on-primary);
   background: var(--aurora-accent-primary);
   border-color: var(--aurora-accent-primary);
+}
+
+/* ——— M-12 (v2 MVP S1) — Saisie v2 : le sélecteur de mode vit DANS la
+   carte de saisie (segment control 3 options Ask/Agent/Miroir, la
+   puce modèle « Auto » ouvre la feuille « Réflexion et modèle »),
+   le texte d'aide « / » sous la carte invite à appeler un skill. ——— */
+.agent-composer-top {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+.agent-mode-pill {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--aurora-bg-subtle);
+  border: 1px solid var(--aurora-border);
+  border-radius: 999px;
+}
+.agent-mode-pill__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--aurora-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 100ms ease-linear, color 100ms ease-linear;
+}
+.agent-mode-pill__option:hover {
+  color: var(--aurora-text-primary);
+  background: var(--aurora-surface, var(--ion-color));
+}
+.agent-mode-pill__option.is-active {
+  color: var(--aurora-accent-on-primary);
+  background: var(--aurora-accent-primary);
+}
+.agent-mode-pill__option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.agent-mode-pill__icon {
+  display: inline-flex;
+}
+.agent-composer-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.agent-composer-help {
+  padding: 6px 4px 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--aurora-text-muted);
+}
+.agent-composer-help code {
+  font-family: var(--aurora-font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  color: var(--aurora-text-secondary);
+  background: var(--aurora-bg-subtle);
+  border-radius: 4px;
+  padding: 1px 4px;
 }
 
 /* ——— Active chips (research / plus / files / connectors) ——— */

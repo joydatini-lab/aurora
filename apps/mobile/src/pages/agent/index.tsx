@@ -97,6 +97,18 @@ const AGENT_MODES: Array<{ id: AgentMode; label: string; icon: React.ReactNode }
   { id: 'ascent', label: 'Ascent', icon: <Compass size={12} /> },
 ];
 
+/** M-12 (v2 MVP S1) — la puce de mode du composer : la maquette Stitch
+ *  fixe le segment control à 3 options (Ask / Agent / Miroir). `ascent`
+ *  reste un mode du `taskProfile` (S5 le câble) mais n'est PAS une
+ *  option de la puce — il s'atteint par le deep-link /ascent (S5, M-51).
+ *  Labels SSoT : « Ask » = le mode lecture-seule de Q9 (M-11), « Agent »
+ *  = la boucle d'écriture complète, « Miroir » = le mode pédago. */
+const MODE_PILLS: Array<{ id: AgentMode; label: string; icon: React.ReactNode }> = [
+  { id: 'chat', label: 'Ask', icon: <Bot size={14} /> },
+  { id: 'agent', label: 'Agent', icon: <Zap size={14} /> },
+  { id: 'mirror', label: 'Miroir', icon: <Brain size={14} /> },
+];
+
 // ——— Thinking levels (M-21, stitch écran 4 « Réflexion et modèle ») ———
 // Les 3 affichages Rapide / Équilibré / Approfondi ; la valeur `max`
 // (héritée du picker v1) reste le palier profond — même choix qu'« Approfondi ».
@@ -466,7 +478,11 @@ export function AgentPage() {
           setShowPlusSheet(true);
         }
       } else if (totalDx > GESTURE_DEAD_ZONE) {
-        // RIGHT swipe → cycle the agent mode (chat → agent → mirror → chat).
+        // RIGHT swipe → cycle the agent mode (M-12 v2) : le cycle suit le
+        // segment control du composer (MODE_PILLS : Ask → Agent → Miroir),
+        // plus le mode complet AGENT_MODES (ascent inclut) : le swipe reste
+        // une surface geste « calme » qui n'invente pas de mode hors
+        // puce.
         if (Math.abs(totalDx) > 64 || velocity > GESTURE_VELOCITY) {
           setAgentMode((prev) => {
             const idx = Math.max(0, AGENT_MODES.findIndex((m) => m.id === prev));

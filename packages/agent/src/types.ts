@@ -72,6 +72,15 @@ export interface TaskProfile {
    *             AscentLearningIR; the /ascent page only reads it
    */
   agentMode?: 'chat' | 'agent' | 'mirror' | 'ascent';
+  /**
+   * M-21 (plan v2 S2, ADR §6 / Q12) — the typed model tier the device
+   * picked (Auto / Léger / Standard / Avancé). This is a typed
+   * task-profile parameter submitted to the policy + AI budget — NEVER
+   * keywords in a prompt. The router folds it into the chain as a pinned
+   * (provider, model) resolution (`resolveModelTier`, model-tier.ts);
+   * `auto` = the S2.6 router decides (Agnes-first chain).
+   */
+  modelTier?: 'auto' | 'light' | 'standard' | 'advanced';
 }
 
 /** The routing level a TaskProfile resolves to (ADR v1.7 S7 levels). */

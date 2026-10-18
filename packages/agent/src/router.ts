@@ -14,6 +14,7 @@
  */
 import type { TaskProfile } from './types.ts';
 import { levelFor } from './intent.ts';
+import { resolveModelTier } from './model-tier.ts';
 
 /** The router's output — which provider/model serves the task. */
 export interface ProviderModel {
@@ -106,8 +107,14 @@ export class AgnesPrimaryRouter {
 
     // 0. DEVICE PREFER — the model picker pinned a provider/model
     // (AD-3 public config; AD-5 fallback still applies on 429/error).
-    const prefProv = profile.preferredProvider;
-    const prefModel = profile.preferredModel;
+    // M-21 (plan v2 S2, ADR §6 / Q12): the typed model tier folds in
+    // here when no explicit pin is set — `resolveModelTier(tier)` maps
+    // Léger/Standard/Avancé to a pinned (provider, model); `auto` (or
+    // absent) = the S2.6 router decides below (Agnes-first chain).
+    // Typed param only — never prompt keywords.
+    const tierPin = !profile.preferredProvider ? resolveModelTier(profile.modelTier ?? 'auto') : undefined;
+    const prefProv = profile.preferredProvider ?? tierPin?.provider;
+    const prefModel = profile.preferredModel ?? tierPin?.model;
     if (prefProv) {
       const entry = providers.find((p) => p.provider === prefProv);
       if (entry) {
