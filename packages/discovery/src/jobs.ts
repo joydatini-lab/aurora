@@ -19,7 +19,7 @@
  * rupture). The provider is injected at build time (the dispatcher
  * owns it — `createResearchProvider()` reads env, AD-3 server-side).
  */
-import type { JobKind, UserContext } from '@aurora/domain';
+import type { JobKind, OrSetValue, UserContext } from '@aurora/domain';
 // LOT 1 (AD-1): the real research provider lives in the integrations
 // ADAPTER package (vendors stay in adapters, 01 §3.2). Root-level
 // import of the adapter package entrypoint:
@@ -52,36 +52,56 @@ import {
   appendRun,
   buildVaultMd,
   computeVaultHash,
+  dedupeAgainstVault,
   decideVerbe,
+  runVerdictFromDelta,
 } from './vault.ts';
 import type { VeilleVault, VaultRunManifest, VaultStore } from '@aurora/domain';
 
 /**
- * LOT 2 (discovery-vault plan 2026-10-10) — build a `VaultRunManifest`
- * from the veille pipeline output. The run id is the ULID the handler
- * passes; the date is the run's day (yyyy-MM-dd); `newSources` is the
- * count of NEW discovery items (dedup is the heuristic's job — in V1
- * we count all items, the dedup refinement = backlog); `totalSources`
- * is the previous vault's total + the new items; `relevance` is the
- * filter's verdict average (0..1).
+ * M-43 (S4 plan veille 2026-10-17, bug V1 corrigé) — build a
+ * `VaultRunManifest` from the veille pipeline output, **avec mémoire** :
+ *
+ * - `newSources` = le nombre de sources DU DELTA (ce qui n'était PAS
+ *   déjà dans le vault, via `dedupeAgainstVault` — le critère SSoT
+ *   gelé 10/10 : le run N+1 ne refait pas les recherches des runs
+ *   précédents, le vault a servi de mémoire, taux de doublons
+ *   avec cache 0–10 % / seuil ≤ 20 %). V1 comptait TOUS les items
+ *   (« in V1 we count all items, the dedup refinement = backlog ») —
+ *   le backlog est livré ici.
+ * - `relevance` = le verdict DÉRIVÉ du delta (`runVerdictFromDelta`),
+ *   PAS le `1.0/0` figé de V1 (gel 10/10 : « la pertinence SSoT du
+ *   run N+1 est dérivée du delta »).
+ * - `totalSources` = le cumul du vault pré-run + le delta (les
+ *   doublons ne sont JAMAIS ré-apportés à la SSoT).
+ * - AD-16b : le flag `uncertain` du `NotificationJobPayload` (nourri
+ *   par le pipeline, voir `runVeillePipeline`) n'est JAMAIS retiré par
+ *   la dédup — c'est un autre canal que la pertinence du run.
  *
  * Pure: same input → same manifest.
  */
 function buildVaultRunManifest(
   jobId: string,
   domaine: string,
-  discoveryItems: ReadonlyArray<{ summary: string }>,
+  discoveryItems: ReadonlyArray<{ summary: string; title?: string; sources?: OrSetValue[] }>,
   prevVault: VeilleVault | null,
   now: string,
 ): VaultRunManifest {
   const date = now.slice(0, 10); // yyyy-MM-dd (the runs/ folder name)
-  const newSources = discoveryItems.length;
+  // M-43 — run « avec mémoire » : le delta = ce qui n'est PAS déjà dans
+  // le vault (`dedupeAgainstVault`, SSoT doc 10/14). Premier run
+  // (prevVault = null) → tout est delta (le bootstrap ne peut pas être
+  // en doublon), taux de doublons = 0.
+  const { delta } = dedupeAgainstVault(discoveryItems, prevVault);
+  const newSources = delta.length;
   const totalSources =
     (prevVault?.runs.at(-1)?.totalSources ?? 0) + newSources;
-  const relevance =
-    discoveryItems.length === 0
-      ? 0
-      : 1.0; // V1: the filter already qualified these; relevance = presence
+  // M-43 — le verdict = fct(delta) (gel 10/10 : le `1.0/0` figé de V1
+  // est remplacé — un delta élevé = une pertinence élevée ; un delta
+  // faible = une pertinence faible). AD-16b inchangé : ce verdict ne
+  // supprime PAS le flag `uncertain` du notificationJob (celui-ci est
+  // déjà porté par le pipeline, voir `runVeillePipeline`).
+  const relevance = runVerdictFromDelta(newSources, discoveryItems.length);
   return {
     id: jobId, // the run id = the job ULID (idempotency AD-8)
     date,
@@ -232,7 +252,17 @@ export function buildDiscoveryResearchHandler(deps: DiscoveryJobDeps): Registere
               run.mutations = [
                 { verbe: decision.verbe, runId: run.id, section: decision.section, note: decision.note },
               ];
-              const vaultMd = buildVaultMd(prev, run, decision);
+              // M-43 — le vault SSoT n'accumule QUE le delta : les
+              // titres de source DU DELTA (ce qui n'était PAS déjà
+              // dans le vault, la mémoire du run N+1) sont seuls
+              // ajoutés à la section `## Sources`. Absent → le V1
+              // (le SSoT ne porte que le cumul du manifest).
+              const { delta } = dedupeAgainstVault(out.discoveryItems, prev);
+              const deltaTitles: string[] = delta.map(
+                (item) =>
+                  (typeof item.title === 'string' && item.title !== '' ? item.title : item.summary),
+              );
+              const vaultMd = buildVaultMd(prev, run, decision, deltaTitles);
               const hash = await computeVaultHash(vaultMd);
               const next = appendRun(prev, run, vaultMd, hash, userId, jobId);
               vaultResult = await deps.vaultStore.write(userId, domaine, next);
