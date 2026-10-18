@@ -513,6 +513,30 @@
   color: var(--aurora-text-muted);
 }
 
+/* ——— M-74 (S7 finitions) : le 5ᵉ état UX (hors-ligne, AD-7 local-first)
+    — le badge « Hors ligne » + le message honnête (les données du
+    miroir restent lisables, le prochain sync se fera au retour en
+    ligne). La couleur est le var de l'accent, jamais un hex. ——— */
+.focus-v2[data-offline="true"] > .focus-v2-offline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--aurora-text-muted);
+  background: var(--aurora-surface);
+  border: 1px solid var(--aurora-border);
+  border-radius: 12px;
+}
+.focus-v2-offline .aurora-badge {
+  align-self: flex-start;
+}
+.focus-v2-offline-hint {
+  margin: 0;
+  line-height: 1.4;
+}
+
 /* ——— Tâche en cours (le minuteur, M-53) ——— */
 .focus-v2-active {
   padding: 14px 16px;

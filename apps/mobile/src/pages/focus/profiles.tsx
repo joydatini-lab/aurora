@@ -43,6 +43,7 @@ import {
 import { useMemo, useState, useCallback } from 'react';
 import { useUiStateStore } from '../../state/ui-state';
 import { useMobileData } from '../../query/context';
+import { useOnlineStatus } from '../../hooks/use-online';
 import { createAppFocusService } from '../../lib/focus-service';
 import {
   createFocusProfileStore,
@@ -92,6 +93,10 @@ export function FocusProfilesPage({
   onSession,
 }: FocusProfilesPageProps) {
   const { focusActive, setFocusActive } = useUiStateStore();
+  // M-74 (S7 finitions) — le 5ᵉ état UX : l'indicateur hors-ligne (le
+  // badge « Hors ligne » du plan §16, AD-7 local-first : les données du
+  // miroir PowerSync restent lisables en offline, l'état est honnête).
+  const online = useOnlineStatus();
 
   // Profil affiché + tâches (la relecture locale suit le store, AD-7).
   const [version, setVersion] = useState(0);
@@ -187,8 +192,26 @@ export function FocusProfilesPage({
           <div
             data-focus-v2="true"
             data-active={focusActive}
+            data-offline={!online}
             className="focus-v2"
           >
+            {/* M-74 (S7 finitions) — le 5ᵉ état UX : l'indicateur hors-ligne
+                (le badge « Hors ligne » du plan §16, AD-7 local-first :
+                les données du miroir PowerSync restent lisables en offline,
+                l'état est honnête — jamais une fausse sync). */}
+            {!online && (
+              <div
+                data-ux="offline"
+                className="focus-v2-offline"
+                role="status"
+                aria-label="Hors ligne"
+              >
+                <span className="aurora-badge">Hors ligne</span>
+                <span className="focus-v2-offline-hint">
+                  Les profils et tâches restent lisables — le prochain sync se fera dès le retour en ligne.
+                </span>
+              </div>
+            )}
             {/* ——— MES PROFILS ——— */}
             <section className="focus-v2-section" data-purpose="profiles-section">
             <div className="focus-v2-section-head">
