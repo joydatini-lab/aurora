@@ -133,6 +133,22 @@ export interface AgentRunRow {
   confirmationStepId?: string;
   confirmationStepHash?: string;
   confirmationTool?: string;
+  /**
+   * Lot Canvas AI (2026-10-18) — le `input` du step de confirmation
+   * (exposé pour la diff « suggestion d'écriture » du SSoT
+   * `canvas-run-wiring.ts` : `canvas_write` porte `canvasId` +
+   * `blockId` + `markdown`, la carte montre l'actuel vs le proposé).
+   * Absent = le prompt n'a pas d'input lisible (pas de diff à montrer).
+   */
+  confirmationStepInput?: Record<string, unknown> | null;
+  /**
+   * Lot Canvas AI (2026-10-18) — les ids de canvas TOUCHÉS par le run
+   * (les steps `canvas.*` qui portent `input.canvasId`, dedupés dans
+   * l'ordre de première apparition — le SSoT `canvas-run-wiring.ts`
+   * `canvasIdsOf`). Le CTA « Ouvrir le canvas » du chat navigue vers
+   * `/canvas/<id>` (au lieu de toujours `/canvas/new`).
+   */
+  canvasIds?: string[];
   startedAt: string;
   completedAt?: string;
 }
@@ -213,6 +229,17 @@ function mapAgentRunRow(row: Record<string, unknown>): AgentRunRow {
     ? (row.steps_json as Array<Record<string, unknown>>)
     : [];
   const pending = steps.find((s) => s?.kind === 'confirmation' && s.status === 'pending');
+  // Lot Canvas AI : les ids de canvas touchés (le SSoT canvas-run-wiring
+  // lit le subset `canvasIdsOf` ici, le mapping canvasId → URL du CTA).
+  const canvasIds: string[] = [];
+  for (const s of steps) {
+    const tool = typeof s?.tool === 'string' ? s.tool : '';
+    const isCanvasTool =
+      tool.startsWith('canvas_') || tool === 'canvas_rename' || tool.startsWith('canvas.');
+    if (!isCanvasTool) continue;
+    const id = s?.input && typeof s.input === 'object' ? (s.input as Record<string, unknown>).canvasId : undefined;
+    if (typeof id === 'string' && id !== '' && !canvasIds.includes(id)) canvasIds.push(id);
+  }
   return {
     id: String(row.id),
     userId: String(row.user_id ?? ''),
@@ -231,6 +258,11 @@ function mapAgentRunRow(row: Record<string, unknown>): AgentRunRow {
         ? String(pending.stepHash)
         : undefined,
     confirmationTool: pending?.tool ? String(pending.tool) : undefined,
+    confirmationStepInput:
+      pending?.input !== null && pending?.input !== undefined && typeof pending.input === 'object'
+        ? (pending.input as Record<string, unknown>)
+        : undefined,
+    canvasIds: canvasIds.length > 0 ? canvasIds : undefined,
     startedAt: String(row.started_at ?? ''),
     completedAt: row.completed_at ? String(row.completed_at) : undefined,
   } satisfies AgentRunRow;

@@ -191,6 +191,61 @@
   opacity: 0.5;
 }
 
+/* Lot Canvas AI (2026-10-18) — la diff « suggestion d'écriture » (le
+   pattern Review Changes du doc Tiptap, SANS l'add-on payant) : l'actuel
+   (gris) vs le proposé (fond bleu léger), le contenu du bloc canvas qui
+   sera écrit si l'utilisateur Confirme. + le CTA « Ouvrir le canvas »
+   (le mapping canvasId → URL). */
+.agent-canvas-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.agent-canvas-diff pre {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--aurora-radius, 0.5rem);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow: auto;
+  font-family: var(--aurora-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+.agent-canvas-diff-current {
+  background: var(--aurora-bg-subtle);
+  color: var(--aurora-text-tertiary);
+  border: 1px dashed var(--aurora-border);
+}
+.agent-canvas-diff-proposed {
+  background: var(--aurora-bg-subtle);
+  color: var(--aurora-text-primary);
+  border: 1px solid var(--aurora-accent-primary);
+}
+.agent-canvas-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.agent-canvas-link {
+  appearance: none;
+  border: 1px solid var(--aurora-accent-primary);
+  background: var(--aurora-surface-bg);
+  color: var(--aurora-text-primary);
+  border-radius: var(--aurora-radius, 0.5rem);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  min-height: var(--aurora-tap-target, 44px);
+  display: inline-flex;
+  align-items: center;
+}
+.agent-canvas-link:active {
+  background: var(--aurora-accent-primary);
+  color: var(--aurora-accent-on-primary);
+}
+
 /* Composer (pinned). */
 /* M-12 (v2 MVP S1) : la carte de saisie = colonne (puce de mode en
    tête → row [puce Auto + input + envoi] → texte d'aide « / »). */

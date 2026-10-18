@@ -95,6 +95,12 @@ import { parseSkillSlashCall, withForcedSkill, type SkillCandidate } from './ski
 // dans le .ts final).
 import { MirrorFindingsCard } from '../../components/agent/mirror-findings-card.tsx';
 import type { MirrorCardFinding } from '../../components/agent/mirror-findings-card.tsx';
+import {
+  canvasIdsOf,
+  buildCanvasUrl,
+  buildCanvasDiff,
+  type CanvasDiff,
+} from '../../lib/canvas-run-wiring';
 
 // ——— Model picker catalog (AD-3: static, public config — no key here). ———
 const MODEL_CATALOG: Array<{ provider: string; name: string; models: string[] }> = [
@@ -1016,10 +1022,60 @@ export function AgentPage() {
                   // la ligne d'état suffit.
                   const p = promptOf(inFlightRow);
                   if (!p) return null;
+                  // Lot Canvas AI — le SSoT canvas-run-wiring : si le run a
+                  // touché un canvas, le CTA « Ouvrir le canvas » navigue
+                  // vers /canvas/<id> (le mapping canvasId → URL, manquement
+                  // 1) ; si le prompt est un canvas_write, la diff
+                  // « suggestion d'écriture » (l'actuel vs le proposé, le
+                  // pattern Review Changes du doc Tiptap, manquement 2) est
+                  // montrée dans la carte AVANT les boutons.
+                  const cIds = canvasIdsOf(inFlightRow);
+                  // Le SSoT buildCanvasDiff (le module pur) est appelé sans
+                  // la session courante (le bloc courant n'est pas chargé
+                  // sur la page agent) → la diff se dégrade au contenu
+                  // proposé seul (le `current` est vide). Le client canvas
+                  // (si la session est ouverte) brancherait le contenu
+                  // actuel via `canvas.get` ; ici, le minimum = le proposé.
+                  const diff: CanvasDiff | null = buildCanvasDiff(inFlightRow, null);
                   return (
                     <div className="agent-confirm" data-confirmation={p.stepId}>
                       {p.tool && <div className="agent-confirm-label">{p.tool}</div>}
                       {p.message && <div className="agent-confirm-message">{p.message}</div>}
+                      {diff && (
+                        <div
+                          className="agent-canvas-diff"
+                          data-canvas-id={diff.canvasId}
+                          data-block-id={diff.blockId}
+                          role="group"
+                          aria-label="Suggestion d'écriture canvas"
+                        >
+                          {diff.current !== '' && (
+                            <pre className="agent-canvas-diff-current" aria-label="Contenu actuel">
+                              {diff.current}
+                            </pre>
+                          )}
+                          <pre
+                            className="agent-canvas-diff-proposed"
+                            aria-label="Contenu proposé"
+                          >
+                            {diff.proposed}
+                          </pre>
+                        </div>
+                      )}
+                      {cIds.length > 0 && (
+                        <div className="agent-canvas-links" aria-label="Canvas touchés">
+                          {cIds.map((cid) => (
+                            <button
+                              key={cid}
+                              type="button"
+                              className="agent-canvas-link"
+                              onClick={() => navigate(buildCanvasUrl(cid), { state: { from: '/agent' } })}
+                            >
+                              Ouvrir le canvas
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       <div className="agent-confirm-actions">
                         <button
                           type="button"
