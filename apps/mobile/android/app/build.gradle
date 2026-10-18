@@ -1,5 +1,22 @@
 apply plugin: 'com.android.application'
 
+// S8 M-86 (plan 2026-10-17 L669–673) — le signingConfigs.release : les
+// secrets de signature SONT dans l'ENV de CI (les GitHub secrets, le
+// plan L672 « les secrets viennent de l'ENV de CI, jamais en clair
+// dans le code/dépôt »). System.getenv lit les 4 secrets (les valeurs
+// par défaut vides = le build debug local continue de fonctionner, le
+// plan L672 ; le build release sans secrets échoue explicitement au
+// moment de la signature, le CI les pose via gh secret set avant le
+// premier run du release-apk.yml, M-87b).
+//
+// L'applicationId N'EST PAS modifiée (le plan L673) — la signature ne
+// change JAMAIS le package (le keystore est la SSoT de la signature,
+// le package est le SSoT de l'identifiant d'installation).
+def keystorePath = System.getenv('KEYSTORE_PATH') ?: ''
+def keystorePassword = System.getenv('KEYSTORE_PASSWORD') ?: ''
+def keyAlias = System.getenv('KEY_ALIAS') ?: ''
+def keyPassword = System.getenv('KEY_PASSWORD') ?: ''
+
 android {
     namespace = "com.aurora.mobile"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,10 +33,34 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+
+    // S8 M-86 (le plan L670–672) : le signingConfigs.release — le
+    // keystore est lu depuis l'ENV (le KEYSTORE_PATH, le CI le decode
+    // depuis le base64 secret `KEYSTORE_BASE64`, le workflow M-87 le
+    // fait ; sur une machine locale, l'ENV KEYSTORE_PATH pointe vers
+    // un keystore existant, sinon les valeurs vides → le build
+    // release échoue au moment de la signature, le build debug
+    // continue de fonctionner (le plan L672 « les valeurs par défaut
+    // vides — le build debug local continue de fonctionner »)).
+    signingConfigs {
+        release {
+            storeFile keystorePath ? file(keystorePath) : null
+            storePassword keystorePassword
+            keyAlias keyAlias
+            keyPassword keyPassword
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // Le signingConfig du release : si les secrets SONT dans
+            // l'ENV (le CI, le M-87b), l'APK est signé ; sinon (un
+            // build local sans secrets), le storeFile null → le build
+            // échoue explicitement (le plan L672 : les valeurs par
+            // défaut vides, le build debug n'est PAS affecté).
+            signingConfig keystorePath ? signingConfigs.release : null
         }
     }
 }
