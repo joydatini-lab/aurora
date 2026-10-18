@@ -23,11 +23,13 @@ import {
   Brain,
   Calendar,
   Compass,
+  Download,
   Inbox,
   LogIn,
   Moon,
   PenTool,
   Plug,
+  RefreshCw,
   Sun,
   Timer,
 } from 'lucide-react';
@@ -58,6 +60,8 @@ import {
 } from '@aurora/ui';
 import { useUiStateStore } from '../../state/ui-state';
 import { useUserFeatures } from '../../query/user-features';
+import { useUpdater } from '../../updater/useUpdater';
+import { Capacitor } from '@capacitor/core';
 
 /**
  * The 13 swatches (10 expressive + 3 presets) grouped by FAMILY, so a
@@ -148,6 +152,24 @@ export function SettingsPage() {
   const { isEnabled, setFeature } = useUserFeatures();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  // S8 M-85 (plan 2026-10-17 L667) : le bouton « Rechercher une mise à
+  // jour » de la page Réglages — il relaie le `checkNow` du hook
+  // `useUpdater` (le hook est aussi monté au shell root, le plan L666,
+  // ce bouton en est le trigger manuel). Sur web/iOS (le
+  // `Capacitor.getPlatform() !== 'android'`) le bouton n'apparaît PAS
+  // (le plan L723–724 : le updater ne fait rien hors Android, la page
+  // Réglages n'expose pas un CTA mort).
+  const updater = useUpdater();
+  const isAndroid = Capacitor.getPlatform() === 'android';
+  const [checking, setChecking] = useState(false);
+  const checkForUpdate = async () => {
+    setChecking(true);
+    try {
+      await updater.checkNow();
+    } finally {
+      setChecking(false);
+    }
+  };
   // Optimistic local coaching prefs (OQ-47: the write is a local mirror,
   // the sync is an AD-8 job — never blocks the screen).
   const [cadence, setCadence] = useState<'daily' | 'weekly' | 'off'>('daily');
@@ -555,6 +577,52 @@ export function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* S8 M-85 (plan 2026-10-17 L667) : le bouton « Rechercher une
+              mise à jour » — le trigger manuel du self-updater APK (le
+              hook `useUpdater` est aussi monté au shell root, le plan
+              L666 ; ce bouton relaie `checkNow`). Sur web/iOS (le
+              `Capacitor.getPlatform() !== 'android'`) la section
+              n'apparaît PAS (le plan L723–724 : le updater ne fait rien
+              hors Android, la page Réglages n'expose pas un CTA mort).
+              L'état du hook est partagé avec le dialogue global du
+              shell (le `UpdateDialog` M-85) — si une update est
+              détectée, le dialogue s'ouvre au-dessus de la page. */}
+          {isAndroid && (
+            <Card id="updater-section">
+              <CardHeader>
+                <CardTitle>Mise à jour</CardTitle>
+                <CardDescription>
+                  Vérifie l'existence d'une nouvelle version APK sur
+                  GitHub Releases (le self-updater S8, plan L653–658).
+                  Le téléchargement + l'installation se font hors Play
+                  Store (le plan L620–622 : l'utilisateur télécharge
+                  l'APK brut depuis le web, l'app détecte et installe
+                  elle-même les nouvelles versions).
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  iconLeading={RefreshCw}
+                  onClick={() => {
+                    void checkForUpdate();
+                  }}
+                  isLoading={checking || updater.status === 'checking'}
+                >
+                  Rechercher une mise à jour
+                </Button>
+                {updater.status === 'error' && updater.error && (
+                  <p
+                    data-updater="settings-error"
+                    role="alert"
+                    style={{ marginTop: 8, fontSize: 13, color: 'var(--color-error-primary)' }}
+                  >
+                    {updater.error}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </IonContent>
     </>

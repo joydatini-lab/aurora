@@ -38,6 +38,7 @@ import { LearnPage, LearnDetailPage } from './pages/learn';
 import { KnowledgePage, KnowledgeNodePage } from './pages/knowledge';
 import { DiscoveryPage } from './pages/discovery';
 import { RapportDeVeillePage } from './pages/discovery/rapport';
+import { VeilleCreatePage } from './pages/discovery/creation';
 import { ProgressPage, ProgressDetailPage } from './pages/progress';
 import { FocusProfilesRoute } from './pages/focus/profiles';
 import { ArtifactPage } from './pages/artifacts';
@@ -140,6 +141,12 @@ export const appRouter: AppRouter = createBrowserRouter([
 
       // --- Discovery feed (G-M7 gated) ---
       { path: '/discovery', element: <FeatureGate feature="discovery"><DiscoveryPage /></FeatureGate> },
+      // M-45 (S4) : le FORMULAIRE DE CRÉATION d'une veille (l'écran 15 du
+      // plan 2026-10-17, le SSoT Stitch `veille_cr_ation_manuelle_fraunces`
+      // — gated sur le feature `discovery`). Le path `nouveau` DOIT être
+      // déclaré AVANT `/discovery/:id` (sinon le paramètre `:id` matche
+      // « nouveau » et le formulaire n'est jamais servi).
+      { path: '/discovery/nouveau', element: <FeatureGate feature="discovery"><VeilleCreatePage /></FeatureGate> },
       // M-44 (S4) : le RAPPORT DE VEILLE d'un programme (l'écran 13 du
       // plan 2026-10-17, le VAULT.md rendu « style édition » + la feuille
       // des sources de l'écran 14 — gated sur le feature `discovery`).
@@ -171,6 +178,6 @@ export type AppRoute = '/home' | '/tasks' | '/learn' | '/progress' | '/agent'
   | '/agent/conversations' | '/agent/capacites' | '/agent/bibliotheque'
   | '/tasks/:id' | '/learn/:id' | '/progress/:id' | '/knowledge' | '/knowledge/:nodeId'
   | '/artifacts/:id' | '/inbox' | '/settings' | '/goals' | '/goals/:id'
-  | '/goals/:id/features/:fid' | '/goals/:id/ascent' | '/focus' | '/calendar' | '/projects' | '/habits' | '/routines' | '/reviews' | '/retro' | '/countdown' | '/discovery' | '/discovery/:id'
+  | '/goals/:id/features/:fid' | '/goals/:id/ascent' | '/focus' | '/calendar' | '/projects' | '/habits' | '/routines' | '/reviews' | '/retro' | '/countdown' | '/discovery' | '/discovery/nouveau' | '/discovery/:id'
   | '/skills' | '/integrations' | '/login' | '/onboarding'
   | '/canvas/:id';

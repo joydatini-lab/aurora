@@ -24,10 +24,19 @@ import { Settings } from 'lucide-react';
 import { IN_APP_LOGO, IN_APP_LOGO_ASSET } from '../brand/logo';
 import { AgentBus } from './AgentBus';
 import { ShellTabBar } from './ShellTabBar';
+import { useUpdater } from '../updater/useUpdater';
+import { UpdateDialog } from '../updater/UpdateDialog';
 
 export function Shell() {
   const navigate = useNavigate();
   const location = useLocation();
+  // S8 M-85 (plan 2026-10-17 L666) : l'intégration au démarrage du
+  // self-updater APK — le hook est monté au shell root (après le
+  // PowerSync/Supabase boot de `main.tsx`, sans le bloquer : le check
+  // est asynchrone post-mount, le render n'est JAMAIS bloqué). Sur
+  // web/iOS le hook reste `idle` pour toujours (le plan L723–724 : ne
+  // fait rien, ne génère AUCUNE erreur).
+  const updater = useUpdater();
   /** M-13 (v2 MVP S1, plan S1 §M-13) : la page Agent N'A PAS de barre
    *  d'onglets (« AUCUNE barre de navigation sur la page Agent ») — la
    *  sortie de l'assistant passe par SON MENU LATÉRAL (nouvelle
@@ -79,6 +88,11 @@ export function Shell() {
         </IonFooter>
       )}
       <AgentBus />
+      {/* S8 M-85 : le dialogue de mise à jour (le plan L664) — il
+          n'apparaît que si le hook `useUpdater` détecte une version
+          plus récente (le plan L719) ; sur web/iOS il reste `idle`
+          et rend `null` (le plan L723–724). */}
+      <UpdateDialog updater={updater} />
     </IonApp>
   );
 }

@@ -28,7 +28,11 @@ import {
   type CheckForUpdateResult,
   type LatestReleaseResponse,
   type UpdateInfo,
+  type ApkAsset,
 } from './checkForUpdate';
+
+// Le re-export des types (le hook M-85 les importe depuis ce module).
+export type { UpdateInfo, ApkAsset } from './checkForUpdate';
 
 // ————————————————————————————————————————————————————————————————
 // L'interface EXACTE du bridge (le plan L650 : « l'interface exacte de la
