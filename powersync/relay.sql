@@ -43,7 +43,13 @@ UNION ALL SELECT id, user_id, 'goals', title, description, status,
 UNION ALL SELECT id, user_id, 'subtasks', title, NULL, status,
                  3, 3, NULL, '[]'::jsonb, '[]'::jsonb,
                  crdt_added, crdt_removed, local_mutation_id, created_at, updated_at
-           FROM subtasks;
+           FROM subtasks
+UNION ALL SELECT id, user_id, 'focus_profiles', name,
+                 method || ' / base ' || base_minutes || ' min' AS description,
+                 NULL,
+                 3, 3, NULL, '[]'::jsonb, '[]'::jsonb,
+                 '{}'::jsonb, '{}'::jsonb, '', created_at, updated_at
+           FROM focus_profiles;
 
 -- Learning scope (owner Learning)
 CREATE OR REPLACE VIEW v_learning_scope WITH (security_invoker = on) AS

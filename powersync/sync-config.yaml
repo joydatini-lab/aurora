@@ -51,6 +51,7 @@ streams:
       - SELECT * FROM habits WHERE user_id = auth.user_id()
       - SELECT * FROM routines WHERE user_id = auth.user_id()
       - SELECT * FROM focus_sessions WHERE user_id = auth.user_id()
+      - SELECT * FROM focus_profiles WHERE user_id = auth.user_id()
       - SELECT * FROM decisions WHERE user_id = auth.user_id()
       - SELECT * FROM calendar_events WHERE user_id = auth.user_id()
 

@@ -75,7 +75,7 @@
   "mirrorTables": {
     "productivity": [
       "tasks", "subtasks", "milestones", "projects", "goals", "habits", "routines",
-      "focus_sessions", "decisions", "calendar_events"
+      "focus_sessions", "focus_profiles", "decisions", "calendar_events"
     ],
     "knowledge": [
       "notes", "resources",
