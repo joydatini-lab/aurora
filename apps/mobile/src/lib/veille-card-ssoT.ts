@@ -47,7 +47,7 @@ export type CardTone = (typeof CARD_TONES)[number];
  *  dérivé de l'`id` du programme — deux programmes distincts partagent
  *  la même teinte si leur index modulo 4 coïncide, le SSoT fermé du
  *  Stitch écran 12 : 4 teintes max, jamais plus). */
-export function pickCardTone(id: string, cadence: string | null): CardTone {
+export function pickCardTone(id: string): CardTone {
   let h = 0;
   for (let i = 0; i < id.length; i++) {
     h = (h * 31 + id.charCodeAt(i)) >>> 0;

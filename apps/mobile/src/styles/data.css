@@ -4359,3 +4359,84 @@ html[data-aurora-image-theme] .cal-header {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+/* ---- M-46 (S4, écran 12 « Carte de liste v2 ») ---------------------------
+ * Le design Stitch `discovery_cartes_fiches_ditoriales_a_r_es_statut` :
+ * l'en-tête coloré (le pastille teinté par le SSoT de la teinte
+ * `data-card-tone`, le sous-titre type/cadence + le titre en gras),
+ * le menu 3 points DANS L'EN-TÊTE (plus dans le corps), le footer v2
+ * (3 infos SSoT : sources+delta, date dernière veille, pertinence).
+ *
+ * Les 4 teintes SSoT (`pickCardTone` de `veille-card-ssoT.ts`) :
+ * le `data-card-tone` pilote le fond coloré de la pastille (le token
+ * `--aurora-accent-*` / `--aurora-success` / `--aurora-warning` /
+ * `--aurora-info` — AD-17 : tokens only, zéro hex hardcodé). */
+
+/* Le pastille teinté du header v2 (le SSoT du Stitch écran 12 :
+   `w-9 h-9 rounded-lg`, le fond est la teinte du programme, l'icône
+   est la même teinte mais plus opaque). Le `data-card-tone` porte
+   le `--veil-card-pastille-bg` + le `--veil-card-pastille-fg`. */
+.veil-card-pastille {
+  background: var(--veil-card-pastille-bg, var(--aurora-accent-selected-surface));
+  color: var(--veil-card-pastille-fg, var(--aurora-accent-primary));
+}
+/* Les 4 teintes SSoT (le `data-card-tone` du `.tsx`) : */
+[data-card-tone="accent"] .veil-card-pastille {
+  background: var(--aurora-accent-selected-surface);
+  color: var(--aurora-accent-primary);
+}
+[data-card-tone="success"] .veil-card-pastille {
+  background: var(--aurora-success-surface);
+  color: var(--aurora-success);
+}
+[data-card-tone="warning"] .veil-card-pastille {
+  background: var(--aurora-warning-surface);
+  color: var(--aurora-warning);
+}
+[data-card-tone="info"] .veil-card-pastille {
+  background: var(--aurora-info-surface);
+  color: var(--aurora-info);
+}
+
+/* Le sous-titre type/cadence (le SSoT du Stitch écran 12 : le libellé
+   `VEILLE · MENSUELLE` en uppercase 10px tracking-wide, la teinte est
+   celle du programme — mais pour l'AD-17 on garde le text-muted par
+   défaut, le libellé est informationnel, pas une state sémantique). */
+.veil-card-type-cadence {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--aurora-text-tertiary, var(--aurora-text-secondary));
+  line-height: 1.3;
+}
+
+/* Le titre en gras du programme (le SSoT du Stitch écran 12 : le
+   `h3` `text-[15px] font-semibold` du header v2, remplacé ici par le
+   CSS dédié `veil-card-title` — le `.tsx` ne redéfini plus le titre
+   inline, il consomme ce sélecteur). */
+.veil-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--aurora-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Le footer v2 (M-46 : 3 infos SSoT, le SSoT du Stitch écran 12 —
+   le count sources + le delta "ce jour" + la date + le verdict de
+   pertinence, une ligne, les 3 infos sont séparées par un `gap`).
+   Le SSoT du Lot 4 (total + date en 2 spans) est remplacé ici. */
+.veil-card-stats-v2 {
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+}
+/* La 3e info (le verdict de pertinence) se positionne à droite du
+   footer (le `ml-auto` du Stitch écran 12 : le badge de pertinence
+   est à droite, les 2 autres à gauche). */
+.veil-card-stats-v2 > :last-child {
+  margin-left: auto;
+}

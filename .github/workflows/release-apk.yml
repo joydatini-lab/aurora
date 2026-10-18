@@ -1,0 +1,174 @@
+# S8 M-87 (plan 2026-10-17 L675–711) — le workflow de publication du
+# self-updater APK (hors Play Store, le plan L620–622).
+#
+# NE PAS TOUTCHER le workflow `release.yml` existant (le plan L677 —
+# c'est un autre lot, la publication du web). Ce fichier est LE workflow
+# dédié à la publication de l'APK Android signé.
+#
+# Le trigger (le plan L676) : un push de tag `v*` sur la branche main.
+# Le workflow :
+#   1. pnpm 10.28.0 + node 22 (identique au release.yml, le plan L678)
+#   2. pnpm install (le lockfile du monorepo pnpm, pas yarn/npm)
+#   3. pnpm build:web dans apps/mobile (le build web Vite/Rollup —
+#      l'APK embarque le dist web du mobile, le Capacitor le package)
+#   4. npx cap sync android (le copy du dist/ dans l'asset du Android,
+#      le plan L681)
+#   5. le decode du keystore depuis le secret `KEYSTORE_BASE64`
+#      (le plan L684–685 : le keystore N'EST PAS dans le dépôt, il est
+#      decodé du base64 du secret au moment du build, on l'écrit dans
+#      un temp file non-committed, le ENV `KEYSTORE_PATH` pointe dessus)
+#   6. ./gradlew assembleRelease (le build.gradle M-86 lit les 4 secrets
+#      via System.getenv, le plan L669–673)
+#   7. l'upload de `app-release.apk` sur GitHub Releases (le
+#      `softprops/action-gh-release@v1` + le nom d'asset exact `app-release.apk`,
+#      le plan L694–697 : le config.ts `APK_ASSET_NAME` l'attend sous
+#      ce nom exact, l'app le détecte via le GitHub API)
+#
+# M-87b (le plan L712–714) : les 4 secrets sont posés par le lead via
+# `gh secret set` (KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS,
+# KEY_PASSWORD). Le workflow NE PEUT PAS les poser lui-même, il les
+# référence seulement. Les valeurs par défaut vides dans le build.gradle
+# (le M-86) signent un build debug seulement, le build release échoue
+# explicitement si les secrets manquent.
+name: Release APK (self-updater)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Les secrets (le M-87b) : le lead les pose une seule fois dans le
+# dashboard GitHub → Settings → Secrets and variables → Actions.
+# L'accès workflow via `${{ secrets.* }}` (le plan L686).
+env:
+  # Le pnpm version pin (le release.yml existant, le plan L678).
+  PNPM_VERSION: '10.28.0'
+
+jobs:
+  build-release-apk:
+    name: Build + sign + publish APK
+    # L'apk ne se compile que sur une runner Linux avec le SDK Android
+    # (le plan L682–683) — le ubuntu-latest a le JDK 17 + le Android
+    # SDK preinstalled via l'action `android-actions/setup-android`.
+    runs-on: ubuntu-latest
+
+    steps:
+      # ————————————————————————————————————————————————
+      # 1. Le checkout (le SHA du tag pushed, pas une branche — le
+      #    workflow est triggeré par un tag, le checkout est l'exact
+      #    commit du tag).
+      # ————————————————————————————————————————————————
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Le tag n'existe qu'avec l'historique complet.
+
+      # ————————————————————————————————————————————————
+      # 2. Le pnpm (le pin via corepack — le pnpm est le package
+      #    manager du monorepo, le lockfile est `pnpm-lock.yaml`).
+      # ————————————————————————————————————————————————
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      # ————————————————————————————————————————————————
+      # 3. L'install des deps (le pnpm install au root, le lockfile
+      #    est le SSoT — le CI ne dérive JAMAIS le lockfile).
+      # ————————————————————————————————————————————————
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ————————————————————————————————————————————————
+      # 4. Le build web (le plan L681 : `pnpm build:web` dans
+      #    apps/mobile — le Vite/Rollup produce le dist/ que le
+      #    Capacitor va empaqueter).
+      # ————————————————————————————————————————————————
+      - name: Build mobile web
+        working-directory: apps/mobile
+        run: pnpm build:web
+
+      # ————————————————————————————————————————————————
+      # 5. Le cap sync android (le copy du dist web dans
+      #    android/app/src/main/assets/public, le plan L681).
+      # ————————————————————————————————————————————————
+      - name: Cap sync android
+        working-directory: apps/mobile
+        run: npx cap sync android
+
+      # ————————————————————————————————————————————————
+      # 6. Le decode du keystore (le plan L684–685) : le secret
+      #    `KEYSTORE_BASE64` contient le keystore encodé en base64.
+      #    On le decode dans un temp file hors du dépôt, on pose
+      #    l'ENV `KEYSTORE_PATH` que le build.gradle (M-86) lit via
+      #    `System.getenv('KEYSTORE_PATH')`. Le keystore N'EST PAS
+      #    commité (le plan L672 : jamais en clair dans le dépôt).
+      # ————————————————————————————————————————————————
+      - name: Decode keystore from secret
+        run: |
+          set -e
+          # Le temp keystore (le /tmp est hors du workspace, jamais
+          # vu par le git working tree du checkout).
+          KEYSTORE_PATH="$HOME/aurora-release.keystore"
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "$KEYSTORE_PATH"
+          ls -la "$KEYSTORE_PATH"
+          # Le export pour les étapes suivantes (l'ENV du build.gradle
+          # M-86 lit KEYSTORE_PATH via System.getenv).
+          {
+            echo "KEYSTORE_PATH=$KEYSTORE_PATH"
+            echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}"
+            echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}"
+            echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}"
+          } >> "$GITHUB_ENV"
+
+      # ————————————————————————————————————————————————
+      # 7. L'assembleRelease (le plan L686 : le gradlew compile le
+      #    Capacitor Android + le web assets + le plugin ApkUpdater
+      #    M-82, le build.gradle M-86 signe avec le keystore de
+      #    l'étape 6). Le output est
+      #    android/app/build/outputs/apk/release/app-release.apk.
+      # ————————————————————————————————————————————————
+      - name: Gradle assembleRelease
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleRelease
+
+      # ————————————————————————————————————————————————
+      # 8. Le rename en `app-release.apk` (le plan L694–697 : le nom
+      #    d'asset EXACT attendu par le `APK_ASSET_NAME` du config.ts
+      #    M-84). Le GitHub Actions l'upload sous ce nom sur la
+      #    release du tag pushed.
+      # ————————————————————————————————————————————————
+      - name: Stage APK asset
+        run: |
+          set -e
+          SRC="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          DEST="$RUNNER_TEMP/app-release.apk"
+          cp "$SRC" "$DEST"
+          # Le .sha256 annexe (le plan L697) : le plugin M-82 vérifie
+          # le digest pendant le download, le user final peut re-check
+          # le .sha256 local via le `sha256sum -c`.
+          sha256sum "$DEST" | awk '{print $1}' > "${DEST}.sha256"
+          cat "${DEST}.sha256"
+
+      # ————————————————————————————————————————————————
+      # 9. L'upload sur GitHub Releases (le plan L697 : le softprops
+      #    action crée la release du tag + l'upload l'asset
+      #    `app-release.apk` + un fichier `app-release.apk.sha256`
+      #    annexe, le user final (le client web M-88) peut le
+      #    vérifier).
+      # ————————————————————————————————————————————————
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          # Le `generate_release_notes` = le changelog auto GitHub
+          # (le plan L695–696). Le `draft: false` = la release est
+          # publique immédiatement (le plan L697 : l'app la détecte
+          # via le GitHub API `releases/latest`).
+          generate_release_notes: true
+          draft: false
+          files: |
+            ${{ runner.temp }}/app-release.apk
+            ${{ runner.temp }}/app-release.apk.sha256

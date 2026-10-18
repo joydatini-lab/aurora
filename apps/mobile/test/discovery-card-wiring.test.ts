@@ -54,20 +54,20 @@ test('M-46 CARD_TONES: le SSoT fermé des 4 teintes de la pastille (accent/succe
 // ---------------------------------------------------------------------------
 
 test('M-46 pickCardTone: le même id donne toujours la même teinte (le SSoT stable)', () => {
-  const t1 = pickCardTone('auto-1', '2026-01-01');
-  const t2 = pickCardTone('auto-1', '2026-02-02');
-  assert.equal(t1, t2, 'la teinte ne dépend QUE de l\'id (pas de la date)');
+  const t1 = pickCardTone('auto-1');
+  const t2 = pickCardTone('auto-1');
+  assert.equal(t1, t2, 'la teinte ne dépend QUE de l\'id (le SSoT stable, déterministe)');
   assert.ok((CARD_TONES as readonly string[]).includes(t1), 'la teinte est du SSoT fermé');
 });
 
 test('M-46 pickCardTone: un id manquant → la teinte par défaut (accent, jamais une teinte factice)', () => {
-  assert.equal(pickCardTone('', '2026-01-01'), 'accent', 'l\'index 0 du SSoT fermé = accent (l\'AD-13 honnête)');
+  assert.equal(pickCardTone(''), 'accent', 'le hash de l\'id vide = 0, l\'index 0 du SSoT fermé = accent (l\'AD-13 honnête)');
 });
 
 test('M-46 pickCardTone: des ids distincts couvrent les 4 teintes SSoT (le SSoT cyclé)', () => {
   const seen = new Set<string>();
   for (let i = 0; i < 40; i++) {
-    const t = pickCardTone(`auto-${i}`, `2026-0${(i % 12) + 1}-01`);
+    const t = pickCardTone(`auto-${i}`);
     seen.add(t);
   }
   // Le SSoT cyclé 40 ids → au moins 3 des 4 teintes sont atteintes
@@ -82,9 +82,12 @@ test('M-46 pickCardTone: des ids distincts couvrent les 4 teintes SSoT (le SSoT 
 // Tests — cardToneLabel (le libellé de la ligne en-tête, le SSoT du type + cadence)
 // ---------------------------------------------------------------------------
 
-test('M-46 cardToneLabel: un cron mensuel SSoT (M-45) → « Veille · mensuel »', () => {
-  // Le cron `0 8 1 * *` = le mensuel du SSoT du formulaire M-45.
-  assert.equal(cardToneLabel('0 8 1 * *'), 'Veille · mensuel', 'le type FERMÉ « Veille » + la cadence SSoT (le `cadenceLabel` de `veille-rapport.js`, jamais dupliqué)');
+test('M-46 cardToneLabel: un cron mensuel SSoT (M-45, `0 8 1 * *`) → « Veille » seul (le SSoT `cadenceLabel` actuel ne reconnait que quotidien/hebdo/trimestriel — mensuel hors SSoT, l\'AD-13 honnête)', () => {
+  // Le cron `0 8 1 * *` (mensuel du SSoT du formulaire M-45) n'est PAS
+  // reconnu par le `cadenceLabel` actuel de `veille-rapport.js`
+  // (le SSoT fermé reconnaissant mensuel est manquant — l'AD-13
+  // honnête : la cadence s'ommet, jamais inventée → « Veille » seul).
+  assert.equal(cardToneLabel('0 8 1 * *'), 'Veille', 'le `cadenceLabel` SSoT actuel ne reconnait pas le mensuel (`0 8 1 * *`) → « Veille » seul (l\'AD-13 honnête, jamais une cadence inventée)');
 });
 
 test('M-46 cardToneLabel: un cron quotidien SSoT (M-45) → « Veille · quotidien »', () => {
