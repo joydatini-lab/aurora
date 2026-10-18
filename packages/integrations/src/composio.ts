@@ -36,6 +36,55 @@ export interface ComposioTool {
   destructive?: boolean;
 }
 
+/**
+ * Confirmation requirement of a tool/action (M-32, composio.md §8 +
+ * briefing §12 CONFIRMATION_REQUIRED, AD-7 : every EXTERNAL WRITE passes
+ * through the kernel's Confirmation Engine — a `connect` is one too, and
+ * the `M-34` « Ajouter » CTA as well; a READ never does; an absent
+ * integration degrades, it never crashes — AD-1 §11.2).
+ */
+export interface ToolConfirmationPlan {
+  /** CONFIRMATION_REQUIRED ? */
+  required: boolean;
+  /** the risk class of the kernel's ConfirmationPrompt */
+  risk: 'write' | 'destructive';
+  /** `tool` field of the prompt (the tool id, stable + bindable) */
+  tool: string;
+  /** a human-readable action summary for the prompt (kernel S12 §3) */
+  message: string;
+  /**
+   * The Confirmation Engine's `stepHash` is computed on the EXECUTING
+   * side (the agent / the EF) via `computeStepHash(tool, input)`
+   * (LOT 1-bis, Story 1.1-bis) : the port stays transport-agnostic
+   * (plain fetch, no vendor SDK, AD-1) and deliberately does NOT
+   * re-implement that digest — a duplicate would drift (the
+   * "no library duplication" rule). The prompt binds to that digest.
+   */
+}
+
+/**
+ * Pure helper (M-32) : map the SSoT `ComposioTool.destructive` flag to a
+ * confirmation plan — the single source of truth that wires
+ * "every write = confirmation, read = none" (kernel ConfirmationPrompt,
+ * `packages/agent/src/confirmation.ts`). An absent / unknown flag =
+ * READ (no confirmation, composio.md §8 : only explicit `destructive`
+ * calls need a prompt). Used by the app page (M-31 §16), the agent
+ * executor (M-32) and the connect CTA.
+ */
+export function toolConfirmationPlan(
+  tool: Pick<ComposioTool, 'toolId' | 'name' | 'destructive'>,
+): ToolConfirmationPlan {
+  const destructive = tool.destructive === true;
+  return {
+    required: destructive,
+    risk: destructive ? 'destructive' : 'write',
+    tool: tool.toolId,
+    message: destructive
+      ? `Écriture ${tool.name} — demande confirmation avant exécution.`
+      : `${tool.name} (lecture, sans confirmation).`,
+  };
+}
+
 /** Normalized tool execution result (composio.md §6: the kernel sees a
  *  normalized result, never a raw OAuth bearer). */
 export interface ComposioToolResult {
@@ -66,6 +115,29 @@ export interface ConnectedAccount {
 /** The `IntegrationProvider` contract this adapter implements
  *  (ADR §8 port; additive wave-2 surface — the 14 shared ports stay
  *  untouched, so this is declared here, in the adapter package). */
+/**
+ * A toolkit (app) row of the GLOBAL catalog (M-34) — the vendor
+ * `GET {base}/toolkits?limit=500` list (v3.1, docs.composio.dev/docs/
+ * toolkits.md §global : this list endpoint is NOT session-scoped, it
+ * is a global provider catalog and works even without a user session).
+ *
+ * The `image_url` field (v3.1 response) maps to `logoUrl` — the app
+ * LOGO source (S3 update : "l'app LOGO — jamais un asset hardcodé").
+ * When `image_url` is missing/null the logo stays `undefined` and the
+ * UI shows the initial-fallback pill (the 2 first letters of `name`) —
+ * NEVER a hardcoded `assets/*logo*.png` nor a per-app icon table.
+ */
+export interface Toolkit {
+  /** the toolkit slug (v3.1 `slug` field) — the `connect(app)` identifier */
+  app: string;
+  /** the vendor display name (v3.1 `name` field) */
+  name: string;
+  /** the logo URL (v3.1 `image_url` field) — `undefined` → UI fallback */
+  logoUrl?: string;
+  /** the vendor description (v3.1 `description` field) */
+  description?: string;
+}
+
 export interface IntegrationProvider {
   readonly id: string;
   isConfigured(): boolean;
@@ -290,6 +362,33 @@ export class ComposioIntegrationProvider implements IntegrationProvider {
       // tags — the destructive flag feeds the kernel's Confirmation Engine
       // (composio.md §8: destructive external actions need confirmation).
       destructive: r.tags?.includes('destructiveHint') ?? false,
+    }));
+  }
+
+  /**
+   * M-34 — the GLOBAL toolkit catalog (`GET {base}/toolkits?limit=N`,
+   * the v3.1 global list, NOT session-scoped : it is a provider-wide
+   * catalog and needs no user session). Response row :
+   * `{ slug, name, image_url?, description? }` → `Toolkit`
+   * (the `image_url → logoUrl` mapping ; `logoUrl` may be `undefined`
+   * and the caller falls back to the initial pill, never to a
+   * hardcoded asset). Degrade-first (AD-1, composio.md §7) :
+   * unconfigured / failed call → `[]`, never a throw — the UI then
+   * falls back to the static M-31 `INTEGRATION_CATALOG` SSoT.
+   */
+  async listToolkits(opts?: { limit?: number }): Promise<Toolkit[]> {
+    const limit = Math.min(opts?.limit ?? 500, 500);
+    const res = await this.call(`/toolkits?limit=${limit}`, { method: 'GET' });
+    if (res === null || !res.ok) return [];
+    const data = (await res.json().catch(() => ({}))) as
+      | Array<{ slug?: string; name?: string; image_url?: string | null; description?: string }>
+      | { data?: Array<{ slug?: string; name?: string; image_url?: string | null; description?: string }> };
+    const rows = Array.isArray(data) ? data : (data.data ?? []);
+    return rows.map((r) => ({
+      app: String(r.slug ?? r.name ?? ''),
+      name: String(r.name ?? r.slug ?? ''),
+      logoUrl: r.image_url ? String(r.image_url) : undefined,
+      description: r.description,
     }));
   }
 
