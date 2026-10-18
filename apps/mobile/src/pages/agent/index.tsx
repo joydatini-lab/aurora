@@ -75,6 +75,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useReducedMotion } from 'motion/react';
 import { useMobileData } from '../../query/context';
 import { useAgentRun } from '../../query/agent-runs';
+import { useCanvasSession } from '../../query/canvas';
 import { useKilledDetection } from '../../hooks/use-killed';
 import type { AgentRunRow } from '../../lib/agent-client';
 import type { UserSkillRow } from '../../lib/skills-client';
@@ -774,6 +775,21 @@ export function AgentPage() {
 
   const inFlightRow = activeRun && runRow && runRow.id === activeRun ? runRow : null;
 
+  // Lot Canvas AI (manquement 1, branchement du contenu ACTUEL) — quand le
+  // prompt du run est une suggestion `canvas_write`, on charge la session
+  // cible via le client canvas (`canvas.get`, la RLS user_isolation borne
+  // la lecture, AD-3) et on branche le contenu du bloc courant dans la
+  // diff (`current` non vide si le bloc existe déjà, `''` si c'est une
+  // création). Le hook est désactivé (id undefined) quand le prompt n'est
+  // pas `canvas_write` — pas de fetch inutiles, la diff restera dégradée
+  // au proposé seul. Appelé ici (jamais dans l'IIFE de rendu, règles des
+  // hooks) ; le résultat est lu plus bas dans la carte de confirmation.
+  const diffCanvasId =
+    inFlightRow?.confirmationTool === 'canvas_write'
+      ? (inFlightRow.confirmationStepInput?.canvasId as string | undefined)
+      : undefined;
+  const currentCanvas = useCanvasSession(diffCanvasId);
+
   return (
     <>
       <IonHeader>
@@ -1030,13 +1046,15 @@ export function AgentPage() {
                   // pattern Review Changes du doc Tiptap, manquement 2) est
                   // montrée dans la carte AVANT les boutons.
                   const cIds = canvasIdsOf(inFlightRow);
-                  // Le SSoT buildCanvasDiff (le module pur) est appelé sans
-                  // la session courante (le bloc courant n'est pas chargé
-                  // sur la page agent) → la diff se dégrade au contenu
-                  // proposé seul (le `current` est vide). Le client canvas
-                  // (si la session est ouverte) brancherait le contenu
-                  // actuel via `canvas.get` ; ici, le minimum = le proposé.
-                  const diff: CanvasDiff | null = buildCanvasDiff(inFlightRow, null);
+                  // Lot Canvas AI (manquement 1) — la diff « suggestion
+                  // d'écriture » (l'actuel vs le proposé, le pattern Review
+                  // Changes du doc Tiptap) : le contenu ACTUEL du bloc
+                  // chargé via `useCanvasSession(diffCanvasId)`
+                  // (hook appelé plus haut, hors de l'IIFE de rendu).
+                  const diff: CanvasDiff | null = buildCanvasDiff(
+                    inFlightRow,
+                    currentCanvas.data?.session ?? null,
+                  );
                   return (
                     <div className="agent-confirm" data-confirmation={p.stepId}>
                       {p.tool && <div className="agent-confirm-label">{p.tool}</div>}
@@ -1052,6 +1070,14 @@ export function AgentPage() {
                           {diff.current !== '' && (
                             <pre className="agent-canvas-diff-current" aria-label="Contenu actuel">
                               {diff.current}
+                            </pre>
+                          )}
+                          {diff.current === '' && diff.blockId !== '' && (
+                            <pre
+                              className="agent-canvas-diff-current"
+                              aria-label="Contenu actuel"
+                            >
+                              {(currentCanvas.data?.session ? '(bloc vide)' : '…')}
                             </pre>
                           )}
                           <pre
