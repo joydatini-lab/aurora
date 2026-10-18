@@ -18,10 +18,8 @@ import type {
 import {
   clamp01,
   evidenceFromFlashcardReviewed,
-  // M-63 (S6) : l'applyer de `progress.evidence_create` branchera ce
-  // constructeur ici ; import pré-positionné par S6 (le verbe n'est pas
-  // encore consommé côté recompute — tsc le signale tant que l'usage n'est
-  // pas branché).
+  // M-63 (S6) : `evidenceFromMirrorValidation` est consommé par
+  // `buildMirrorEvidence` (l'applyer de `progress.evidence_create`).
   evidenceFromMirrorValidation,
   evidenceFromTaskCompleted,
   levelIndex,
@@ -105,6 +103,27 @@ export function recomputeSkill(input: RecomputeInput): RecomputeOutput {
     current.level !== level ||
     (current.confidence ?? 0) !== next.confidence;
   return { state: next, changed };
+}
+
+/**
+ * M-63 (S6) — l'applyer de la commande `progress.evidence_create` (M-62
+ * : le bouton « Valider » du chat, confirmation ADR §5) : qualifie la
+ * validation miroir en une `ProgressEvidence` de type
+ * `personal-explanation` via le constructeur SSoT d'`evidence.ts`
+ * (le module Progress reste le SEUL producteur de preuve, F-07).
+ * Sans `validated === true`, le constructeur refuse (zéro row, F-07).
+ */
+export function buildMirrorEvidence(
+  input: {
+    skillId?: string;
+    kind?: string;
+    validated?: boolean;
+    sourceNode?: string;
+  },
+  userId: string,
+  now: string,
+): ProgressEvidence {
+  return evidenceFromMirrorValidation(input, { now, userId });
 }
 
 /** Recency weight 0..1 (01 S4.4 freshness): recent evidence weighs more. */
