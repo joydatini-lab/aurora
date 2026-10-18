@@ -25,6 +25,17 @@ export interface PlannerDeps {
 }
 
 /**
+ * M-11 (v2 MVP S1, Q9) — the docs tools that write ONLY a computed
+ * representation row (the parsed artifact, AD-7 — the Artifact module
+ * applies it, never the kernel). Not a domain write: in chat (Ask) mode
+ * they stay available (mirror of capability.ts `REPRESENTATION_ROW_ONLY_TOOLS`).
+ */
+const REPRESENTATION_ROW_ONLY_TOOLS: ReadonlySet<string> = new Set([
+  'docs_parse',
+  'docs_inspect',
+]);
+
+/**
  * The intent → step templates. This is the typed planning surface
  * (kernel S13 mandatory example): `organize_day` composes the 4
  * canonical intents. The kernel never invents a step for an
@@ -138,6 +149,20 @@ export function buildPlan(
     const verdict = deps.permission(step, ctx, perm);
     if (verdict === 'blocked') {
       step.status = 'skipped';
+    }
+    // M-11 (v2 MVP S1, Q9) — Ask-mode read-only enforcement: in chat mode
+    // a write step is SKIPPED (not just risk-labeled) — Ask never writes
+    // (plan §14), the plan degrades to its read-only steps instead of
+    // failing the run (AD-1 last paragraph).
+    if (
+      ctx.intent?.profile?.agentMode === 'chat' &&
+      step.status === 'pending' &&
+      tool !== undefined &&
+      tool.writeScopes.length > 0 &&
+      !REPRESENTATION_ROW_ONLY_TOOLS.has(tool.tool)
+    ) {
+      step.status = 'skipped';
+      step.confirmationRequired = false;
     }
     return step;
   });

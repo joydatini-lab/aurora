@@ -879,12 +879,43 @@ export class DefaultCapabilityRegistry {
  * feature disabled, platform mismatch, offline window). The Planner
  * then marks the step skipped rather than failing the whole run
  * (AD-1 last paragraph: optional capabilities degrade when absent). */
+/** M-11 (v2 MVP S1, Q9) — the docs tools `docs_parse` / `docs_inspect`
+ * write ONLY a computed representation row (the parsed artifact, AD-7 —
+ * the Artifact module applies it, never the kernel). That is not a domain
+ * write: in chat (Ask) mode the user can still ASK to inspect / parse a
+ * document — the gate only forbids mutating the user's domain data. */
+const REPRESENTATION_ROW_ONLY_TOOLS: ReadonlySet<string> = new Set([
+  'docs_parse',
+  'docs_inspect',
+]);
+
+function isRepresentationRowOnlyWrite(entry: Pick<CapabilityEntry, 'tool' | 'writeScopes'>): boolean {
+  return REPRESENTATION_ROW_ONLY_TOOLS.has(entry.tool);
+}
+
 export function resolveTool(
   tool: string,
   ctx: AgentContext,
   registry: Pick<DefaultCapabilityRegistry, 'byTool'>,
 ): CapabilityEntry | undefined {
   const entry = registry.byTool(tool);  if (!entry) return undefined;
+  // M-11 (v2 MVP S1, Q9) — ASK-MODE GATE (read-only): `agentMode 'chat'`
+  // means the user is TALKING, not delegating — the kernel may READ
+  // (zero writeScopes) but NEVER write domain data. Tools that carry ANY
+  // write scope are degraded to "unavailable" in chat mode: the Planner
+  // marks the step skipped (AD-1) instead of failing the run. Tools that
+  // only write a computed REPRESENTATION row (docs_parse / docs_inspect:
+  // the parsed artifact, AD-7 — the Artifact module applies) are NOT
+  // domain writes and stay available. Every other mode (agent / mirror /
+  // ascent / unset) keeps the full write loop — confirmation gates
+  // (requiresConfirmation) still apply above this line.
+  if (
+    ctx.intent?.profile?.agentMode === 'chat' &&
+    !isRepresentationRowOnlyWrite(entry) &&
+    entry.writeScopes.length > 0
+  ) {
+    return undefined;
+  }
   // Platform gate: focus.block is android-only.
   if (entry.platform && entry.platform === 'android') {
     const dpcAvailable = (ctx.permission as Record<string, unknown>)['devicePolicyAvailable'] === true;
