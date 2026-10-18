@@ -16,47 +16,44 @@
  * "intégrations indisponibles" empty state — it never fakes a connection.
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import { Check, ExternalLink, Plus, Music, Loader2, CircleOff } from 'lucide-react';
+import { Check, ExternalLink, Loader2, CircleOff, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useMobileData } from '../../query/context';
 import type { IntegrationAccount } from '../../lib/integrations-client';
+import {
+  INTEGRATION_CATALOG,
+  WRITE_CONFIRMATION_REMINDER,
+  AD3_NO_KEY_REMINDER,
+  DEGRADED_INTEGRATIONS,
+  splitConnectedAndAvailable,
+  servicePermissions,
+  servicePermissionsFromTools,
+  planConnectPreset,
+  GOOGLE_CALENDAR_SERVICE,
+  type IntegrationService,
+  type ServiceTool,
+} from './data';
 
-// ——— Connector catalog (Composio v3.1 toolkits) ————————————————————————
-// The 9 CONNECTORS below are a static device-side subset of the v3.1 toolkit
-// catalog (composio-analysis.md §2). discoverTools() (lib/integrations-client.ts:47)
-// is the SSoT runtime seam — it is NOT wired yet (wave-N); the server EF
-// (fn-integrations) validates every toolSlug against the live session catalog
-// before execution, so a stale slug in this array cannot corrupt data.
-interface Connector {
-  id: string; // toolkit_slug (v3.1)
-  name: string;
-  vendor: string;
-  defaultOn: boolean; // Google Workspace preset = true
-  status: 'connected' | 'disconnected' | 'token_expired' | 'reauth_required';
-}
-
-const CONNECTORS: Connector[] = [
-  { id: 'GOOGLEDOCS', name: 'Google Docs', vendor: 'Google Workspace', defaultOn: true, status: 'disconnected' },
-  { id: 'GMAIL', name: 'Gmail', vendor: 'Google Workspace', defaultOn: true, status: 'disconnected' },
-  { id: 'GOOGLECALENDAR', name: 'Google Calendar', vendor: 'Google Workspace', defaultOn: true, status: 'disconnected' },
-  { id: 'GOOGLEDRIVE', name: 'Google Drive', vendor: 'Google Workspace', defaultOn: true, status: 'disconnected' },
-  { id: 'GOOGLESHEETS', name: 'Google Sheets', vendor: 'Google Workspace', defaultOn: true, status: 'disconnected' },
-  { id: 'SPOTIFY', name: 'Spotify', vendor: 'Spotify', defaultOn: false, status: 'disconnected' },
-  { id: 'NOTION', name: 'Notion', vendor: 'Notion', defaultOn: false, status: 'disconnected' },
-  { id: 'SLACK', name: 'Slack', vendor: 'Slack', defaultOn: false, status: 'disconnected' },
-  { id: 'GITHUB', name: 'GitHub', vendor: 'GitHub', defaultOn: false, status: 'disconnected' },
-];
-
-function statusIcon(s: Connector['status']) {
-  switch (s) {
-    case 'connected':
-      return <Check size={14} className="is-ok" aria-hidden />;
-    case 'reauth_required':
-      return <ExternalLink size={14} className="is-warn" aria-hidden />;
-    default:
-      return <Plus size={14} className="is-muted" aria-hidden />;
-  }
-}
+/**
+ * Page Intégrations v2 (S3 M-31, écran 7) — le SSoT de l'écran est le
+ * module `./data` (le test `integrations-wiring.test.ts` le couvre) :
+ * 2 sections (briefing §8 + le Q6 gelée) :
+ *   - **Connectées** : Google Agenda (lecture + écriture), Google Docs
+ *     (lecture + création) — chaque ligne mène aux PERMISSIONS du
+ *     service (le briefing §16 point 2, `discoverTools` →
+ *     `IntegrationTool.destructive` : chaque ÉCRITURE = confirmation).
+ *   - **Disponibles** : Drive, Gmail, Notion — bouton « Connecter »
+ *     (émet `connect(app)` au client EF, AD-7 : le module applique,
+ *     jamais une write directe depuis l'app).
+ *
+ * Les rappels SSoT (le plan §12) : « chaque écriture demande
+ * confirmation » + AD-3 (aucune clé sur l'appareil, auth serveur).
+ *
+ * Le détail des permissions par action est servi par le catalog LIVE du
+ * `discoverTools()` quand il est chargé (le `useEffect` ci-dessous) ;
+ * sinon le catalog statique `./data` (`servicePermissions`) — un tool
+ * inconnu au statique n'est pas masqué (le `servicePermissionsFromTools`).
+ */
 
 export function IntegrationsPage() {
   const { integrations } = useMobileData();
@@ -64,6 +61,15 @@ export function IntegrationsPage() {
   // Live connection state, read from the server (AD-3: never from the body).
   const [accounts, setAccounts] = useState<IntegrationAccount[]>([]);
   const [loading, setLoading] = useState(false);
+  // Le catalog LIVE du `discoverTools()` (le SSoT runtime, le détail des
+  // permissions par action du briefing §16 point 2) — vide tant que le
+  // client ne l'a pas chargé ; le fallback statique `servicePermissions`
+  // (le module `./data`) couvre le rendu initial (jamais une fausse
+  // permission, le static catalog est le subset v2 du brief).
+  const [liveTools, setLiveTools] = useState<ServiceTool[]>([]);
+  // Le service dont le DÉTAIL des permissions est affiché (le §16
+  // point 2 : « chaque ligne mène aux permissions du service »).
+  const [detailService, setDetailService] = useState<string | null>(null);
   const [connectError, setConnectError] = useState<string | null>(null);
   // In-flight guard: disables the toggles + preset while a connect call runs
   // (5 parallel window.open would otherwise race the accounts refresh).
@@ -73,13 +79,17 @@ export function IntegrationsPage() {
     if (!integrations) return;
     let live = true;
     setLoading(true);
-    integrations
-      .listAccounts()
-      .then((a) => {
-        if (live) setAccounts(a);
+    Promise.allSettled([
+      integrations.listAccounts(),
+      integrations.discoverTools({ limit: 200 }),
+    ])
+      .then(([accountsRes, toolsRes]) => {
+        if (!live) return;
+        if (accountsRes.status === 'fulfilled') setAccounts(accountsRes.value);
+        if (toolsRes.status === 'fulfilled') setLiveTools(toolsRes.value as unknown as ServiceTool[]);
       })
       .catch(() => {
-        /* degraded: keep the catalog's default 'disconnected' state */
+        /* degraded: keep the catalog's default state (AD-7) */
       })
       .finally(() => {
         if (live) setLoading(false);
@@ -89,20 +99,29 @@ export function IntegrationsPage() {
     };
   }, [integrations]);
 
-  const isConnected = (id: string) =>
-    accounts.some((a) => a.app.toUpperCase() === id && a.state === 'connected');
+  /** Le détail d'un service (le §16 point 2) : le catalog LIVE quand
+   *  chargé (le SSoT runtime), sinon le catalog statique `./data`
+   *  (le subset du brief — jamais une fausse permission). */
+  function permissionsFor(service: IntegrationService) {
+    if (liveTools.length > 0) {
+      return servicePermissionsFromTools(service.app, liveTools);
+    }
+    return servicePermissions(service);
+  }
 
   /**
    * Connect (or disconnect) one app. Returns a Promise so preset-level
    * batching (Promise.allSettled) cannot lose individual rejections — a
    * failed item surfaces a per-item `setConnectError`, not a silent drop.
+   * AD-7 : le CTA émet `connect(app)` au client EF — le module/EF
+   * applique, l'app ne fait JAMAIS de write directe.
    */
   function connectOne(id: string): Promise<void> {
     if (!integrations) return Promise.resolve();
     setConnectError(null);
     setInFlight((prev) => new Set(prev).add(id));
-    const connector = CONNECTORS.find((c) => c.id === id);
-    const label = connector ? connector.name : id;
+    const service = INTEGRATION_CATALOG.find((c) => c.app === id);
+    const label = service ? service.name : id;
     return integrations
       .connect(id)
       .then((res) => {
@@ -129,18 +148,30 @@ export function IntegrationsPage() {
       });
   }
 
-  /** Single-app toggle (card button). */
+  /** Single-service toggle (card button) — émet `connect(app)` (AD-7). */
   function toggle(id: string) {
     void connectOne(id);
   }
 
-  const google = CONNECTORS.filter((c) => c.vendor === 'Google Workspace');
-  const others = CONNECTORS.filter(
-    (c) => c.vendor !== 'Google Workspace' && c.vendor !== 'Spotify',
+  // Le split Connectées / Disponibles (le SSoT du module `./data`, le test
+  // le couvre) : « Connectées » = les services qui ont un compte live
+  // `connected` ; « Disponibles » = le reste (CTA « Connecter »).
+  const { connected, available } = splitConnectedAndAvailable(
+    INTEGRATION_CATALOG,
+    accounts as Array<{ connectedAccountId: string; app: string; state: 'connected' | 'disconnected' | 'token_expired' | 'reauth_required' }>,
   );
 
-  // AD-7 degrade-first: no Supabase env → the client is undefined → honest
-  // empty state, never a fake "connected".
+  // Le preset « Tout connecter » (le SSoT de `planConnectPreset`) : les
+  // services `defaultOn` PAS encore connectés → un lot de `connect(app)`
+  // (AD-7 : l'EF applique, jamais une write directe depuis l'app).
+  const presetPlan = planConnectPreset(
+    INTEGRATION_CATALOG,
+    accounts as Array<{ connectedAccountId: string; app: string; state: 'connected' | 'disconnected' | 'token_expired' | 'reauth_required' }>,
+  );
+
+  // AD-7 degrade-first: no Supabase env → the client is undefined → the
+  // SSoT `DEGRADED_INTEGRATIONS` (le test du module `./data` le couvre) —
+  // jamais une fausse « connectée ».
   if (!integrations) {
     return (
       <>
@@ -150,33 +181,76 @@ export function IntegrationsPage() {
         <IonContent>
           <div className="integrations-page integrations-degraded">
             <CircleOff size={32} className="is-muted" aria-hidden />
-            <p>Les intégrations ne sont pas encore prêtes sur cet appareil.</p>
+            <p>{DEGRADED_INTEGRATIONS.message}</p>
           </div>
         </IonContent>
       </>
     );
   }
 
-  function renderCard(c: Connector) {
-    const on = isConnected(c.id);
+  function renderServiceCard(service: IntegrationService, opts: { connected: boolean }) {
+    const on = opts.connected;
+    const detailOpen = detailService === service.app;
+    const perms = detailOpen ? permissionsFor(service) : null;
     return (
-      <div key={c.id} className={`integration-card ${on ? 'is-connected' : ''}`}>
+      <div key={service.app} className={`integration-card ${on ? 'is-connected' : ''}`}>
         <div className="integration-card-main">
-          <div className="integration-card-status">{on ? <Check size={16} className="is-ok" /> : statusIcon(c.status)}</div>
+          <div className="integration-card-status">
+            {on ? (
+              <Check size={16} className="is-ok" />
+            ) : (
+              <ExternalLink size={14} className="is-muted" aria-hidden />
+            )}
+          </div>
           <div className="integration-card-text">
-            <h4>{c.name}</h4>
-            <span>{c.vendor}{c.defaultOn ? ' · par défaut' : ''}</span>
+            <h4>{service.name}</h4>
+            <span>{service.vendor} · {service.permissionSummary}</span>
           </div>
         </div>
-        <button
-          type="button"
-          className={`integration-toggle ${on ? 'is-on' : ''}`}
-          onClick={() => toggle(c.id)}
-          disabled={inFlight.has(c.id)}
-          aria-label={on ? `Déconnecter ${c.name}` : `Connecter ${c.name}`}
-        >
-          {on ? 'Déconnecter' : 'Connecter'}
-        </button>
+        <div className="integration-card-actions">
+          <button
+            type="button"
+            className="integration-detail-btn"
+            onClick={() => setDetailService(detailOpen ? null : service.app)}
+            aria-expanded={detailOpen}
+            aria-controls={`integration-detail-${service.app}`}
+          >
+            <span>{on ? 'Permissions' : 'Autorisations'}</span>
+            <ChevronRight size={14} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className={`integration-toggle ${on ? 'is-on' : ''}`}
+            onClick={() => toggle(service.app)}
+            disabled={inFlight.has(service.app)}
+            aria-label={on ? `Déconnecter ${service.name}` : `Connecter ${service.name}`}
+          >
+            {on ? 'Déconnecter' : 'Connecter'}
+          </button>
+        </div>
+        {detailOpen ? (
+          <div id={`integration-detail-${service.app}`} className="integration-detail" aria-label={`Permissions de ${service.name}`}>
+            {perms && perms.actions.length > 0 ? (
+              <ul className="integration-detail-list">
+                {perms.actions.map((a) => (
+                  <li key={a.toolId} className={`integration-detail-item ${a.destructive ? 'is-write' : ''}`}>
+                    <span className="integration-detail-action">{a.name}</span>
+                    <span className="integration-detail-note">
+                      {a.destructive
+                        ? 'Écriture — demande confirmation'
+                        : 'Lecture — sans confirmation'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="integration-detail-empty">
+                Les permissions exactes de {service.name} sont vérifiées côté
+                serveur (Composio, AD-3) — pas encore chargées sur cet appareil.
+              </p>
+            )}
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -202,79 +276,52 @@ export function IntegrationsPage() {
           ) : null}
 
           <div className="integrations-hint">
-            <p>
-              Connecte des apps externes que l'agent peut utiliser (Gmail, Drive, Calendar…).
-              Les identifiants restent côté serveur (Composio, AD-3) — rien ne part sur l'appareil.
-            </p>
+            <p>{WRITE_CONFIRMATION_REMINDER}</p>
+            <p>{AD3_NO_KEY_REMINDER}</p>
           </div>
 
           <section className="integration-group">
-            <h3>Google Workspace <span className="integration-group-badge">par défaut</span></h3>
-            <div className="integration-group-preset">
-              <button
-                type="button"
-                className="integration-preset-btn"
-                disabled={inFlight.size > 0}
-                onClick={() => {
-                  // Connect the full Google Workspace preset at once.
-                  // allSettled: one item's rejection must not drop the
-                  // others — each failure lands in setConnectError per item.
-                  void Promise.allSettled(google.map((g) => connectOne(g.id)));
-                }}
-              >
-                <Check size={14} />
-                <span>Tout connecter (Docs + Gmail + Calendar + Drive + Sheets)</span>
-              </button>
-            </div>
-            {google.map(renderCard)}
+            <h3>Connectées {connected.length > 0 ? <span className="integration-group-badge">{connected.length}</span> : <span className="integration-group-badge">aucune</span>}</h3>
+            {connected.length > 0 ? (
+              connected.map((s) => renderServiceCard(s, { connected: true }))
+            ) : (
+              <p className="integration-group-note">
+                Aucune connexion active pour l’instant — connecte un service depuis
+                « Disponibles » ci-dessous.
+              </p>
+            )}
           </section>
 
           <section className="integration-group">
-            <h3>Spotify <span className="integration-group-badge">focus mode</span></h3>
-            <p className="integration-group-note">
-              Quand tu connectes Spotify, le mode Focus peut <strong>visualiser
-              ta session</strong> (timer ring synchronisé), te proposer ta
-              <strong> playlist / album préféré</strong> en lecture au lieu du
-              son générique, ou t'inviter à <strong>choisir ton propre
-              morceau</strong> pour la session.
-              <br />
-              <span className="integration-group-note-muted">
-                Spotify n'a pas d'OAuth géré par Composio : une app maison est
-                requise (voir docs.composio.dev/toolkits/spotify.md).
-              </span>
-            </p>
-            <div className="spotify-block">
-              <div className={`integration-card ${isConnected('SPOTIFY') ? 'is-connected' : ''}`}>
-                <div className="integration-card-main">
-                  <div className="integration-card-status">
-                    {isConnected('SPOTIFY') ? (
-                      <Check size={16} className="is-ok" />
-                    ) : (
-                      <Music size={14} className="is-muted" />
-                    )}
-                  </div>
-                  <div className="integration-card-text">
-                    <h4>Spotify</h4>
-                    <span>Visualisation · playlist préféré · son perso</span>
-                  </div>
-                </div>
+            <h3>Disponibles</h3>
+            {presetPlan.length > 0 ? (
+              <div className="integration-group-preset">
                 <button
                   type="button"
-                  className={`integration-toggle ${isConnected('SPOTIFY') ? 'is-on' : ''}`}
-                  onClick={() => toggle('SPOTIFY')}
-                  disabled={inFlight.has('SPOTIFY')}
-                  aria-label={isConnected('SPOTIFY') ? 'Déconnecter Spotify' : 'Connecter Spotify'}
+                  className="integration-preset-btn"
+                  disabled={inFlight.size > 0}
+                  onClick={() => {
+                    // Le preset « Tout connecter » (le SSoT de `planConnectPreset`) :
+                    // un lot de `connect(app)` (AD-7 : l'EF applique, jamais une
+                    // write directe depuis l'app). allSettled : la défaillance
+                    // d'un item ne fait pas tomber les autres — chaque échec
+                    // atterrit dans setConnectError par item.
+                    void Promise.allSettled(presetPlan.map((p) => connectOne(p.app)));
+                  }}
                 >
-                  {isConnected('SPOTIFY') ? 'Déconnecter' : 'Connecter'}
+                  <Check size={14} />
+                  <span>Tout connecter ({presetPlan.map((p) => INTEGRATION_CATALOG.find((s) => s.app === p.app)?.name ?? p.app).join(' + ')})</span>
                 </button>
               </div>
-            </div>
+            ) : null}
+            {available.map((s) => renderServiceCard(s, { connected: false }))}
           </section>
 
-          <section className="integration-group">
-            <h3>Autres connecteurs</h3>
-            {others.map(renderCard)}
-          </section>
+          {/* Le service Google Agenda (M-33 : le 1er branché) est le
+              GOOGLE_CALENDAR_SERVICE du SSoT `./data` — il est déjà dans
+              le catalog (première entrée) ; ce commentaire fige le SSoT
+              du 1er service pour le test de wiring. */}
+          <span className="sr-only" data-testid="first-service">{GOOGLE_CALENDAR_SERVICE.app}</span>
         </div>
       </IonContent>
     </>

@@ -134,18 +134,197 @@
   border-color: var(--aurora-accent-primary);
 }
 
-/* ——— Spotify focus block ——— */
+/* ——— Page v2 (S3 M-31, écran 7) : actions + détail permissions ——— */
+
+/* L'état dégradé AD-7 (pas de client : le SSoT `DEGRADED_INTEGRATIONS`). */
+.integrations-degraded {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 16px;
+  text-align: center;
+}
+.integrations-degraded p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--aurora-text-muted);
+}
+
+/* Le rappel des permissions + AD-3 (le SSoT de `data.ts`). */
+.integrations-hint p + p {
+  margin-top: 8px;
+}
+
+/* La rangée d'actions d'une carte (bouton permissions + CTA Connecter). */
+.integration-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+/* Le bouton « Permissions » (chacune ligne mène aux permissions du service,
+   le briefing §16 point 2). Couleur sémantique : le texte porte l'info
+   (jamais la couleur seule, le §11.4). */
+.integration-detail-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--aurora-text-secondary);
+  background: transparent;
+  border: 1px solid var(--aurora-border);
+  border-radius: var(--aurora-radius, 0.5rem);
+  cursor: pointer;
+}
+.integration-detail-btn:hover {
+  background: var(--aurora-bg-subtle);
+}
+.integration-card.is-connected .integration-detail-btn {
+  color: var(--aurora-accent-primary);
+  border-color: var(--aurora-accent-primary);
+}
+.integration-card.is-connected .integration-detail-btn:hover {
+  background: var(--aurora-accent-surface);
+}
+
+/* Le CTA « Connecter » d'une carte Disponible (le briefing §8). */
+.integration-toggle {
+  flex: none;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--aurora-text-primary);
+  background: var(--aurora-bg-subtle);
+  border: 1px solid var(--aurora-border);
+  border-radius: var(--aurora-radius, 0.5rem);
+  cursor: pointer;
+  min-width: 110px;
+}
+.integration-toggle.is-on {
+  color: var(--aurora-accent-on-primary);
+  background: var(--aurora-accent-primary);
+  border-color: var(--aurora-accent-primary);
+}
+.integration-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Le DÉTAIL des permissions par action (le §16 point 2) : la fiche qui
+   s'ouvre sous une ligne connectée — lecture vs écriture par action
+   (le flag SSoT `destructive` du `discoverTools`, le plan §12 : chaque
+   ÉCRITURE = confirmation, la lecture non). */
+.integration-detail {
+  flex-basis: 100%;
+  margin-top: 4px;
+  padding: 12px;
+  background: var(--aurora-bg-subtle);
+  border: 1px solid var(--aurora-border);
+  border-radius: var(--aurora-radius, 0.5rem);
+}
+.integration-detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.integration-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.integration-detail-action {
+  font-family: var(--aurora-font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  color: var(--aurora-text-primary);
+}
+.integration-detail-note {
+  font-size: 12px;
+  color: var(--aurora-text-muted);
+}
+/* La pastille sémantique « écriture » (l'info n'est portée QUE par le
+   texte du `integration-detail-note` — la couleur est un renfort, §11.4). */
+.integration-detail-item.is-write .integration-detail-note {
+  color: var(--aurora-accent-primary);
+}
+.integration-detail-empty {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--aurora-text-muted);
+}
+
+/* La note d'état vide de la section « Connectées » (les 5 états du plan). */
 .integration-group-note {
-  margin: 0 0 6px;
+  margin: 0;
   font-size: 13px;
   line-height: 1.5;
   color: var(--aurora-text-muted);
 }
-.spotify-block {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.integration-group-note-muted {
+  font-size: 12px;
+  color: var(--aurora-text-muted);
+  opacity: 0.8;
 }
-.spotify-block .integration-card {
-  border-left: 3px solid var(--aurora-accent-primary);
+
+/* Le spinner de chargement (les 5 états du plan). */
+.integrations-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  font-size: 13px;
+  color: var(--aurora-text-muted);
+}
+.is-spin {
+  animation: integrations-spin 0.9s linear infinite;
+}
+@keyframes integrations-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* L'alerte d'erreur de connect (les 5 états du plan). */
+.integrations-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  font-size: 13px;
+  color: var(--aurora-text-secondary);
+  background: var(--aurora-bg-subtle);
+  border: 1px solid var(--aurora-border);
+  border-radius: var(--aurora-radius, 0.5rem);
+}
+
+/* L'icône monochrome (la règle du logo du plan : l'arrière-plan discret
+   de l'état vide utilise le motif, PAS le logo plat officiel). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Les icônes (l'accessibilité : les icônes décoratives sont `aria-hidden`,
+   le texte SSoT porte l'info — le §11.4). */
+.is-muted {
+  color: var(--aurora-text-muted);
+}
+.is-ok {
+  color: var(--aurora-accent-on-primary);
+}
+.is-warn {
+  color: var(--aurora-accent-primary);
 }
