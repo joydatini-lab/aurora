@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aurora — Installer l'APK</title>
+    <style>
+      /* Le style minimal (le plan M-88 L720–725 : « le bouton + 3
+         lignes d'instructions, minimal pour GitHub Pages »). Pas de
+         framework, pas de build — c'est une page statique servie par
+         GitHub Pages (le `updater/download-page.html` au root du dépôt,
+         le plan L722 : le user y va après avoir pressé "Mettre à
+         jour" dans l'app, ou avant le premier install). */
+      :root {
+        /* Le brand du Aurora (le §design system, le color brand-500).
+           Sur GitHub Pages, on est sur un thème clair, le brand est
+           le même que dans l'app. */
+        --brand: #5b4b8a;
+        --brand-dark: #4a3d73;
+        --text: #1f2933;
+        --muted: #4b5563;
+        --border: #e5e7eb;
+        --bg: #ffffff;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      main {
+        max-width: 420px;
+        text-align: center;
+      }
+      h1 {
+        font-size: 1.5rem;
+        margin: 0 0 8px;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 0.95rem;
+        margin: 0 0 24px;
+      }
+      /* Le bouton (le plan L722 : un bouton = un CTA). Le link vers
+         l'asset `app-release.apk` du release GitHub le plus récent. Le
+         `data-asset` porte le nom exact (le config.ts `APK_ASSET_NAME`,
+         le plan L694–697). */
+      .dl-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: var(--brand);
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 24px;
+        font-size: 1rem;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 100ms linear;
+      }
+      .dl-btn:hover { background: var(--brand-dark); }
+      /* Les 3 lignes d'instructions (le plan L722–725 : le bouton +
+         3 lignes, minimal). Le `<ol>` porte les 3 étapes, le user
+         suit dans l'OS Android. */
+      ol.steps {
+        text-align: left;
+        max-width: 420px;
+        margin: 24px auto 0;
+        padding: 16px 0 16px 24px;
+        list-style: none;
+        counter-reset: step;
+        font-size: 0.9rem;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+      }
+      ol.steps li {
+        counter-increment: step;
+        position: relative;
+        padding-left: 24px;
+        margin-bottom: 8px;
+      }
+      ol.steps li:last-child { margin-bottom: 0; }
+      ol.steps li::before {
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--brand);
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+      }
+      /* Le footer (le version courante, le `releases/latest` du
+         GitHub API — le user sait quelle version il va télécharger). */
+      .ver {
+        margin-top: 24px;
+        font-size: 0.75rem;
+        color: var(--muted);
+        opacity: 0.7;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Aurora — Android</h1>
+      <p class="sub">Télécharger l'APK de la dernière version.</p>
+
+      <!-- Le bouton (le plan L722). Le link vers le releases/latest
+           asset exact `app-release.apk` (le config.ts M-84, le plan
+           L694–697 : le `APK_ASSET_NAME` est attendu sous ce nom par
+           l'app — le GitHub API renvoie ce nom exact). -->
+      <a
+        id="dl-btn"
+        class="dl-btn"
+        href="#"
+        data-asset="app-release.apk"
+        data-owner="joynagassi-cyber"
+        data-repo="aurora"
+      >
+        <!-- Le icon download (inline SVG, pas de dep, le plan L720
+             « minimal pour GitHub Pages »). -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        Télécharger l'APK
+      </a>
+
+      <!-- Les 3 lignes d'instructions (le plan L722–725 : le bouton +
+           3 lignes, minimal). Le user suit dans Android après le
+           download. -->
+      <ol class="steps">
+        <li>
+          Après le téléchargement, touchez le fichier dans votre
+          navigateur ou l'app « Fichiers ».
+        </li>
+        <li>
+          Autorisez l'installation d'applications inconnues pour le
+          navigateur (Android 8+ / API 26+), puis confirmez
+          l'installation.
+        </li>
+        <li>
+          Ouvrez Aurora et utilisez-le normalement. L'app détecte les
+          prochaines versions toute seule (le self-updater, S8).
+        </li>
+      </ol>
+
+      <p class="ver" id="ver">Version la plus récente — chargée depuis GitHub.</p>
+    </main>
+
+    <script>
+      // Le script (le plan L722–725) : le fetch du `releases/latest`
+      // GitHub API pour peupler le `href` du bouton avec l'asset
+      // exact `app-release.apk` (le `APK_ASSET_NAME` du config.ts,
+      // le plan L694–697) + le affichage de la version courante.
+      //
+      // Le page est servie par GitHub Pages (le root du dépôt) :
+      // le `fetch` vers `api.github.com` n'a PAS de CORS issue pour
+      // la API publique des releases (l'endpoint `releases/latest`
+      // est ouvert, pas d'auth requise pour un repo public).
+      (async () => {
+        const btn = document.getElementById('dl-btn');
+        const ver = document.getElementById('ver');
+        const owner = btn.dataset.owner;
+        const repo = btn.dataset.repo;
+        const assetName = btn.dataset.asset;
+        try {
+          const res = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/releases/latest`,
+            { headers: { Accept: 'application/vnd.github+json' } },
+          );
+          if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+          const rel = await res.json();
+          // Le asset exact (le plan L694–697 : le nom `app-release.apk`
+          // est le SSoT, le config.ts M-84 l'attend sous ce nom).
+          const asset =
+            rel.assets &&
+            rel.assets.find((a) => a.name === assetName);
+          if (!asset) {
+            throw new Error(
+              `Asset ${assetName} absent de la release ${rel.tag_name}`,
+            );
+          }
+          btn.href = asset.browser_download_url;
+          btn.setAttribute('download', assetName);
+          ver.textContent = `Version ${rel.tag_name} — ${new Date(
+            rel.published_at,
+          ).toLocaleDateString('fr-FR')}`;
+        } catch (err) {
+          // Le fallback (le plan L724 : jamais de crash, le user
+          // lit le message, pas de JS error in the console only).
+          btn.href = `https://github.com/${owner}/${repo}/releases/latest`;
+          ver.textContent =
+            'Impossible de charger la dernière release — cliquez pour ' +
+            'voir les releases sur GitHub.';
+        }
+      })();
+    </script>
+  </body>
+</html>
