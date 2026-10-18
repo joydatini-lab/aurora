@@ -158,6 +158,15 @@
   font-weight: 600;
   color: var(--aurora-text-primary);
 }
+/* M-73 — la ligne du step (le label tool) + le message §12 (le message
+   exact de la confirmation, la wording jamais inventée) : le message est
+   distinct du label (le label = l'étiquette du step, le message = la
+   question posée à l'utilisateur, ADR §5). */
+.agent-confirm-message {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--aurora-text-primary);
+}
 .agent-confirm-actions {
   display: flex;
   gap: 8px;

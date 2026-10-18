@@ -80,6 +80,11 @@ import type { AgentRunRow } from '../../lib/agent-client';
 import type { UserSkillRow } from '../../lib/skills-client';
 import { useUiStateStore } from '../../state/ui-state';
 import { AuroraOrb } from '../../components/AuroraOrb';
+import {
+  buildConfirmationPayload,
+  resumeRequest,
+  type PendingPrompt,
+} from '../../lib/confirmations-wiring.ts';
 import { parseSkillSlashCall, withForcedSkill, type SkillCandidate } from './skill-slash-parse.ts';
 // M-62 (S6) — interlock S2↔S6 : le .tsx canonique du composant est cassé
 // (TS3024, S6 en cours de re-branchement). Le shim .tsx réexporte le .ts
@@ -226,8 +231,12 @@ function statusLine(row: AgentRunRow | null): string {
   if (!row) return 'Lancé côté serveur — en attente de démarrage…';
   switch (row.status) {
     case 'running':
+      // M-73 : le prompt en attente est affiché par la CARTE de
+      // confirmation (la carte est rendue juste après cette ligne, dans
+      // le même bloc) — ici, la ligne d'état reste le statut du run,
+      // pas un message statique qu'on ne peut pas répondre.
       return row.confirmationMessage
-        ? 'Une confirmation est nécessaire : « ' + row.confirmationMessage + ' »'
+        ? 'En attente de ta confirmation (voir la carte ci-dessous)…'
         : 'En cours…';
     case 'completed':
       return 'C’est fait — tes changements ont été appliqués.';
@@ -236,6 +245,23 @@ function statusLine(row: AgentRunRow | null): string {
     case 'cancelled':
       return 'Annulé.';
   }
+}
+
+/**
+ * M-73 (S7 finitions, le trou du S1) — build le prompt de confirmation
+ * à afficher dans la carte depuis une row du miroir `agent_runs` : le
+ * prompt porte `stepId` + `stepHash` exact + le label du tool. Retourne
+ * `null` quand la row ne porte PAS un prompt en attente (le run est
+ * fini, ou le miroir n'a pas persisté de step de confirmation).
+ */
+function promptOf(row: AgentRunRow): PendingPrompt | null {
+  if (!row.confirmationStepId) return null;
+  return {
+    stepId: row.confirmationStepId,
+    stepHash: row.confirmationStepHash,
+    tool: row.confirmationTool,
+    message: row.confirmationMessage ?? '',
+  };
 }
 
 /**
@@ -529,6 +555,52 @@ export function AgentPage() {
         push({
           role: 'agent',
           body: 'Le service est en cours de démarrage — réessaie dans un instant.',
+        });
+      }
+    }
+  }
+
+  /**
+   * M-73 (S7 finitions) — répondre à un point de confirmation : le tap
+   * Confirmer/Refuser émet le payload du run de REPRISE (le SSoT pur
+   * `confirmations-wiring.ts`) :
+   *   - Confirmer → `decisions[{ stepId, answer:'confirmed', stepHash }]`
+   *     + `resumeFrom{ agentRunId }` (le run reprend ; le plan est
+   *     rechargé côté serveur, 0024 — jamais un plan client).
+   *   - Refuser → `decisions[{ stepId, answer:'rejected', stepHash }]`
+   *     SEULEMENT, pas de `resumeFrom` (le run reste en pause, ne
+   *     reprend pas ; le kernel marque le step skipped).
+   * Le run de reprise est relancé par `agent.start` (le même endpoint
+   * que le run initial — l'handler agent_run reconstruit le
+   * KernelRequest, le kernel repasse le plan rechargé).
+   */
+  async function answerConfirmation(
+    row: AgentRunRow,
+    prompt: PendingPrompt,
+    answer: 'confirmed' | 'rejected',
+  ) {
+    if (!agent) return;
+    const agentRunId = row.agentRunId ?? '';
+    const payload = buildConfirmationPayload(prompt, answer, agentRunId);
+    const req = resumeRequest(row.intent, payload);
+    try {
+      const handle = await agent.start(req);
+      setActiveRun(handle.traceId);
+    } catch (err) {
+      // Erreur typée du client (10-07) — pas de message vendor brut.
+      const kind =
+        err && typeof err === 'object' && 'kind' in err
+          ? (err as { kind?: string }).kind
+          : 'unknown';
+      if (kind === 'network') {
+        push({
+          role: 'agent',
+          body: 'Pas de connexion — ta réponse partira dès que tu seras en ligne.',
+        });
+      } else {
+        push({
+          role: 'agent',
+          body: 'La réponse n’a pas pu être envoyée — réessaie.',
         });
       }
     }
@@ -935,6 +1007,37 @@ export function AgentPage() {
                 >
                   {statusLine(inFlightRow)}
                 </div>
+                {(() => {
+                  // M-73 (le trou du S1) : le point de confirmation n'est
+                  // PLUS un message statique — c'est une CARTE qui émet
+                  // `decisions[]` + `resumeFrom` (le SSoT pur
+                  // `confirmations-wiring.ts`). Absent prompt persisté
+                  // (le miroir n'a pas de step pending) → pas de carte,
+                  // la ligne d'état suffit.
+                  const p = promptOf(inFlightRow);
+                  if (!p) return null;
+                  return (
+                    <div className="agent-confirm" data-confirmation={p.stepId}>
+                      {p.tool && <div className="agent-confirm-label">{p.tool}</div>}
+                      {p.message && <div className="agent-confirm-message">{p.message}</div>}
+                      <div className="agent-confirm-actions">
+                        <button
+                          type="button"
+                          className="is-primary"
+                          onClick={() => void answerConfirmation(inFlightRow, p, 'confirmed')}
+                        >
+                          Confirmer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void answerConfirmation(inFlightRow, p, 'rejected')}
+                        >
+                          Refuser
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>

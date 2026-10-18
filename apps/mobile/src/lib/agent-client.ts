@@ -61,6 +61,33 @@ export interface AgentRunRequest {
      */
     forceSkillKey?: string;
   };
+  /**
+   * M-73 (S7 finitions, le trou du S1) — les decisions de confirmation
+   * (ADR §5, LOT 1-bis Story 1.1-bis) : les réponses aux points de
+   * confirmation du run STOPPÉ, portées au run de reprise. Chaque
+   * decision est `{ stepId, answer: 'confirmed' | 'rejected', stepHash? }`
+   * — le `stepHash` (le hash de contenu du step, estampé côté serveur
+   * au prompt) bind la réponse au step exact : un hash divergent est
+   * traité par le kernel comme « pas de décision » (re-prompt, jamais
+   * auto-confirm). Normalisées par `fn-agent-run` avant enfilement
+   * (une entrée malformée est jetée, jamais un auto-confirm).
+   * SSoT : `lib/confirmations-wiring.ts` (`AgentDecision`).
+   */
+  decisions?: Array<{
+    stepId: string;
+    answer: 'confirmed' | 'rejected';
+    stepHash?: string;
+  }>;
+  /**
+   * M-73 — le handle de reprise d'un run stoppé à un point de
+   * confirmation (0024) : SEULEMENT le `agentRunId` du run stoppé —
+   * le plan en attente est rechargé côté serveur depuis
+   * `agent_runs.pending_plan` (par agentRunId + user_id), JAMAIS porté
+   * par la device (un `pendingPlan` client est rejeté par fn-agent-run
+   * avec 400 `agent/plan_not_accepted` — ne jamais l'émettre).
+   * « Refuser » n'émet PAS de reprise : le run reste en pause.
+   */
+  resumeFrom?: { agentRunId: string };
 }
 
 /** The `fn-agent-run` 202 response handle (the run id the device follows). */
@@ -95,6 +122,17 @@ export interface AgentRunRow {
   jobId?: string;
   /** the confirmation prompt when the action is important/irreversible (ADR §5). */
   confirmationMessage?: string;
+  /**
+   * M-73 (le trou du S1) — the pending confirmation PROMPT (the
+   * `steps_json` step `{ kind: 'confirmation', status: 'pending', … }`
+   * persisted by the dispatcher) : the `stepId` the decision is keyed
+   * by + the `stepHash` that binds the answer to the exact step + the
+   * `tool` label of the step (the card's heading). Absent = no
+   * pending prompt (nothing to show / the run finished).
+   */
+  confirmationStepId?: string;
+  confirmationStepHash?: string;
+  confirmationTool?: string;
   startedAt: string;
   completedAt?: string;
 }
@@ -183,6 +221,16 @@ function mapAgentRunRow(row: Record<string, unknown>): AgentRunRow {
     agentRunId: row.trace_id ? String(row.trace_id) : undefined,
     jobId: row.trace_id ? String(row.trace_id) : undefined,
     confirmationMessage: pending ? String(pending.message ?? '') : undefined,
+    // M-73 — le prompt complet (le stepId = la key de la decision ; le
+    // stepHash = le binding au step exact ; le tool = l'étiquette du
+    // step dans la carte de confirmation). Absent prompt → pas de
+    // champs (pas de carte).
+    confirmationStepId: pending?.stepId ? String(pending.stepId) : undefined,
+    confirmationStepHash:
+      pending?.stepHash !== undefined && pending?.stepHash !== null && String(pending.stepHash) !== ''
+        ? String(pending.stepHash)
+        : undefined,
+    confirmationTool: pending?.tool ? String(pending.tool) : undefined,
     startedAt: String(row.started_at ?? ''),
     completedAt: row.completed_at ? String(row.completed_at) : undefined,
   } satisfies AgentRunRow;
