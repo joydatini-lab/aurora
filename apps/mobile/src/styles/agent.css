@@ -714,6 +714,184 @@
 }
 
 /* ————————————————————————————————————————————————————————————————
+ * M-22 (Q13) — Feuille basse « Skills installés » (stitch
+ * `agent_skills_install_s_fraunces`) : liste des skills installés
+ * (badges INDEXÉ blue / NON INDEXÉ amber, iOS-style toggles) + les 2 CTA
+ * du footer (Gérer = /skills, Parcourir = /agent/bibliotheque).
+ * ———————————————————————————————————————————————————————————————— */
+.agent-skills-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 0;
+}
+.agent-skills-header h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--aurora-text-primary);
+}
+.agent-skills-back {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: var(--aurora-text-primary);
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.agent-skills-back:hover {
+  background: var(--aurora-bg-subtle);
+}
+.agent-skills-subtitle {
+  padding: 8px 16px 12px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--aurora-text-muted);
+}
+.agent-skills-slash {
+  font-weight: 600;
+  color: var(--aurora-text-primary);
+}
+.agent-skills-error {
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--aurora-text-error, var(--aurora-accent-primary));
+}
+.agent-skills-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  font-size: 13px;
+  color: var(--aurora-text-muted);
+}
+.agent-skills-list {
+  list-style: none;
+  margin: 0 16px;
+  padding: 0;
+}
+.agent-skills-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--aurora-border);
+}
+.agent-skills-item:first-child {
+  border-top: none;
+}
+.agent-skills-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.agent-skills-item-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--aurora-text-primary);
+}
+.agent-skills-item-desc {
+  font-size: 13px;
+  color: var(--aurora-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agent-skills-item-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.agent-skills-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  line-height: 1.2;
+}
+.agent-skills-badge.is-indexed {
+  color: var(--aurora-accent-primary);
+  border: 1px solid var(--aurora-accent-primary);
+}
+.agent-skills-badge.is-not-indexed {
+  color: #b87614;
+  border: 1px solid #c48d2b;
+  text-align: center;
+}
+.agent-skills-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 48px;
+  height: 28px;
+  padding: 0;
+  background: var(--aurora-bg-disabled, var(--aurora-text-quaternary));
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+.agent-skills-toggle.is-on {
+  background: var(--aurora-accent-primary);
+}
+.agent-skills-toggle-knob {
+  position: absolute;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--aurora-surface, #fff);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  transition: transform 0.1s ease;
+}
+.agent-skills-toggle.is-on .agent-skills-toggle-knob {
+  transform: translateX(20px);
+}
+.agent-skills-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 16px 16px 0;
+  margin-top: 8px;
+}
+.agent-skills-btn-outline,
+.agent-skills-btn-filled {
+  min-height: 44px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+.agent-skills-btn-outline {
+  color: var(--aurora-accent-primary);
+  background: var(--aurora-surface, #fff);
+  border: 2px solid var(--aurora-accent-primary);
+}
+.agent-skills-btn-outline:hover {
+  background: var(--aurora-accent-surface);
+}
+.agent-skills-btn-filled {
+  color: var(--aurora-text-on-accent, #fff);
+  background: var(--aurora-accent-primary);
+  border: 2px solid var(--aurora-accent-primary);
+}
+.agent-skills-btn-filled:hover {
+  background: var(--aurora-accent-hover, var(--aurora-accent-primary));
+}
+
+/* ————————————————————————————————————————————————————————————————
  * Gestures (emotion-design §3: fluid, never blocking; §2: token-only)
  *  1. Composer swipe surface — the row translates with the finger; a hint
  *     line appears mid-gesture so the affordance is discoverable once.
@@ -1164,4 +1342,217 @@
   margin: 8px 0 0;
   padding: 0 12px;
 }
+
+/* =======================================================================
+   Miroir cognitif — la carte du retour structuré (S6 M-62, plan v2).
+   Design SSoT : `stitch_design_system_optimization/agent_mode_miroir_
+   fraunces/code.html` (AuroraEvaluationCard). Les 3 blocs du contrat
+   M-61 (docs/adr/mirror-contract.md) :
+     1. « Ce que j'ai compris » (reformulation, AD-11 corpus-dominant)
+     2. « Lacunes détectées » (findings typées SSoT Learning :
+        gap / contradiction / error — JAMAIS les labels du briefing,
+        écart signalé dans le rapport S6)
+     3. « Question pour vous » (la relance ciblée)
+   + le sujet (Stitch « Sujet : … ») + les 2 actions du maquette
+   (« Planifier un Focus » = bouton primary, « Créer une veille » =
+   bouton ghost) + la validation (« Valider », M-63 : le cas findings
+   non vide — commande `progress.evidence_create`, confirmation).
+
+   COULEUR DYNAMIQUE (AD-17) : 100 % `var(--aurora-*)` — zéro hex
+   hardcodé. Les tokens vivent dans `styles/tokens.css` (AD-17 SSoT)
+   et sont surécrits par l'image-theme (05 §5.4) : la carte suit la
+   palette de l'app, jamais l'inverse.
+   ======================================================================= */
+
+/* Le conteneur (la carte blanche, le Stitch « AuroraEvaluationCard »). */
+.agent-mirror-card {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 88%;
+  padding: 16px;
+  background: var(--aurora-bg-subtle);
+  border: 1px solid var(--aurora-border);
+  border-radius: var(--aurora-radius, 0.5rem);
+}
+
+/* Le sujet (Stitch « Sujet : … » + le label « Sujet »). */
+.agent-mirror-card__subject {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+.agent-mirror-card__subject-label {
+  color: var(--aurora-text-muted);
+}
+.agent-mirror-card__subject-value {
+  font-weight: 500;
+  color: var(--aurora-text-secondary);
+}
+
+/* Les 3 blocs (l'ordre Stitch : reformulation → findings → question). */
+.agent-mirror-card__block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.agent-mirror-card__title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--aurora-text-muted);
+  margin: 0;
+}
+.agent-mirror-card__text {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--aurora-text-primary);
+  margin: 0;
+}
+
+/* Les findings typées SSoT (le bloc « Lacunes détectées »). */
+.agent-mirror-card__findings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.agent-mirror-card__finding {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--aurora-text-primary);
+}
+/* L'étiquette du `kind` SSoT (gap / contradiction / error) — le token
+   sémantique (AD-17) : `--aurora-warning` (la lacune = l'info
+   « attention » du miroir, l'erreur = `--aurora-danger`). Le label
+   FR de l'étiquette (Lacune / Contradiction / Erreur) vient du module
+   pures fonctions (le composant ne redéclare jamais de label, la
+   SSoT est `MIRROR_FINDING_LABELS`). */
+.agent-mirror-card__finding-tag {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--aurora-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  letter-spacing: 0.04em;
+  background: var(--aurora-warning-surface);
+  color: var(--aurora-warning);
+}
+.agent-mirror-card__finding[data-kind="error"] .agent-mirror-card__finding-tag,
+.agent-mirror-card__finding[data-kind="contradiction"] .agent-mirror-card__finding-tag {
+  background: var(--aurora-danger-surface);
+  color: var(--aurora-danger);
+}
+.agent-mirror-card__finding-text {
+  flex: 1;
+}
+/* L'AD-11 provenance (le `nodeId` du finding, quand il existe — la
+   source corpus du SSoT, jamais une écriture du miroir lui-même). */
+.agent-mirror-card__finding-node {
+  flex: none;
+  font-size: 11px;
+  color: var(--aurora-text-muted);
+  font-family: var(--aurora-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+/* L'état vide du bloc findings (AD-13 : le bloc reste affiché, jamais
+   masqué — le texte « Aucune lacune détectée. » est le SSoT du module
+   pures fonctions, pas du composant). */
+.agent-mirror-card__finding-empty {
+  font-size: 14px;
+  color: var(--aurora-text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+/* Les actions (Stitch : 2 boutons flex-1 — primary / ghost ; + la
+   validation M-63, le cas findings non vide). Les 44 px tap targets
+   (05 §6.3, AD-13 a11y). Les couleurs : le bouton primary =
+   `--aurora-accent-primary` (le Stitch bleu), le ghost = bordure
+   `--aurora-accent-primary` + fond transparent (le token SSoT,
+   jamais un hex inventé). */
+.agent-mirror-card__actions {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  padding-top: 8px;
+  flex-wrap: wrap;
+}
+.agent-mirror-card__action {
+  flex: 1;
+  min-width: 120px;
+  min-height: var(--aurora-tap-target, 44px);
+  padding: 10px 12px;
+  border-radius: var(--aurora-radius, 0.5rem);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease, transform 120ms ease, border-color 120ms ease;
+  border: 1px solid transparent;
+}
+.agent-mirror-card__action:active {
+  transform: scale(0.99);
+}
+.agent-mirror-card__action:focus-visible {
+  outline: 2px solid var(--aurora-accent-primary);
+  outline-offset: 2px;
+}
+/* Le bouton « Planifier un Focus » (Stitch : solid blue) — le token
+   `--aurora-accent-primary` (le bleu de l'app, AD-17), jamais un hex. */
+.agent-mirror-card__action--primary {
+  background: var(--aurora-accent-primary);
+  color: var(--aurora-accent-on-primary);
+  border-color: var(--aurora-accent-primary);
+}
+.agent-mirror-card__action--primary:hover {
+  background: var(--aurora-accent-secondary);
+  border-color: var(--aurora-accent-secondary);
+}
+/* Le bouton « Créer une veille » (Stitch : outline blue) — le fond
+   transparent, la bordure `--aurora-accent-primary` (le token SSoT). */
+.agent-mirror-card__action--secondary {
+  background: transparent;
+  color: var(--aurora-accent-primary);
+  border-color: var(--aurora-accent-primary);
+}
+.agent-mirror-card__action--secondary:hover {
+  background: var(--aurora-bg-subtle);
+}
+/* Le bouton « Valider » (M-63) — l'accent warning (la validation =
+   une action importante / irréversible, ADR §5 : confirmation
+   obligatoire — le flag `requiresConfirmation` du module pures
+   fonctions, le composant ne décide jamais de l'application). Le
+   `:disabled` (après confirmation, `data-confirmed="true"`) : le
+   token `--aurora-text-muted` (l'état confirmé, plus clickable). */
+.agent-mirror-card__action--validate {
+  background: var(--aurora-warning-surface);
+  color: var(--aurora-warning);
+  border-color: var(--aurora-warning);
+}
+.agent-mirror-card__action--validate:disabled {
+  background: var(--aurora-bg-subtle);
+  color: var(--aurora-text-muted);
+  border-color: var(--aurora-border);
+  cursor: default;
+  transform: none;
+}
+
+/* Le cas findings vide (AD-13) : le bloc « Lacunes détectées » reste
+   affiché avec le texte vide du module pures fonctions ; les actions
+   « Planifier un Focus » / « Créer une veille » restent utilisables
+   (elles n'ont pas besoin d'un finding pour se déclencher) mais la
+   validation « Valider » est masquée (zéro objet à valider, l'invariant
+   F-07 : une preuve naît d'une détection validée, pas d'un bouton). */
 
