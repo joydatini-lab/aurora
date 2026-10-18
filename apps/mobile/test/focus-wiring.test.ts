@@ -4,17 +4,19 @@
  * Contratuel node:test, AD-7 (local-first, zéro réseau, zéro PowerSync) :
  *
  * - **M-51** : le profil de focus (méthode + durées + tâche assignée) est
- *   modélisé CÔTÉ APP dans le store local (`lib/focus-profiles.ts`,
- *   `InMemoryLocalStore` de `@aurora/data`). L'entité `focus_profiles`
- *   n'existe PAS encore en miroir Supabase (bannière de synthèse S5 →
- *   checkpoint lead ; blocage PowerSync reporté dans le rapport, on ne code
- *   PAS de migration). La création d'un profil produit une row du store ;
- *   `launchProfile(profil)` mappe le profil en `FocusSessionOptions` et
- *   démarre le mode focus via `FocusControllerService.startSession(opts)`
- *   (S5 §M-51).
- * - **M-52** : l'assignation tâche ↔ profil (`taskProfileLinks`) est
- *   persistée localement (la tâche simple du Q11 reste la `Task` miroir
- *   existante) ; le ▶ d'une tâche lance le focus avec le profil assigné.
+ *   modélisé sur l'entité SSoT **`FocusProfile` de `@aurora/domain`**
+ *   (migration 0027 : `focus_profiles` Supabase + RLS + PowerSync stream
+ *   `focus`). Le store local (`lib/focus-profiles.ts`) lit/écrit cette row
+ *   (snake_case miroir `focus_profiles` / camelCase entité domain). La
+ *   création d'un profil produit une row du store ; `launchProfile(profil)`
+ *   mappe le profil en `FocusSessionOptions` et démarre le mode focus via
+ *   `FocusControllerService.startSession(opts)` (S5 §M-51). Le
+ *   rebranchement miroir PowerSync (stream `focus` portant désormais
+ *   `focus_profiles`) + upsync passe **au checkpoint lead** (le subagent
+ *   ne déploie JAMAIS le relay PROD) ; ce test reste local (AD-7).
+ * - **M-52** : l'assignation tâche ↔ profil (le FK `focus_profiles.task_id`,
+ *   0002) est persistée localement sur la row du profil ; le ▶ d'une tâche
+ *   lance le focus avec le profil assigné.
  *
  * Run: pnpm -F @aurora/mobile exec node --experimental-strip-types
  *        --no-warnings --test test/focus-wiring.test.ts
@@ -44,14 +46,14 @@ function makeProfile(over: Partial<FocusProfile> = {}): FocusProfile {
   return {
     id: 'p1',
     userId: 'user1',
-    title: 'Étude profonde',
+    name: 'Étude profonde',
     method: 'pomodoro',
-    workMin: 25,
-    pauseMin: 5,
-    sessions: 4,
+    baseMinutes: 25,
+    restMinutes: 5,
+    rounds: 4,
     taskId: 't1',
-    displayOnFocusPage: true,
     createdAt: '2026-10-18T00:00:00.000Z',
+    updatedAt: '2026-10-18T00:00:00.000Z',
     ...over,
   };
 }
@@ -68,11 +70,11 @@ test('M-51 createFocusProfile: la création d’un profil produit une row du sto
   const row = store.row(
     'focus_profiles',
     'p1',
-  ) as { title?: string; method?: string; task_id?: string } | undefined;
+  ) as { name?: string; method?: string; task_id?: string } | undefined;
   assert.ok(row, 'row focus_profiles/p1 écrite par la création du profil');
-  assert.equal(row.title, 'Étude profonde', 'titre miroir');
+  assert.equal(row.name, 'Étude profonde', 'nom miroir');
   assert.equal(row.method, 'pomodoro', 'méthode miroir');
-  assert.equal(row.task_id, 't1', 'tâche assignée → colonne task_id');
+  assert.equal(row.task_id, 't1', 'tâche assignée → colonne task_id (FK 0002)');
 });
 
 test('M-51 launchProfile: un profil Pomodoro démarre startSession(mode, durées + tâche)', async () => {
@@ -82,8 +84,8 @@ test('M-51 launchProfile: un profil Pomodoro démarre startSession(mode, durées
 
   const opts: FocusSessionOptions = launchProfile(profile);
   assert.equal(opts.mode, 'pomodoro', 'méthode → mode focus');
-  assert.equal(opts.plannedDurationSec, 25 * 60, 'travail min → plannedDurationSec');
-  assert.equal(opts.pomodoroPauseSec, 5 * 60, 'pause min → pomodoroPauseSec');
+  assert.equal(opts.plannedDurationSec, 25 * 60, 'baseMinutes → plannedDurationSec');
+  assert.equal(opts.pomodoroPauseSec, 5 * 60, 'restMinutes → pomodoroPauseSec');
   assert.deepEqual(opts.taskIds, ['t1'], 'tâche assignée → taskIds');
   assert.equal(opts.userId, 'user1', 'propriétaire (RLS scope)');
 
@@ -97,17 +99,18 @@ test('M-51 launchProfile: un profil Chronomètre démarre startSession(mode=time
   const svc = createAppFocusService(store);
   const profile = makeProfile({
     id: 'p2',
-    title: 'Lecture libre',
-    method: 'timer',
-    workMin: 0,
-    pauseMin: 0,
-    sessions: 0,
+    name: 'Lecture libre',
+    method: 'chrono',
+    baseMinutes: 1,
+    restMinutes: 0,
+    rounds: 1,
     taskId: undefined,
   });
 
   const opts = launchProfile(profile);
   assert.equal(opts.mode, 'timer', 'chronomètre → mode timer');
-  assert.equal(opts.plannedDurationSec ?? 0, 0, 'sans limite de durée (planned=0)');
+  assert.equal(opts.plannedDurationSec, 1 * 60, 'base du chrono → planned (60 s, SSoT)');
+  assert.equal(opts.pomodoroPauseSec, undefined, 'pas de pause alternée');
   assert.equal(opts.taskIds, undefined, 'pas de tâche assignée → pas de taskIds');
 
   const session = await svc.startSession(opts);
@@ -125,9 +128,9 @@ test('M-52 linkTaskToProfile + launchTask: le ▶ d’une tâche lance le focus 
   const svc = createAppFocusService(store);
 
   // la tâche simple t1 pointe vers le profil p1 (assignation depuis la tâche,
-  // S5 M-52 « Choisir un profil ») ; le lien est persisté localement sur la row
-  // du profil (pas d’entité distincte, AD-7 — l’entité focus_profiles est le
-  // blocage PowerSync reporté, le lien reste app-side tant que le miroir n’existe pas).
+  // S5 M-52 « Choisir un profil ») ; le lien = le FK focus_profiles.task_id
+  // (0002), persisté localement sur la row du profil (pas d’entité distincte,
+  // AD-7 ; le rebranchement miroir + upsync passe au checkpoint lead).
   put.linkTaskToProfile('t1', 'p1');
   const row = store.row(
     'focus_profiles',

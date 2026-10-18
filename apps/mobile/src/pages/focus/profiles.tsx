@@ -19,10 +19,11 @@
  *
  * Sessions **locales** (AD-7, offline) : la mécanique de session/timer
  * EXISTE (`packages/focus`), on ne la modifie pas, on se rebranche dessus.
- * Les tâches simples restent la `Task` miroir `productivity.tasks` (Q11) ;
- * l'assignation tâche↔profil vit côté app (`focus_profiles.task_id`) tant
- * que l'entité miroir n'existe pas (blocage PowerSync reporté au checkpoint
- * lead — on ne code PAS de migration).
+ * L'entité SSoT du profil = `FocusProfile` de `@aurora/domain` (0027 :
+ * `focus_profiles` Supabase + RLS + PowerSync stream `focus`) ; les tâches
+ * simples restent la `Task` miroir `productivity.tasks` (Q11, 0002). Le
+ * rebranchement miroir + upsync passe au checkpoint lead (le subagent ne
+ * déploie JAMAIS le relay PROD).
  */
 import {
   IonButton,
@@ -46,7 +47,7 @@ import { createAppFocusService } from '../../lib/focus-service';
 import {
   createFocusProfileStore,
   launchProfile,
-  type FocusProfile,
+  type FocusProfile as FocusProfileDomain,
 } from '../../lib/focus-profiles';
 import { createMinimalTask, readProductivity, type MinimalTaskInput } from '../../lib/productivity-repo';
 import { NewFocusProfileBody } from './new-profile';
@@ -55,16 +56,17 @@ import type { FocusControllerService, FocusSessionOptions } from '@aurora/focus'
 import type { FocusSession, Task } from '@aurora/domain';
 
 /** Description de durée d'un profil (carte, écran 8). */
-function profileDescription(p: FocusProfile): string {
-  if (p.method === 'timer') return 'Sans limite de durée';
-  return `${p.workMin} min · pause ${p.pauseMin} min · ${p.sessions} sessions`;
+function profileDescription(p: FocusProfileDomain): string {
+  if (p.method === 'chrono') return 'Chronomètre · base ' + p.baseMinutes + ' min';
+  if (p.method === 'tours') return p.rounds + ' tours';
+  return `${p.baseMinutes} min · pause ${p.restMinutes} min · ${p.rounds} sessions`;
 }
 
 /** Le profil assigné à une tâche (par `focus_profiles.task_id`). */
 function profileForTask(
   task: Task,
-  profiles: FocusProfile[],
-): FocusProfile | undefined {
+  profiles: FocusProfileDomain[],
+): FocusProfileDomain | undefined {
   return profiles.find((p) => p.taskId === task.id);
 }
 
@@ -105,6 +107,7 @@ export function FocusProfilesPage({
   const activeTask = tasks.find((t) => t.id === activeTaskId);
   // Les paramètres du profil en cours (méthode + durées) pour le minuteur
   // v2 (M-53) : l'anneau Pomodoro / le chrono s'adaptent au profil lancé.
+  // `pomodoro` → anneau ; `chrono`/`tours` → chrono + laps.
   const [activeMethod, setActiveMethod] = useState<'pomodoro' | 'timer'>('pomodoro');
   const [activeWorkSec, setActiveWorkSec] = useState(0);
   const [activeSessions, setActiveSessions] = useState(4);
@@ -112,15 +115,20 @@ export function FocusProfilesPage({
   const [newProfileOpen, setNewProfileOpen] = useState(false);
 
   /** Lancer un profil (M-51) : mappe en options + `startSession`. */
-  async function launch(profile: FocusProfile, taskId?: string) {
+  async function launch(profile: FocusProfileDomain, taskId?: string) {
     if (!service) return;
     const opts: FocusSessionOptions = launchProfile(profile);
     if (taskId) opts.taskIds = [taskId];
     const s = await service.startSession(opts);
     setActiveTaskId(taskId ?? profile.taskId ?? null);
-    setActiveMethod(profile.method);
-    setActiveWorkSec(profile.workMin * 60);
-    setActiveSessions(profile.sessions || 4);
+    // Le profil 0027 porte `method` (pomodoro/chrono/tours) ; le timer v2
+    // s'adapte en sous-mode `pomodoro` (anneau) ou `timer` (chrono + laps).
+    const subMode = profile.method === 'pomodoro' ? 'pomodoro' : 'timer';
+    setActiveMethod(subMode);
+    // base de travail du profil (la durée de base de la session).
+    setActiveWorkSec(profile.baseMinutes * 60);
+    // N = les pomodoros (Pomodoro) ou les tours (Chrono/Tours), défaut 4.
+    setActiveSessions(profile.rounds || 4);
     setFocusActive(true);
     onSession?.(s);
   }
@@ -208,9 +216,13 @@ export function FocusProfilesPage({
                   data-profile-id={p.id}
                 >
                   <div className="focus-v2-card-head">
-                    <h3>{p.title}</h3>
+                    <h3>{p.name}</h3>
                     <span className="focus-v2-pill">
-                      {p.method === 'pomodoro' ? 'Pomodoro' : 'Chronomètre'}
+                      {p.method === 'pomodoro'
+                        ? 'Pomodoro'
+                        : p.method === 'tours'
+                          ? 'Tours'
+                          : 'Chronomètre'}
                     </span>
                   </div>
                   <p className="focus-v2-desc">{profileDescription(p)}</p>
@@ -219,7 +231,7 @@ export function FocusProfilesPage({
                     className="focus-v2-launch"
                     disabled={!service}
                     onClick={() => void launch(p, p.taskId)}
-                    aria-label={`Lancer le profil ${p.title}`}
+                    aria-label={`Lancer le profil ${p.name}`}
                   >
                     <Play size={16} aria-hidden /> Lancer
                   </button>
@@ -254,7 +266,7 @@ export function FocusProfilesPage({
                         <h4>{t.title}</h4>
                         <p>
                           {assigned
-                            ? `Profil : ${assigned.title}`
+                            ? `Profil : ${assigned.name}`
                             : 'Aucun profil · à choisir'}
                         </p>
                       </div>

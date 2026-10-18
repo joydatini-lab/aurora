@@ -11,10 +11,12 @@
  * - Case « Afficher sur la page Focus »
  * - Footer Annuler + **Créer le profil**
  *
- * Le profil écrit une row du store local (`createFocusProfileStore.create`)
- * — AD-7, zéro réseau. L'entité miroir `focus_profiles` n'existe pas
- * (blocage PowerSync reporté au checkpoint lead ; on ne code PAS de
- * migration).
+ * Le profil écrit une row miroir `focus_profiles` (0027) dans le store
+ * local — AD-7, zéro réseau sur le chemin de lecture ; le rebranchement
+ * miroir PowerSync (stream `focus`) + upsync passe au checkpoint lead.
+ * L'entité SSoT du profil = `FocusProfile` de `@aurora/domain` (0027) :
+ * `name` / `method` (pomodoro / chrono / tours) / `baseMinutes` /
+ * `restMinutes` / `rounds` / `taskId?` (FK tâches Q11, 0002).
  *
  * Le composant est un **corps de formulaire** (pas de chrome Ion) : il est
  * monté dans l'IonContent de la page Focus v2 (écran 8), l'en-tête «
@@ -43,28 +45,32 @@ export function NewFocusProfileBody({
   onCancel,
 }: NewFocusProfileBodyProps) {
   const [title, setTitle] = useState('');
-  const [method, setMethod] = useState<'pomodoro' | 'timer'>('pomodoro');
-  const [workMin, setWorkMin] = useState(25);
-  const [shortPauseMin, setShortPauseMin] = useState(5);
-  const [longPauseMin, setLongPauseMin] = useState(15);
-  const [sessions, setSessions] = useState(4);
+  const [method, setMethod] = useState<'pomodoro' | 'chrono'>('pomodoro');
+  const [baseMin, setBaseMin] = useState(25);
+  const [restMin, setRestMin] = useState(5);
+  const [rounds, setRounds] = useState(4);
+  const [taskId, setTaskId] = useState<string>('');
   const [taskId, setTaskId] = useState<string>('');
   const [display, setDisplay] = useState(true);
 
   const nowIso = useMemo(() => new Date().toISOString(), []);
 
   function submit() {
+    const ts = nowIso;
     const profile: FocusProfile = {
       id: `fp-${Math.random().toString(36).slice(2, 10)}`,
       userId,
-      title: title.trim() || 'Profil de focus',
+      name: title.trim() || 'Profil de focus',
       method,
-      workMin: method === 'pomodoro' ? workMin : 0,
-      pauseMin: method === 'pomodoro' ? shortPauseMin : 0,
-      sessions: method === 'pomodoro' ? sessions : 0,
+      // baseMinutes = durée de travail (Pomodoro : un pomodoro ; Chrono :
+      // base de référence, 1 = open-ended). restMinutes = pause ; rounds =
+      // N pomodoros (Pomodoro) ou N tours (Chrono).
+      baseMinutes: method === 'pomodoro' ? baseMin : 1,
+      restMinutes: method === 'pomodoro' ? restMin : 0,
+      rounds: method === 'pomodoro' ? rounds : 1,
       taskId: taskId || undefined,
-      displayOnFocusPage: display,
-      createdAt: nowIso,
+      createdAt: ts,
+      updatedAt: ts,
     };
     profileStore.create(profile);
     onCreated?.(profile);
@@ -110,9 +116,9 @@ export function NewFocusProfileBody({
           <button
             type="button"
             role="radio"
-            aria-checked={method === 'timer'}
-            className={method === 'timer' ? 'is-active' : ''}
-            onClick={() => setMethod('timer')}
+            aria-checked={method === 'chrono'}
+            className={method === 'chrono' ? 'is-active' : ''}
+            onClick={() => setMethod('chrono')}
           >
             Chronomètre
           </button>
@@ -121,16 +127,15 @@ export function NewFocusProfileBody({
 
       {method === 'pomodoro' && (
         <div className="focus-new-durations" data-purpose="durations-config-card">
-          <DurationRow label="Travail" min={15} max={45} step={5} valueState={[workMin, setWorkMin]} />
-          <DurationRow label="Pause courte" min={2} max={15} step={1} valueState={[shortPauseMin, setShortPauseMin]} />
-          <DurationRow label="Pause longue" min={10} max={30} step={5} valueState={[longPauseMin, setLongPauseMin]} />
+          <DurationRow label="Travail" min={15} max={45} step={5} valueState={[baseMin, setBaseMin]} />
+          <DurationRow label="Pause" min={2} max={15} step={1} valueState={[restMin, setRestMin]} />
           <div className="focus-new-dur-row">
-            <span>Sessions</span>
-            <span className="focus-new-dur-value">{sessions}</span>
+            <span>Nombre de sessions</span>
+            <span className="focus-new-dur-value">{rounds}</span>
           </div>
           <div className="focus-new-dur-steps">
-            <button type="button" onClick={() => setSessions((s) => Math.max(1, s - 1))} aria-label="Réduire les sessions">−</button>
-            <button type="button" onClick={() => setSessions((s) => Math.min(8, s + 1))} aria-label="Augmenter les sessions">+</button>
+            <button type="button" onClick={() => setRounds((s) => Math.max(1, s - 1))} aria-label="Réduire les sessions">−</button>
+            <button type="button" onClick={() => setRounds((s) => Math.min(8, s + 1))} aria-label="Augmenter les sessions">+</button>
           </div>
         </div>
       )}

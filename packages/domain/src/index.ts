@@ -59,3 +59,28 @@ export * from './ai-pipeline';
 
 // ---- UI / registres (§10-§11) + 7 registries ----
 export * from './registries';
+
+// ——— Focus module (S5 M-51, migration 0027) —————————————————————————
+/** Profil Focus (méthode + durées + tâche Q11 optionnelle, 0027).
+ *  SSoT : le store LocalStore du S5 est migré ici pour la synchro
+ *  multi-appareils (PowerSync, stream focus, 0002). */
+export interface FocusProfile {
+  id: string;
+  userId: string;
+  /** nom du profil (1–80 caractères, 0027). */
+  name: string;
+  /** méthode (0027 : pomodoro / chrono / tours). */
+  method: 'pomodoro' | 'chrono' | 'tours';
+  /** base en minutes (pomodoro : 25 par défaut ; chrono : 1 par défaut). */
+  baseMinutes: number;
+  /** pause en minutes (défaut 5, 0027). */
+  restMinutes: number;
+  /** nombre de tours (méthode tours, défaut 1, 0027). */
+  rounds: number;
+  /** tâche Q11 liée (FK tasks, 0002, NULL = pas de tâche, 0027). */
+  taskId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type FocusMethod = FocusProfile['method'];
