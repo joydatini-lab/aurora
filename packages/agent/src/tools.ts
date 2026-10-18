@@ -1394,6 +1394,35 @@ export const skillCreate: KernelTool = tool({
 });
 
 /**
+ * skill_update (M-23, plan v2 S2) — éditer les instructions d'un skill
+ * personnel EXISTANT (trigger / objectif / procédure / nom). Thin
+ * command AD-7 : le kernel ÉMET `agent.skill_update` (payload = les
+ * nouveaux champs), le module `fn-skills` APPLIQUE la mutation
+ * (jamais de write directe du kernel). Non-destructif : aucune
+ * confirmation (le rename seul = `skill_rename`, le vrai delete =
+ * `skill_delete` ADR §5).
+ */
+export const skillUpdate: KernelTool = tool({
+  description:
+    "Update a personal skill's instructions (trigger / goal / procedure, and optionally the name). Thin command → agent.skill_update (AD-7 : le module Agent applique la mutation des instructions du skill, jamais le kernel). Non-destructif — pas de confirmation (le delete est `skill_delete`, ADR §5).",
+  inputSchema: z.object({
+    /** the skill id / key being updated */
+    skillId: z.string(),
+    /** the new name (optional — keep the old name when omitted) */
+    name: z.string().optional(),
+    /** the new trigger (what activates the skill) */
+    trigger: z.string().optional(),
+    /** the new goal it achieves */
+    goal: z.string().optional(),
+    /** the new ordered procedure */
+    steps: z.array(z.string()).optional(),
+    /** l'identité du user (portée par le kernel, AD-7) */
+    userId: z.string().optional(),
+  }),
+  execute: async (input) => ({ ok: true, command: 'agent.skill_update', payload: input }),
+});
+
+/**
  * skill_search — search the global skill_catalog by query text and/or domain.
  * The server-side EF (fn-skills `search_catalog` verb) runs the PostgREST
  * `ilike` filter over `skill_catalog.name/trigger_/objective` and returns
@@ -1526,6 +1555,7 @@ export const KERNEL_TOOLS = {
   // Skills (ADR S14 user skills, separate from expert skills)
   skill_activate: skillActivate,
   skill_create: skillCreate,
+  skill_update: skillUpdate,
   // Skill catalog search (0021 marketplace): the agent searches the global
   // skill_catalog per case — skill_search returns compact matches,
   // skill_get retrieves the full SKILL.md body of the chosen skill.

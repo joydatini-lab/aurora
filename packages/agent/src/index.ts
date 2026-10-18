@@ -184,6 +184,9 @@ export {
   taskDelete,
   canvasDelete,
   skillDelete,
+  // M-23 (plan v2 S2) : édition des instructions d'un skill existant
+  // (AD-7 thin — le module Agent applique, non-destructif)
+  skillUpdate,
   // G6 (feature agentique 2026-10-06) : création habit / routine (cadence
   // = programmer) — thin emitters AD-7
   habitCreate,

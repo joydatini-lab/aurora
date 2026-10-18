@@ -524,3 +524,483 @@
 .skill-doc-sheet-body a:hover {
   text-decoration: underline;
 }
+
+/* —————————————————————————————————————————————————————————————
+   M-23 (plan v2 S2) — Bibliothèque v2 (stitch screens):
+   - skills_biblioth_que_fraunces : 2-tab segmented + card grid 2/col
+   - skill_d_tail_fraunces        : detail view
+   - skill_cr_er_modifier_fraunces: create / edit form
+   Colors follow the Stitch code.html references.
+   ————————————————————————————————————————————————————————————— */
+
+.skills-page-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+/* ——— Header : titre + CTA « + Créer » (stitch écran 2) ——— */
+.skills-v2-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.skills-v2-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--aurora-text-primary);
+}
+.skills-v2-create-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: #2f65f6; /* stitch : CTA bleu */
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* ——— Segment control 2 tabs (Installés • N / Parcourir) ——— */
+.skills-v2-segment {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  background: var(--aurora-bg-subtle);
+  border: 1px solid var(--aurora-border);
+  border-radius: 12px;
+}
+.skills-v2-segment-btn {
+  padding: 9px 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--aurora-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+}
+.skills-v2-segment-btn.is-active {
+  color: #fff;
+  background: #2f65f6; /* stitch : segment actif */
+}
+
+/* ——— Grille de cartes 2 colonnes (stitch écran 2, grid-cols-2) ——— */
+.skills-v2-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px; /* stitch gap-3.5 */
+}
+.skills-v2-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 110px; /* stitch min-h ~175px / 2-col */
+  padding: 12px;
+  text-align: left;
+  background: var(--aurora-bg);
+  border: 1px solid var(--aurora-border);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 0.1s linear;
+}
+.skills-v2-card.is-active {
+  border-color: #2f65f6;
+}
+.skills-v2-card-top {
+  display: flex;
+  gap: 10px;
+}
+.skills-v2-card-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: #2f65f6;
+  background: #ebf1fe; /* stitch : fond d'icône */
+  border-radius: 10px;
+}
+.skills-v2-card-text {
+  flex: 1;
+  min-width: 0;
+}
+.skills-v2-card-text h4 {
+  margin: 0 0 2px;
+  font-size: 14px; /* stitch : titre bold 15px, 2-col donc 14px */
+  font-weight: 700;
+  color: var(--aurora-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.skills-v2-card-text p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--aurora-text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ——— Badge d'état (INDEXÉ / NON INDEXÉ / PERSO) ——— */
+.skills-v2-badge {
+  align-self: flex-start;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 999px;
+}
+.skills-v2-badge.is-indexed {
+  color: #1d4ed8;
+  background: #dbeafe; /* stitch : INDEXED blue */
+}
+.skills-v2-badge.is-not-indexed {
+  color: #a16207;
+  background: #fef3c7; /* stitch : NON INDEXÉ amber #a16207 */
+}
+.skills-v2-badge.is-personal {
+  color: #2f65f6;
+  background: #ebf1fe; /* stitch : PERSO blue */
+}
+
+/* ——— Vue détail (stitch écran 3) ——— */
+.skills-v2-detail-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.skills-v2-back {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: var(--aurora-text-primary);
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.skills-v2-detail-nav > span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aurora-text-primary);
+}
+.skills-v2-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.skills-v2-detail-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  color: #2f65f6;
+  background: #ebf1fe;
+  border-radius: 14px;
+}
+.skills-v2-detail-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--aurora-text-primary);
+}
+.skills-v2-detail-badges {
+  display: flex;
+  gap: 8px;
+}
+.skills-v2-detail-pill {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #2f65f6;
+  background: #ebf1fe;
+  border-radius: 999px;
+}
+.skills-v2-detail-pill.is-indexed {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+.skills-v2-detail-pill.is-not-indexed {
+  color: #a16207;
+  background: #fef3c7;
+}
+.skills-v2-detail-pill.is-personal {
+  color: #2f65f6;
+  background: #ebf1fe;
+}
+
+/* Le switch « Actif pour l'agent » (iOS-style, stitch écran 3) */
+.skills-v2-active-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--aurora-bg-subtle);
+  border: 1px solid var(--aurora-border);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--aurora-text-primary);
+}
+.skills-v2-switch {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 27px;
+  background: #d1d5db;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.1s linear;
+}
+.skills-v2-switch.is-on {
+  background: #2f65f6;
+}
+.skills-v2-switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 23px;
+  height: 23px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.1s linear;
+}
+.skills-v2-switch.is-on .skills-v2-switch-knob {
+  transform: translateX(19px);
+}
+
+/* Les sections du détail */
+.skills-v2-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.skills-v2-section h3 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--aurora-text-muted);
+}
+.skills-v2-section > p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--aurora-text-primary);
+}
+.skills-v2-instructions {
+  margin: 0;
+  padding: 12px;
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--aurora-text-primary);
+  background: var(--aurora-bg-subtle);
+  border: 1px solid var(--aurora-border);
+  border-radius: 10px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+.skills-v2-tool-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.skills-v2-tool-tag {
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--aurora-text-primary);
+  background: var(--aurora-bg-subtle);
+  border-radius: 999px;
+}
+.skills-v2-manual-call {
+  font-family: var(--font-mono, monospace);
+  font-size: 14px;
+  color: #2f65f6;
+}
+
+/* Le footer du détail : Désinstaller + Modifier */
+.skills-v2-detail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+.skills-v2-detail-actions .skills-v2-btn-outline {
+  color: var(--aurora-text-primary);
+}
+.skills-v2-detail-actions .skills-v2-btn-outline:hover {
+  color: var(--aurora-danger);
+  border-color: var(--aurora-danger);
+}
+
+/* ——— Boutons communs (outline / filled, stitch écrans 3-4) ——— */
+.skills-v2-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aurora-text-primary);
+  background: var(--aurora-bg);
+  border: 1px solid var(--aurora-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.1s linear;
+}
+.skills-v2-btn-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.skills-v2-btn-filled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: #2f65f6;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.skills-v2-btn-filled:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ——— Formulaire Créer / Modifier (stitch écran 4) ——— */
+.skills-v2-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.skills-v2-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.skills-v2-form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--aurora-text-primary);
+}
+.skills-v2-form-group input,
+.skills-v2-form-group textarea {
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--aurora-text-primary);
+  background: var(--aurora-bg);
+  border: 1px solid var(--aurora-border);
+  border-radius: 10px;
+  outline: none;
+  resize: vertical;
+}
+.skills-v2-form-group input:focus,
+.skills-v2-form-group textarea:focus {
+  border-color: #2f65f6;
+}
+.skills-v2-form-slug {
+  margin: 0;
+  font-size: 12px;
+  color: var(--aurora-text-muted);
+}
+.skills-v2-form-slug span {
+  font-family: var(--font-mono, monospace);
+  color: #2f65f6;
+}
+.skills-v2-form-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--aurora-text-muted);
+}
+
+/* OUTILS AUTORISÉS (checkboxes, stitch écran 4) */
+.skills-v2-tools-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.skills-v2-tools-block h3 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--aurora-text-muted);
+}
+.skills-v2-tools-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.skills-v2-tool-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--aurora-text-primary);
+  background: var(--aurora-bg-subtle);
+  border: 1px solid var(--aurora-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.skills-v2-tool-option input {
+  accent-color: #2f65f6;
+  width: 18px;
+  height: 18px;
+}
+
+/* Le checkbox « Activer et indexer après l'enregistrement » */
+.skills-v2-activate-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--aurora-text-primary);
+  background: var(--aurora-bg-subtle);
+  border: 1px solid var(--aurora-border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.skills-v2-activate-card input {
+  accent-color: #2f65f6;
+  width: 18px;
+  height: 18px;
+}
+
+/* Le footer du formulaire : Annuler (1/3) + Enregistrer (2/3) */
+.skills-v2-form-actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
+  margin-top: 4px;
+}

@@ -692,6 +692,16 @@ export class DefaultCapabilityRegistry {
         destructive: false,
         requiresConfirmation: false,
       },
+      {
+        id: 'skill.update',
+        tool: 'skill_update',
+        description:
+          "Update a personal skill's instructions (trigger / goal / procedure, optionally the name — M-23 plan v2 S2). Thin command → agent.skill_update (AD-7 : le module Agent applique la mutation des instructions, jamais le kernel). Non-destructif — pas de confirmation (le delete est skill.delete, ADR §5).",
+        writeScopes: ['agent:write'],
+        readScopes: ['agent:read'],
+        destructive: false,
+        requiresConfirmation: false,
+      },
       // ------------------------------------------------------------------
       // Canvas tools (0022) — "le canvas est utilisé par l'agent, pas
       // par l'humain" : l'humain reste éditeur de /canvas (StarterKit),

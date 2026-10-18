@@ -44,8 +44,10 @@ import {
   Brain,
   Compass,
   Cpu,
+  ChevronLeft,
   FolderOpen,
   Link2,
+  Loader2,
   Menu,
   MessageSquare,
   MessageSquarePlus,
@@ -63,6 +65,7 @@ import {
 } from 'lucide-react';
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -74,8 +77,11 @@ import { useMobileData } from '../../query/context';
 import { useAgentRun } from '../../query/agent-runs';
 import { useKilledDetection } from '../../hooks/use-killed';
 import type { AgentRunRow } from '../../lib/agent-client';
+import type { UserSkillRow } from '../../lib/skills-client';
 import { useUiStateStore } from '../../state/ui-state';
 import { AuroraOrb } from '../../components/AuroraOrb';
+import { parseSkillSlashCall, withForcedSkill, type SkillCandidate } from './skill-slash-parse.ts';
+import { MirrorFindingsCard } from '../../components/agent/mirror-findings-card';
 
 // ——— Model picker catalog (AD-3: static, public config — no key here). ———
 const MODEL_CATALOG: Array<{ provider: string; name: string; models: string[] }> = [
@@ -131,6 +137,18 @@ const MODEL_TIER_OPTIONS: Array<{ id: ModelTier; label: string; hint: string }> 
   { id: 'advanced', label: 'Avancé', hint: 'Raisonnement poussé, plus lent' },
 ];
 
+// ——— M-22 (Q13) : le label court d'un skill installé (la sous-écran
+//  « Skills installés » de la feuille +) — l'objectif / le trigger,
+//  sinon l'origine lisible (jamais de jargon brut AD-7). ———
+function sourceSkillLabel(s: UserSkillRow): string {
+  if (s.trigger) return s.trigger;
+  if (s.objective) return s.objective;
+  if (s.source.startsWith('marketplace:')) return 'Catalogue';
+  if (s.source === 'user-created') return 'Créé par toi';
+  if (s.source === 'builtin') return 'Intégré';
+  return s.skillKey;
+}
+
 // ——— Research modes ———
 type ResearchMode = 'off' | 'standard' | 'deep';
 const RESEARCH_MODES: Array<{ id: ResearchMode; label: string }> = [
@@ -166,6 +184,33 @@ interface Entry {
   route?: string;
   /** Optional short label shown on the peel affordance (chevron line). */
   routeLabel?: string;
+  /**
+   * S6 M-62 (plan v2) — le payload de la carte Miroir (le retour
+   * structuré du run du mode Miroir, le contrat M-61
+   * `docs/adr/mirror-contract.md`). Quand il est présent sur une
+   * entrée `agent`, le composant `MirrorFindingsCard` est rendu dans
+   * la bulle (le bloc « Lacunes détectées » vit DANS le chat,
+   * jamais une page dédiée — l'écran Miroir = un écran du chat, pas
+   * une route supplémentaire du shell (02 §6.1 S1/S3)). Les champs
+   * (reformulation / findings typées SSoT Learning / question) sont
+   * fixés par le module pures fonctions
+   * `mirror-findings-card.ts` (le composant les consomme, la SSoT
+   * est le module — zéro redéclaration). Le `subjectLabel` /
+   * `subjectId` sont l'état du Stitch « Sujet : … » (le dernier
+   * cours / la veille du flow M-62) ; le `validated` = le flag M-63
+   * (la preuve a-t-elle été validée par l'utilisateur, le bouton
+   * « Valider » se désactive une fois la commande
+   * `progress.evidence_create` appliquée (F-07 : seul Progress
+   * écrit la row, le chat n'émet que la commande typée)).
+   */
+  mirror?: {
+    subjectLabel?: string;
+    subjectId?: string;
+    reformulation: string;
+    findings: MirrorCardFinding[];
+    question: string;
+    validated?: boolean;
+  };
 }
 
 /** Plain French status lines (roadmap 10-07: zéro jargon utilisateur). */
@@ -197,7 +242,11 @@ const PULL_OPEN_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'; // ease-out « luxe »
 
 export function AgentPage() {
   const navigate = useNavigate();
-  const { agent } = useMobileData();
+  // M-22 (plan v2 S2, Q13) : « Skills installés » dans la feuille + du chat
+  // (stitch `agent_skills_install_s_fraunces`) + l'appel `/nom` du brouillon.
+  // Le client `skills` (AD-3, `fn-skills`) sert la liste ; sans client,
+  // l'appel `/nom` est désactivé (AD-7 honnête, pas de skill fantôme).
+  const { agent, skills } = useMobileData();
   // Cross-page intent prefill (?intent=): the Slide-Ascent active-reading
   // actions (Expliquer / Note / Flashcard / Visualiser / Je bloque) and the
   // UxStates « Demande à Aurora » CTA route here with a PRE-BOUND intent —
@@ -224,6 +273,12 @@ export function AgentPage() {
   const researchMode = useUiStateStore((s) => s.agentResearchMode);
   const setResearchMode = useUiStateStore((s) => s.setAgentResearchMode);
   const [connectors, setConnectors] = useState<string[]>(DEFAULT_CONNECTORS);
+  // M-22 (Q13) : les skills installés (la sous-écran du `+` sheet, stitch
+  // `agent_skills_install_s_fraunces`).
+  const [showSkillsSheet, setShowSkillsSheet] = useState(false);
+  const [installedSkills, setInstalledSkills] = useState<UserSkillRow[]>([]);
+  const [skillsLoading, setSkillsLoading] = useState(false);
+  const [skillsError, setSkillsError] = useState<string | null>(null);
   // files: local surface state — kernel not yet wired (wave-N, see docs/kernel §files)
   const transcriptRef = useRef<HTMLDivElement>(null);
   const entrySeq = useRef(0);
@@ -255,6 +310,91 @@ export function AgentPage() {
   // may be stale — force one re-read, and surface "Reconnexion…" while it
   // settles. The hook clears itself on the first local re-read.
   const killed = useKilledDetection(() => refetchRun());
+
+  // ——— M-22 (Q13) : « Skills installés » (la sous-écran du `+` sheet) ———
+  // La liste est servie par le client `fn-skills` (AD-3 : publishable
+  // scope only, RLS user-isolated) — jamais de cache local de skills
+  // (l'activation se fait EN DIRECT sur le serveur, le refresh suit).
+  useEffect(() => {
+    if (!showSkillsSheet || !skills) return;
+    let live = true;
+    setSkillsLoading(true);
+    setSkillsError(null);
+    skills
+      .listUserSkills()
+      .then((rows) => {
+        if (!live) return;
+        // La stitch affiche TOUS les skills installés (catalogue activés +
+        // persos), actifs OU non : le toggle ré-active / désactive, le
+        // badge INDEXÉ reflète l'état courant (actif = indexé au prompt).
+        setInstalledSkills(rows);
+      })
+      .catch((e: unknown) => {
+        if (!live) return;
+        setSkillsError(e instanceof Error ? e.message : 'chargement des skills en échec');
+      })
+      .finally(() => {
+        if (live) setSkillsLoading(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [showSkillsSheet, skills]);
+
+  /** Toggle un skill installé (le serveur applique, le client refresh). */
+  async function toggleInstalledSkill(skillKey: string, currentlyActive: boolean) {
+    if (!skills) return;
+    // Optimistic flip for snappy UX (the sheet re-reads on next open).
+    setInstalledSkills((prev) =>
+      prev.map((s) => (s.skillKey === skillKey ? { ...s, active: !currentlyActive } : s)),
+    );
+    try {
+      if (currentlyActive) {
+        await skills.deactivateSkill(skillKey);
+      } else {
+        // Re-activation needs the catalog copy of the fields (the user
+        // skill row may have been deactivated without dropping its data).
+        const row = installedSkills.find((s) => s.skillKey === skillKey);
+        await skills.activateSkill(skillKey, row ? {
+          domain: row.domain,
+          name: row.name,
+          trigger: row.trigger ?? undefined,
+          objective: row.objective ?? undefined,
+          procedure: row.procedure,
+          constraints: row.constraints,
+          tools: row.tools,
+          source: row.source,
+        } : undefined);
+      }
+    } catch (e) {
+      // Roll back the optimistic flip (honest state, AD-13).
+      setInstalledSkills((prev) =>
+        prev.map((s) => (s.skillKey === skillKey ? { ...s, active: currentlyActive } : s)),
+      );
+      setSkillsError(e instanceof Error ? e.message : 'l’activation a échoué.');
+    }
+  }
+
+  /**
+   * M-22 (Q13) : l'appel `/nom` dans le brouillon — quand la saisie
+   * commence par `/`, le skill exact est résolu (match exact sur le nom /
+   * la key des skills installés — le kernel reçoit déjà le skill résolu)
+   * et INJECTÉ dans le taskProfile du run. Les skills actifs sont DÉJÀ
+   * indexés (layer 1 du prompt, le kernel choisit) ; l'appel `/nom`
+   * force l'activation d'UN skill précis pour ce run (le kernel active
+   * le skill pour le run si inactif, sans write persistant — AD-7).
+   */
+  // M-22 (Q13) : l'appel `/nom` dans le brouillon — le parsing est le
+  // SSoT pur `skill-slash-parse.ts` (testé par `skills-wiring.test.ts` :
+  // match exact sur nom / key des skills installés, jamais flou). Les
+  // skills actifs sont DÉJÀ indexés (layer 1 du prompt, le kernel
+  // choisit) ; l'appel `/nom` force l'activation d'UN skill précis pour
+  // ce run (le kernel active le skill pour le run si inactif, sans
+  // write persistante — AD-7).
+  const draftSkill = useMemo(
+    () => (skills ? parseSkillSlashCall(draft, installedSkills) : null),
+    [draft, installedSkills, skills],
+  );
 
   // Reduced-motion guard (emotion-design §3, 05 §2.6 règle 2): smooth scroll
   // → instant scroll when the OS preference is ON.
@@ -298,19 +438,20 @@ export function AgentPage() {
   }, [runRow, activeRun, reducedMotion]);
 
   // ——— Overlay dismissal (Escape) for the model picker + the + sheet
-  // (pattern: src/ux/floating.tsx). ———
+  // + the skills sheet (pattern: src/ux/floating.tsx). ———
   useEffect(() => {
-    if (!showPicker && !showPlusSheet && !showMenuSheet) return;
+    if (!showPicker && !showPlusSheet && !showMenuSheet && !showSkillsSheet) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         setShowPicker(false);
         setShowPlusSheet(false);
         setShowMenuSheet(false);
+        setShowSkillsSheet(false);
       }
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [showPicker, showPlusSheet, showMenuSheet]);
+  }, [showPicker, showPlusSheet, showMenuSheet, showSkillsSheet]);
 
   // PRD-AI §3 (10-08) : le menu du module Assistant — chaque entrée
   // route vers une surface RÉELLE (jamais de contrôle mort) : les
@@ -331,17 +472,29 @@ export function AgentPage() {
     if (!intent || !agent || thinking) return;
     setDraft('');
     push({ role: 'user', body: intent });
+    // M-22 (Q13) : l'appel `/nom` forcé — le skill résolu dans le
+    // brouillon est injecté dans le taskProfile du run (`withForcedSkill`,
+    // le SSoT pur du parse) ; le kernel l'active pour le run si inactif
+    // (AD-7 : le module skills applique, pas de write persistante).
+    const baseProfile = {
+      preferredProvider: modelChoice?.provider,
+      preferredModel: modelChoice?.model,
+      thinkingLevel,
+      modelTier,
+      researchMode,
+      agentMode,
+    };
+    // M-22 (Q13) : le skill forcé (`forceSkillKey`) est accepté par le
+    // taskProfile du run — le SSoT pur `skill-slash-parse.ts` porte le
+    // champ `forceSkillKey?` optionnel sur le profile.
+    const profile = withForcedSkill<Record<string, unknown> & { forceSkillKey?: string }>(
+      baseProfile as Record<string, unknown>,
+      draftSkill?.skill as SkillCandidate | null,
+    );
     try {
       const handle = await agent.start({
         intent,
-        taskProfile: {
-          preferredProvider: modelChoice?.provider,
-          preferredModel: modelChoice?.model,
-          thinkingLevel,
-          modelTier,
-          researchMode,
-          agentMode,
-        },
+        taskProfile: profile,
       });
       setActiveRun(handle.traceId);
     } catch (err) {
@@ -533,31 +686,6 @@ export function AgentPage() {
     peelStart.current = null;
   }
 
-  // ——— Voice register (emotion-design §5.3): chat/agent = vouvoiement
-  // (professional register); mirror = tutoiement (pedagogical register).
-  // The right-swipe that cycles the mode therefore switches the register —
-  // copy in the transcript follows agentMode. ———
-  function registerCopy(
-    register: 'pro' | 'pedagogical',
-    keys: 'conn' | 'mirror' | 'write' | 'explain'
-  ): string {
-    const pro: Record<typeof keys, string> = {
-      conn: 'Vérifiez votre connexion et relancez.',
-      mirror: 'miroir — vous expliquez ce que vous avez appris',
-      write: 'Écrivez votre intention…',
-      explain: 'Expliquez ce que vous avez appris…',
-    };
-    const ped: Record<typeof keys, string> = {
-      conn: 'Vérifie ta connexion et relance.',
-      mirror: 'miroir — explique ce que tu as appris',
-      write: 'Écris ton intention…',
-      explain: 'Explique ce que tu as appris…',
-    };
-    return (register === 'pro' ? pro : ped)[keys];
-  }
-
-  const register: 'pro' | 'pedagogical' = agentMode === 'mirror' ? 'pedagogical' : 'pro';
-
   const inFlightRow = activeRun && runRow && runRow.id === activeRun ? runRow : null;
 
   return (
@@ -579,48 +707,16 @@ export function AgentPage() {
       </IonHeader>
       <IonContent>
         <div className="agent-chat">
-          {/* Agent mode tabs (chat / agent / mirror) */}
-          <div className="agent-mode-tabs" role="tablist">
-            {AGENT_MODES.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                role="tab"
-                id={`tab-${m.id}`}
-                aria-selected={agentMode === m.id}
-                aria-controls="agent-transcript"
-                tabIndex={agentMode === m.id ? 0 : -1}
-                onKeyDown={(e) => {
-                  if (thinking) return;
-                  const idx = AGENT_MODES.findIndex((x) => x.id === m.id);
-                  let next = -1;
-                  if (e.key === 'ArrowRight') next = (idx + 1) % AGENT_MODES.length;
-                  else if (e.key === 'ArrowLeft') next = (idx - 1 + AGENT_MODES.length) % AGENT_MODES.length;
-                  else if (e.key === 'Home') next = 0;
-                  else if (e.key === 'End') next = AGENT_MODES.length - 1;
-                  if (next >= 0) {
-                    e.preventDefault();
-                    const target = AGENT_MODES[next]!;
-                    setAgentMode(target.id);
-                    document.getElementById(`tab-${target.id}`)?.focus();
-                  }
-                }}
-                className={`agent-mode-tab ${agentMode === m.id ? 'is-active' : ''}`}
-                onClick={() => setAgentMode(m.id)}
-                disabled={thinking}
-              >
-                {m.icon}
-                <span>{m.label}</span>
-              </button>
-            ))}
-          </div>
+          {/* M-12 (v2 MVP S1) — le sélecteur de mode vit DANS la carte de
+              saisie (puce segment 3 options Ask/Agent/Miroir sous l'input,
+              maquette Stitch), PLUS en haut de page : l'écran d'accueil =
+              orbe + titre (M-11b), le mode actif est rappelé par la puce. */}
 
           <div
             ref={transcriptRef}
             id="agent-transcript"
             className="agent-transcript"
             role="tabpanel"
-            aria-labelledby={`tab-${agentMode}`}
             tabIndex={0}
             data-state={
               agent
@@ -718,6 +814,65 @@ export function AgentPage() {
                   onPointerCancel={() => setPeel(null)}
                 >
                   <div className="agent-entry-body">{e.body}</div>
+                  {e.mirror && e.role === 'agent' && (
+                    /* S6 M-62 (plan v2) : le bloc « Lacunes détectées »
+                       vit DANS la bulle de l'agent (le contrat M-61,
+                       `docs/adr/mirror-contract.md` : l'écran Miroir
+                       = un écran du chat, pas une route du shell).
+                       Les 3 actions de la carte émettent des
+                       commandes typées (AD-7 thin emitters) : le
+                       chat ne crée JAMAIS l'event Focus / la veille
+                       / la preuve — les modules propriétaires
+                       appliquent (le F-07 invariant : seul Progress
+                       écrit une `ProgressEvidence`). */
+                    <MirrorFindingsCard
+                      subjectLabel={e.mirror.subjectLabel}
+                      subjectId={e.mirror.subjectId}
+                      reformulation={e.mirror.reformulation}
+                      findings={e.mirror.findings}
+                      question={e.mirror.question}
+                      validated={e.mirror.validated}
+                      onFocusPlan={(skillId) => {
+                        // Le command `focus.plan` (le module Focus
+                        // applique — l'app n'écrit rien, AD-7) : le
+                        // focus cible le skill / le concept du miroir.
+                        // L'intention est poussée dans le draft
+                        // (le run du kernel fait le reste, M-62 flow).
+                        setDraft(`Planifie un Focus sur ${skillId} (provenance miroir : ${e.mirror!.subjectLabel ?? 'sujet non nommé'})`);
+                      }}
+                      onCreateVeille={({ topic, source }: { topic: string; source: string }) => {
+                        // Le command `discovery.create` (G1 writer
+                        // automations, lot B AD-7) : la veille naît
+                        // du miroir (l'AD-11 provenance = `source`),
+                        // jamais d'un clic du module Discovery.
+                        setDraft(`Crée une veille sur ${topic || 'ce sujet'} (provenance ${source})`);
+                      }}
+                      onValidateEvidence={(payload: Record<string, unknown>) => {
+                        // M-63 (ADR mirror-contract.md) : la commande
+                        // `progress.evidence_create` (confirmation
+                        // OBLIGATOIRE — ADR §5, briefing §12 : la
+                        // validation d'une preuve est une action
+                        // importante / irréversible). Le flag
+                        // `validated` est mis à jour ici (l'UI
+                        // signale l'intention confirmée) ; l'écriture
+                        // de la row `progress_evidences` est faite par
+                        // le module Progress (F-07 : seul producteur,
+                        // l'agent propose, Progress commite).
+                        setDraft(
+                          `Valide la preuve du miroir : ${JSON.stringify(
+                            { ...(payload as Record<string, unknown>), _source: 'mirror' },
+                          )} (provenance AD-11 : ${e.mirror!.subjectLabel ?? 'sujet non nommé'})`,
+                        );
+                        setEntries((prev) =>
+                          prev.map((x) =>
+                            x.id === e.id && x.mirror
+                              ? { ...x, mirror: { ...x.mirror, validated: true } }
+                              : x,
+                          ),
+                        );
+                      }}
+                    />
+                  )}
                   {e.ctaLabel && e.ctaHref && (
                     <a
                       className="agent-entry-cta"
@@ -889,44 +1044,78 @@ export function AgentPage() {
                 void submit();
               }}
             >
-              <button
-                type="button"
-                className="agent-model-picker-trigger"
-                onClick={() => {
-                  setShowPlusSheet(false);
-                  setShowPicker(true);
-                }}
-                aria-label="Choisir le modèle et le niveau de réflexion"
-                disabled={!agent || thinking}
-              >
-                {modelChoice ? (
-                  <span className="agent-model-picker-label">
-                    <Cpu size={12} aria-hidden />
-                    {modelChoice.model}
-                  </span>
-                ) : (
-                  <span className="agent-model-picker-label">
-                    <Sparkles size={12} aria-hidden />
-                    Auto
-                  </span>
-                )}
-              </button>
+              {/* M-12 (v2 MVP S1) — le sélecteur de mode vit DANS la carte
+                  de saisie (segment control 3 options Ask/Agent/Miroir de
+                  la maquette Stitch), PLUS en haut de page. L'appui sur la
+                  puce de modèle « Auto » ouvre la feuille « Réflexion et
+                  modèle » EXISTANTE (`.agent-model-picker-modal`, M-21 la
+                  refactorise — on ne la réinvente pas ici). */}
+              <div className="agent-composer-top">
+                <div className="agent-mode-pill" role="radiogroup" aria-label="Mode de l'agent">
+                  {MODE_PILLS.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={agentMode === m.id}
+                      className={`agent-mode-pill__option ${agentMode === m.id ? 'is-active' : ''}`}
+                      onClick={() => setAgentMode(m.id)}
+                      disabled={!agent || thinking}
+                    >
+                      <span className="agent-mode-pill__icon" aria-hidden>{m.icon}</span>
+                      <span>{m.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-              <input
-                id="agent-composer-input"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder={agentMode === 'mirror' ? registerCopy(register, 'explain') : registerCopy(register, 'write')}
-                aria-label="Écrire à l'agent"
-                disabled={!agent || isFetching}
-              />
-              <button
-                type="submit"
-                disabled={!agent || draft.trim().length === 0 || thinking}
-                aria-label="Envoyer"
-              >
-                <Send size={18} />
-              </button>
+              <div className="agent-composer-row">
+                <button
+                  type="button"
+                  className="agent-model-picker-trigger"
+                  onClick={() => {
+                    setShowPlusSheet(false);
+                    setShowPicker(true);
+                  }}
+                  aria-label="Choisir le modèle et le niveau de réflexion"
+                  disabled={!agent || thinking}
+                >
+                  {modelChoice ? (
+                    <span className="agent-model-picker-label">
+                      <Cpu size={12} aria-hidden />
+                      {modelChoice.model}
+                    </span>
+                  ) : (
+                    <span className="agent-model-picker-label">
+                      <Sparkles size={12} aria-hidden />
+                      Auto
+                    </span>
+                  )}
+                </button>
+
+                <input
+                  id="agent-composer-input"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="Demandez, ou tapez / pour un skill"
+                  aria-label="Écrire à l'agent"
+                  disabled={!agent || isFetching}
+                />
+                <button
+                  type="submit"
+                  className="agent-composer-send"
+                  disabled={!agent || draft.trim().length === 0 || thinking}
+                  aria-label="Envoyer"
+                >
+                  <Send size={18} />
+                </button>
+              </div>
+
+              {/* M-12 — texte d'aide sous la carte : invite à taper « / »
+                  pour appeler un skill (M-22 l'indexe côté agent). */}
+              <div className="agent-composer-help">
+                Tapez <code>/</code> pour appeler un skill, glissez le curseur pour les options.
+              </div>
             </form>
 
             {/* Hint line (only visible while swiping: « glisser → options ») */}
@@ -1145,9 +1334,127 @@ export function AgentPage() {
 
               <div className="agent-plus-section">
                 <div className="agent-plus-label">Skills</div>
-                <button type="button" className="agent-plus-option" onClick={() => { setShowPlusSheet(false); navigate('/skills'); }}>
+                <button
+                  type="button"
+                  className="agent-plus-option"
+                  onClick={() => {
+                    setShowPlusSheet(false);
+                    setShowSkillsSheet(true);
+                  }}
+                >
                   <Sparkles size={14} aria-hidden />
-                  <span>Gérer mes skills (marketplace + perso)</span>
+                  <span>
+                    Skills installés{' '}
+                    {installedSkills.length > 0 ? `(${installedSkills.length})` : ''}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* M-22 (Q13) — feuille basse « Skills installés » (stitch
+              `agent_skills_install_s_fraunces`) : le SSoT de la
+              sous-écran du `+` sheet. Liste des skills installés
+              (catalogue activés + persos), badges INDEXÉ (actif,
+              blue) / NON INDEXÉ (inactif, amber), iOS-style toggles,
+              sous-titre + les 2 CTA du footer (Gérer = /skills,
+              Parcourir = /agent/bibliotheque). */}
+          {showSkillsSheet && (
+            <div
+              className="agent-plus-sheet agent-skills-sheet"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Skills installés"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) setShowSkillsSheet(false);
+              }}
+            >
+              <div className="agent-skills-header">
+                <button
+                  type="button"
+                  className="agent-skills-back"
+                  onClick={() => setShowSkillsSheet(false)}
+                  aria-label="Retour"
+                >
+                  <ChevronLeft size={20} aria-hidden />
+                </button>
+                <h3>Skills installés</h3>
+              </div>
+              <p className="agent-skills-subtitle">
+                Les skills actifs sont indexés : l'agent choisit le bon
+                selon votre demande, ou tapez{' '}
+                <span className="agent-skills-slash">/</span> dans la
+                saisie pour en appeler un.
+              </p>
+
+              {skillsError && (
+                <div className="agent-skills-error" role="alert">
+                  {skillsError}
+                </div>
+              )}
+
+              {skillsLoading && installedSkills.length === 0 ? (
+                <div className="agent-skills-empty">
+                  <Loader2 size={16} className="is-spin" aria-hidden />
+                  <span>Chargement des skills…</span>
+                </div>
+              ) : installedSkills.length === 0 ? (
+                <div className="agent-skills-empty">
+                  <Sparkles size={16} aria-hidden />
+                  <span>Aucun skill installé pour l'instant.</span>
+                </div>
+              ) : (
+                <ul className="agent-skills-list" data-purpose="skills-list">
+                  {installedSkills.map((s) => (
+                    <li key={s.skillKey} className="agent-skills-item">
+                      <div className="agent-skills-item-text">
+                        <span className="agent-skills-item-name">{s.name}</span>
+                        <span className="agent-skills-item-desc">
+                          {s.trigger ?? s.objective ?? sourceSkillLabel(s)}
+                        </span>
+                      </div>
+                      <div className="agent-skills-item-controls">
+                        <span
+                          className={`agent-skills-badge ${s.active ? 'is-indexed' : 'is-not-indexed'}`}
+                        >
+                          {s.active ? 'INDEXÉ' : 'NON INDEXÉ'}
+                        </span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={s.active}
+                          aria-label={s.active ? `Désactiver ${s.name}` : `Activer ${s.name}`}
+                          className={`agent-skills-toggle ${s.active ? 'is-on' : ''}`}
+                          onClick={() => void toggleInstalledSkill(s.skillKey, s.active)}
+                        >
+                          <span className="agent-skills-toggle-knob" aria-hidden />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="agent-skills-actions">
+                <button
+                  type="button"
+                  className="agent-skills-btn-outline"
+                  onClick={() => {
+                    setShowSkillsSheet(false);
+                    navigate('/skills');
+                  }}
+                >
+                  Gérer les skills
+                </button>
+                <button
+                  type="button"
+                  className="agent-skills-btn-filled"
+                  onClick={() => {
+                    setShowSkillsSheet(false);
+                    navigate('/agent/bibliotheque');
+                  }}
+                >
+                  Parcourir les skills
                 </button>
               </div>
             </div>

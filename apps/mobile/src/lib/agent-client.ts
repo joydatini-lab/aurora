@@ -52,6 +52,14 @@ export interface AgentRunRequest {
      * `auto` = the S2.6 Agnes-first chain decides.
      */
     modelTier?: 'auto' | 'light' | 'standard' | 'advanced';
+    /**
+     * M-22 (plan v2 S2, Q13) — le skill forcé pour le run via l'appel
+     * `/nom` du chat. La device envoie la key exacte du skill résolu
+     * (le parsing local des skills installés, jamais un nom flou) ;
+     * le kernel l'active pour le run si inactif (AD-7, pas de write
+     * persistante si inactif), le module skills applique.
+     */
+    forceSkillKey?: string;
   };
 }
 
