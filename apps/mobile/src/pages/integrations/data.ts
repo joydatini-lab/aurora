@@ -58,7 +58,17 @@ export interface ServicePermissions {
   actions: ServiceTool[];
 }
 
-/** Une ligne du catalog de l'écran 7 (le service externe de l'agent). */
+/**
+ * Une ligne du catalog de l'écran 7 (le service externe de l'agent).
+ *
+ * LA RÈGLE LOGO (S3 update, gelée) : le logo d'une intégration est
+ * TOUJOURS le `image_url` du toolkit Composio (M-34, `listToolkits`) —
+ * JAMAIS un asset hardcodé (`assets/*logo*.png`) ni une table statique
+ * `app → icône`. Ce SSoT statique ne porte que le NOM + `defaultOn` ;
+ * le `logoUrl?` vient du catalog LIVE (absent ici) et son fallback
+ * (pas d'image / échec de load) = la pastille initiale (les 2
+ * premières lettres du nom).
+ */
 export interface IntegrationService {
   /** le slug SSoT du toolkit Composio v3.1 (le `connect(app)` est passé à ce slug, AD-7 : l'EF applique). */
   app: string;
@@ -72,6 +82,8 @@ export interface IntegrationService {
   defaultOn: boolean;
   /** la permission résumé affichée sous le nom (briefing §8 : Agenda = lecture + écriture, Docs = lecture + création, …). */
   permissionSummary: string;
+  /** le logo LIVE (le `image_url` du toolkit, M-34 `listToolkits`). */
+  logoUrl?: string;
 }
 
 /** Le plan d'un CTA « Connecter » (AD-7 : le module/EF applique, jamais l'app). */
@@ -128,6 +140,20 @@ export const INTEGRATION_CATALOG: readonly IntegrationService[] = [
     permissionSummary: 'Lecture des fichiers du Drive.',
   },
   {
+    app: 'GOOGLESHEETS',
+    name: 'Google Sheets',
+    vendor: 'Google Workspace',
+    defaultOn: true,
+    permissionSummary: 'Lecture et édition de feuilles de calcul — chaque écriture demandera confirmation.',
+  },
+  {
+    app: 'GOOGLESLIDES',
+    name: 'Google Slides',
+    vendor: 'Google Workspace',
+    defaultOn: true,
+    permissionSummary: 'Lecture et édition de présentations — chaque écriture demandera confirmation.',
+  },
+  {
     app: 'GMAIL',
     name: 'Gmail',
     vendor: 'Google Workspace',
@@ -138,10 +164,100 @@ export const INTEGRATION_CATALOG: readonly IntegrationService[] = [
     app: 'NOTION',
     name: 'Notion',
     vendor: 'Notion',
-    defaultOn: false,
+    defaultOn: true,
     permissionSummary: 'Lecture et création de pages — chaque écriture demandera confirmation.',
   },
+  {
+    app: 'SLACK',
+    name: 'Slack',
+    vendor: 'Slack',
+    defaultOn: true,
+    permissionSummary: 'Lecture et envoi de messages — chaque écriture demandera confirmation.',
+  },
+  {
+    app: 'GITHUB',
+    name: 'GitHub',
+    vendor: 'GitHub',
+    defaultOn: true,
+    permissionSummary: 'Lecture et actions sur issues/PR — chaque écriture demandera confirmation.',
+  },
 ];
+
+// ——— M-34 : le CATALOG COMPLET (le « Parcourir les intégrations ») ———
+//
+// La section 3 de l'écran 7 (S3 update) liste le CATALOG COMPLET
+// Composio (le verb `browse_integrations` → `GET {base}/toolkits`),
+// PAS seulement le preset v2 ci-dessus. Un outil local de recherche
+// filtre les résultats en temps réel (le SSoT `filterCatalog`) ; les
+// apps de ce preset local sont le subset MVP du `browse_integrations`
+// quand l'EF (le client Composio) est live.
+
+export interface CatalogEntry {
+  /** le slug SSoT du toolkit Composio (l'id de `connect(app)`) */
+  app: string;
+  /** le nom affiché */
+  name: string;
+  /** le logo LIVE (le `image_url` du toolkit, M-34) */
+  logoUrl?: string;
+  /** le vendor */
+  vendor?: string;
+}
+
+export function filterCatalog(
+  catalog: readonly CatalogEntry[],
+  query: string,
+): CatalogEntry[] {
+  const q = query.trim().toLowerCase();
+  if (q === '') return [...catalog];
+  return catalog.filter(
+    (e) =>
+      e.name.toLowerCase().includes(q) ||
+      e.app.toLowerCase().includes(q) ||
+      (e.vendor?.toLowerCase().includes(q) ?? false),
+  );
+}
+
+// ——— M-34 : la persistance device-side du CATALOG local ajouté ———
+//
+// Le S3 update M-34 (§3) : le CTA « Ajouter » d'une app du browse
+// rejoint le CATALOG LOCAL AJOUTÉ PAR L'UTILISATEUR (persistance
+// `@capacitor/preferences` / localStorage, clé SSoT ci-dessous). Le
+// preset par défaut reste IMMUTABLE ; seul CET ajout est persistant
+// device-side (AD-3 : aucun secret, jamais de liste de comptes sur
+// l'appareil, juste une liste de slug d'app ajoutées).
+
+export const USER_ADDED_INTEGRATIONS_KEY = 'integrations.userAdded';
+
+/**
+ * La clé SSoT du catalog local ajouté (M-34) : `integrations.userAdded`
+ * (la persistance device-side — le preset par défaut reste immutable,
+ * seul CET ajout est persistant ; AD-3 : jamais de compte / secret,
+ * seulement des slugs d'app ajoutées). Le format de stockage est une
+ * JSON string (un tableau de slugs d'app) que le composant lit/écrit
+ * via `localStorage` (le bridge webview du Capacitor, le même que
+ * `ui-state.ts`).
+ */
+export type UserAddedIntegrations = string[];
+
+export function loadUserAddedIntegrations(storage: Pick<Storage, 'getItem'>): UserAddedIntegrations {
+  try {
+    const raw = storage.getItem(USER_ADDED_INTEGRATIONS_KEY);
+    if (raw === null) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((s): s is string => typeof s === 'string');
+  } catch {
+    return [];
+  }
+}
+
+export function saveUserAddedIntegrations(storage: Pick<Storage, 'setItem'>, apps: UserAddedIntegrations): void {
+  storage.setItem(USER_ADDED_INTEGRATIONS_KEY, JSON.stringify(apps));
+}
+
+export function isUserAdded(app: string, userAdded: readonly string[]): boolean {
+  return userAdded.some((a) => a.toUpperCase() === app.toUpperCase());
+}
 
 // ——— Les PERMISSIONS par action (le SSoT device-side, le subset du
 //      `discoverTools()` qui RESTE le SSoT runtime — ce catalog statique
@@ -175,6 +291,14 @@ const PERMISSIONS_BY_SERVICE: Record<string, readonly ServiceTool[]> = {
     { toolId: 'NOTION_READ_PAGE', app: 'NOTION', name: 'read_page', description: 'Lire une page', requiredAuth: 'oauth' },
     { toolId: 'NOTION_CREATE_PAGE', app: 'NOTION', name: 'create_page', description: 'Créer une page — CONFIRMATION_REQUIRED', requiredAuth: 'oauth', destructive: true },
     { toolId: 'NOTION_UPDATE_PAGE', app: 'NOTION', name: 'update_page', description: 'Modifier une page — CONFIRMATION_REQUIRED', requiredAuth: 'oauth', destructive: true },
+  ],
+  SLACK: [
+    { toolId: 'SLACK_READ_CHANNEL', app: 'SLACK', name: 'read_channel', description: 'Lire un canal', requiredAuth: 'oauth' },
+    { toolId: 'SLACK_SEND_MESSAGE', app: 'SLACK', name: 'send_message', description: 'Envoyer un message — CONFIRMATION_REQUIRED', requiredAuth: 'oauth', destructive: true },
+  ],
+  GITHUB: [
+    { toolId: 'GITHUB_LIST_REPOS', app: 'GITHUB', name: 'list_repos', description: 'Lister les dépôts', requiredAuth: 'oauth' },
+    { toolId: 'GITHUB_CREATE_ISSUE', app: 'GITHUB', name: 'create_issue', description: 'Créer une issue — CONFIRMATION_REQUIRED', requiredAuth: 'oauth', destructive: true },
   ],
 };
 
@@ -239,6 +363,51 @@ export function servicePermissionsFromTools(app: string, tools: ServiceTool[]): 
 /** Le flag SSoT « est-ce une écriture ? » (le plan §12 : `destructive`/write = confirmation ; lecture = non). */
 export function isWriteAction(tool: ServiceTool): boolean {
   return tool.destructive === true;
+}
+
+// ——— LA RÈGLE LOGO (S3 update, gelée) ——————————————————————————
+//
+// Le logo d'une intégration est TOUJOURS le `image_url` du toolkit
+// Composio (M-34, `listToolkits`) — JAMAIS un asset hardcodé ni une
+// table statique `app → icône`. Le `logoUrl` du live catalog est
+// MERGÉ sur le preset statique (qui ne porte que le nom + `defaultOn`),
+// et son fallback (absent / échec de load) = la pastille initiale :
+// les 2 premières lettres du nom.
+
+/** Les 2 premières lettres du nom (le fallback pastille initiale). */
+export function serviceInitials(name: string): string {
+  const s = name.trim();
+  if (s.length === 0) return '?';
+  return s.slice(0, 2).toUpperCase();
+}
+
+/** Une entrée du browse (M-34) : le slug + le nom + le logo live. */
+export interface BrowseEntry {
+  app: string;
+  name: string;
+  logoUrl?: string;
+}
+
+/**
+ * Le merge SSoT (la règle logo) : chaque service du preset (le nom +
+ * `defaultOn` immutable) reçoit le `logoUrl` du live catalog quand il
+ * existe (le `image_url` de l'app) ; sinon le logo reste `undefined`
+ * et le composant affiche la pastille initiale (le `serviceInitials`).
+ * Les apps du browse (hors preset) ne sont JAMAIS ajoutées au preset
+ * — le preset reste immutable (M-34 : seul le catalog local ajouté est
+ * persistant).
+ */
+export function mergeServiceLogos(
+  services: readonly (IntegrationService | BrowseEntry)[],
+  live: readonly BrowseEntry[],
+): Array<IntegrationService | BrowseEntry> {
+  const byApp = new Map<string, BrowseEntry>();
+  for (const e of live) byApp.set(e.app.toUpperCase(), e);
+  return services.map((s) => {
+    const app = (s as IntegrationService & BrowseEntry).app.toUpperCase();
+    const liveEntry = byApp.get(app);
+    return liveEntry?.logoUrl ? { ...s, logoUrl: liveEntry.logoUrl } : s;
+  });
 }
 
 export interface ConnectedAccounts {

@@ -134,6 +134,131 @@
   border-color: var(--aurora-accent-primary);
 }
 
+/* ——— Le badge LOGO (S3 update, la règle logo gelée) ———
+   Le logo d'une intégration est TOUJOURS le `image_url` du toolkit
+   Composio (M-34, `listToolkits`) — JAMAIS un asset hardcodé. Le
+   `logoUrl` est TOUJOURS live ; le preset statique par défaut n'a que
+   le nom + le flag. Fallback strict : `logoUrl` absent/`null` OU
+   échec de load (`onError`) → pastille initiale (les 2 premières
+   lettres du nom, fond discret + texte accent, arrondi plein).
+   Interdit : tout asset `assets/*logo*.png` par app, toute table
+   statique `app → icône lucide`. */
+.integration-logo {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--aurora-bg-subtle);
+  overflow: hidden;
+  flex: none;
+}
+.integration-logo-fallback {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--aurora-accent-on-primary);
+  background: var(--aurora-accent-surface);
+  letter-spacing: 0.04em;
+}
+.integration-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ——— M-34 : le CATALOG COMPLET (le « Parcourir les intégrations ») ———
+   Une recherche (input, filtrage live local sur le catalog
+   `browse_integrations` + bouton « Recharger » si le client EF est
+   live) sur le CATALOG COMPLET Composio ; chaque résultat =
+   `app + name + logoUrl` ; un CTA « Ajouter » par app (le verb
+   `connect`, M-32 — une écriture = toujours confirmée) + l'app
+   rejoint le CATALOG LOCAL AJOUTÉ par l'utilisateur (persistance
+   `integrations.userAdded`). L'app se rabat sur le SSoT statique
+   M-31 (sans logos) quand le live browse est vide (503). */
+.integration-browse {
+  gap: 8px;
+}
+.integration-browse-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--aurora-bg-subtle);
+  border: 1px solid var(--aurora-border);
+  border-radius: var(--aurora-radius, 0.5rem);
+}
+.integration-browse-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+  color: var(--aurora-text-primary);
+  outline: none;
+}
+.integration-browse-input::placeholder {
+  color: var(--aurora-text-muted);
+}
+.integration-browse-reload {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--aurora-text-muted);
+  cursor: pointer;
+}
+.integration-browse-reload:hover {
+  background: var(--aurora-bg);
+  color: var(--aurora-text-primary);
+}
+.integration-browse-reload:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.integration-browse-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.integration-browse-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--aurora-bg);
+  border: 1px solid var(--aurora-border);
+  border-radius: var(--aurora-radius-lg, 0.75rem);
+}
+.integration-browse-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--aurora-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.integration-browse-added {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--aurora-accent-surface);
+}
+.integration-browse-add {
+  min-width: 96px;
+}
+
 /* ——— Page v2 (S3 M-31, écran 7) : actions + détail permissions ——— */
 
 /* L'état dégradé AD-7 (pas de client : le SSoT `DEGRADED_INTEGRATIONS`). */

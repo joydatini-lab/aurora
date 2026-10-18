@@ -42,6 +42,17 @@ export interface IntegrationToolResult {
   error?: string;
 }
 
+/** A toolkit row of the GLOBAL Composio catalog (M-34 : the EF
+ *  `browse_integrations` verb → `GET {base}/toolkits?limit=500`).
+ *  `logoUrl` comes from the vendor's `image_url` field — when missing
+ *  the UI shows the initial-fallback pill, never a hardcoded asset. */
+export interface IntegrationToolkit {
+  app: string;
+  name: string;
+  logoUrl?: string;
+  description?: string;
+}
+
 export interface IntegrationClient {
   listAccounts(): Promise<IntegrationAccount[]>;
   discoverTools(opts?: { app?: string; limit?: number }): Promise<IntegrationTool[]>;
@@ -51,6 +62,8 @@ export interface IntegrationClient {
     idempotencyKey?: string,
   ): Promise<IntegrationToolResult>;
   connect(app: string): Promise<{ connectLink: string | null; app: string; note?: string }>;
+  /** M-34 — the global toolkit catalog (browse, not session-scoped). */
+  browseIntegrations(opts?: { limit?: number }): Promise<IntegrationToolkit[]>;
 }
 
 export function createIntegrationClient(supabase: AuroraSupabaseClient): IntegrationClient {
@@ -101,6 +114,14 @@ export function createIntegrationClient(supabase: AuroraSupabaseClient): Integra
         data?: { connectLink: string | null; app: string; note?: string };
       };
       return env?.data as { connectLink: string | null; app: string; note?: string };
+    },
+    async browseIntegrations(opts) {
+      const { data, error } = await supabase.functions.invoke('fn-integrations', {
+        body: { verb: 'browse_integrations', limit: opts?.limit ?? 500 },
+      });
+      if (error) throw error;
+      const env = data as { ok?: boolean; data?: { toolkits?: IntegrationToolkit[] } };
+      return env?.data?.toolkits ?? [];
     },
   };
 }
