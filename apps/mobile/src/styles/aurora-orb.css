@@ -1,0 +1,65 @@
+/**
+ * AuroraOrb — l'avatar de l'agent dans l'état vide du chat (M-11b,
+ * v2 MVP S1). Design SSoT : `stitch_design_system_optimization/
+ * agent_accueil_fraunces/code.html` (`.aurora-orb` + `shadow-orb-glow`).
+ *
+ * COULEUR DYNAMIQUE (règle d'orbe du plan, AD-17) : 100 %
+ * `var(--aurora-accent-*)` + `color-mix()` — ZÉRO hex hardcodé ici
+ * (vérifié par `apps/mobile/test/aurora-orb-wiring.test.ts`). Les
+ * tokens vivent dans `styles/tokens.css` (fallbacks SSoT) et sont
+ * surécrits par l'image-theme (05 §5.4) sur le `<html>` : l'orbe
+ * suit la palette de l'app, jamais l'inverse.
+ */
+
+/* L'orbe (w-32 h-32 = 128 px, cercle ; le centre du gradient est
+   décalé à 35 %/30 % comme la maquette Stitch). */
+.aurora-orb {
+  position: relative;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* Gradient radial (maquette : 4 stops) tokenisé :
+   * lueur secondaire (0 %) → accent principal (55 %) → ton ponctuel
+   * (100 %). Les tokens `--aurora-accent-*` sont définis dans
+   * `styles/tokens.css` (AD-17) ; les fallbacks Ionic (jamais de hex
+   * ici) couvrent l'edge case « thème non chargé ». */
+  background: radial-gradient(
+    circle at 35% 30%,
+    var(--aurora-accent-secondary, var(--ion-color-secondary)) 0%,
+    var(--aurora-accent-primary, var(--ion-color-primary)) 55%,
+    var(--aurora-accent-punctual, var(--ion-color-tertiary)) 100%
+  );
+  /* shadow-orb-glow (maquette) : projection 45 % + lueur 30 % —
+   * dérivées de l'accent principal via color-mix() (jamais de hex). */
+  box-shadow:
+    0 20px 48px -8px color-mix(in srgb, var(--aurora-accent-primary, var(--ion-color-primary)) 45%, transparent),
+    0 0 24px -2px color-mix(in srgb, var(--aurora-accent-primary, var(--ion-color-primary)) 30%, transparent);
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Les 2 yeux « pilules » verticaux (maquette : w-2.5 h-6 = 10 × 24 px,
+   radius plein, gap 12 px) — l'iris lit le token `on-primary` (la
+   couleur porteuse SUR l'accent : blanche par défaut, AD-17). */
+.aurora-orb__eyes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.aurora-orb__eye {
+  display: block;
+  width: 10px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--aurora-accent-on-primary, var(--ion-color-primary-contrast));
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--aurora-accent-primary, var(--ion-color-primary)) 25%, transparent);
+}
+
+/* L'orbe vit DANS l'état vide du transcript (`.agent-empty`, agent.css)
+   : la disposition « orbe au-dessus du titre » est portée par le bloc
+   `.agent-empty` — le composant reste autonome (M-13 : l'orbe est
+   réutilisable dans d'autres états vides). */

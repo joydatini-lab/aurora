@@ -55,6 +55,7 @@ import {
   Send,
   SlidersHorizontal,
   Sparkles,
+  Timer,
   Zap,
   Copy,
   ArrowRight,
@@ -74,6 +75,7 @@ import { useAgentRun } from '../../query/agent-runs';
 import { useKilledDetection } from '../../hooks/use-killed';
 import type { AgentRunRow } from '../../lib/agent-client';
 import { useUiStateStore } from '../../state/ui-state';
+import { AuroraOrb } from '../../components/AuroraOrb';
 
 // ——— Model picker catalog (AD-3: static, public config — no key here). ———
 const MODEL_CATALOG: Array<{ provider: string; name: string; models: string[] }> = [
@@ -95,9 +97,27 @@ const AGENT_MODES: Array<{ id: AgentMode; label: string; icon: React.ReactNode }
   { id: 'ascent', label: 'Ascent', icon: <Compass size={12} /> },
 ];
 
-// ——— Thinking levels ———
+// ——— Thinking levels (M-21, stitch écran 4 « Réflexion et modèle ») ———
+// Les 3 affichages Rapide / Équilibré / Approfondi ; la valeur `max`
+// (héritée du picker v1) reste le palier profond — même choix qu'« Approfondi ».
 type ThinkingLevel = 'low' | 'medium' | 'high' | 'max';
-const THINKING_LEVELS: ThinkingLevel[] = ['low', 'medium', 'high', 'max'];
+const THINKING_LEVELS_BY_GROUP: Array<{ label: string; values: ThinkingLevel[] }> = [
+  { label: 'Rapide', values: ['low'] },
+  { label: 'Équilibré', values: ['medium'] },
+  { label: 'Approfondi', values: ['high', 'max'] },
+];
+
+// ——— M-21 (plan v2 S2, ADR §6 / Q12) — typed model tiers (Q12) ———
+// Paliers (Léger / Standard / Avancé + Auto) : un PARAMÈTRE TYPÉ du profil
+// de tâche (taskProfile.modelTier), soumis à la politique + budget IA —
+// JAMAIS un mot-clé du prompt. `auto` = le routeur décide (chaîne S2.6).
+type ModelTier = 'auto' | 'light' | 'standard' | 'advanced';
+const MODEL_TIER_OPTIONS: Array<{ id: ModelTier; label: string; hint: string }> = [
+  { id: 'auto', label: 'Auto', hint: 'Aurora choisit selon la tâche et votre budget' },
+  { id: 'light', label: 'Léger', hint: 'Réponses rapides, coût réduit' },
+  { id: 'standard', label: 'Standard', hint: 'Bon compromis pour la plupart des demandes' },
+  { id: 'advanced', label: 'Avancé', hint: 'Raisonnement poussé, plus lent' },
+];
 
 // ——— Research modes ———
 type ResearchMode = 'off' | 'standard' | 'deep';
@@ -183,6 +203,9 @@ export function AgentPage() {
   const [showMenuSheet, setShowMenuSheet] = useState(false);
   const [agentMode, setAgentMode] = useState<AgentMode>('agent');
   const [thinkingLevel, setThinkingLevel] = useState<ThinkingLevel>('medium');
+  // M-21 (Q12) : le palier de modèle typé (Auto par défaut, stitch écran 4).
+  // Paramètre du profil de tâche — jamais de mot-clé dans le prompt (ADR §6).
+  const [modelTier, setModelTier] = useState<ModelTier>('auto');
   // PRD-AI-06 (10-08) : la préférence de recherche web est PARTAGÉE entre
   // /agent (chip + feuille « + ») et /agent/capacites (l'onglet Capacités)
   // — persistée (ui-state) et envoyée avec chaque requête (taskProfile).
@@ -303,6 +326,7 @@ export function AgentPage() {
           preferredProvider: modelChoice?.provider,
           preferredModel: modelChoice?.model,
           thinkingLevel,
+          modelTier,
           researchMode,
           agentMode,
         },
@@ -609,12 +633,54 @@ export function AgentPage() {
               </div>
             )}
 
+            {/* M-11b (v2 MVP S1) — l'orbe Aurora dans l'état vide du chat
+                (maquette Stitch `agent_accueil_fraunces`) : l'orbe
+                (cercle radial-gradient + 2 yeux, COULEUR DYNAMIQUE
+                `--aurora-accent-*`, jamais de hex) AU-DESSUS du titre
+                « Que puis-je faire pour vous ? » + sous-titre du mode +
+                les quick-actions pills de la maquette (structure exacte,
+                non inventée). */}
             {agent && entries.length === 0 && !thinking && !inFlightRow && (
               <div className="agent-empty">
-                <p>
-                  Mode {agentMode === 'agent' ? 'agent' : agentMode === 'mirror' ? registerCopy(register, 'mirror') : 'chat'}.
-                  {agentMode === 'mirror' ? 'Commence par un apprentissage.' : 'Commencez par une intention.'}
+                <div className="agent-empty__orb">
+                  <AuroraOrb />
+                </div>
+                <h2 className="agent-empty__title">Que puis-je faire pour vous ?</h2>
+                <p className="agent-empty__subtitle">
+                  {agentMode === 'chat'
+                    ? 'Mode Ask : je lis et je réponds — je n’écris rien sans que vous passiez en mode Agent.'
+                    : agentMode === 'mirror'
+                      ? 'Mode Miroir : je vous fais pratiquer et diagnostique vos acquis.'
+                      : agentMode === 'ascent'
+                        ? 'Mode Ascent : je vous guide montée après montée sur vos objectifs.'
+                        : 'Mode Agent : j’agis sur vos veilles, votre agenda et vos sessions Focus.'}
                 </p>
+                <div className="agent-empty__suggestions">
+                  <button
+                    type="button"
+                    className="agent-empty__suggestion"
+                    onClick={() => setDraft(agentMode === 'agent' ? 'Crée une veille sur ' : 'Où j’en suis sur ')}
+                  >
+                    <Compass size={16} aria-hidden />
+                    {agentMode === 'agent' ? 'Créer une veille' : 'Où j’en suis sur…'}
+                  </button>
+                  <button
+                    type="button"
+                    className="agent-empty__suggestion"
+                    onClick={() => setDraft(agentMode === 'agent' ? 'Planifie un focus sur ' : '')}
+                    disabled={agentMode !== 'agent'}
+                  >
+                    <Timer size={16} aria-hidden />
+                    Planifier un Focus
+                  </button>
+                  <button
+                    type="button"
+                    className="agent-empty__suggestion"
+                    onClick={() => setShowPlusSheet(true)}
+                  >
+                    Plus
+                  </button>
+                </div>
               </div>
             )}
 
@@ -885,46 +951,91 @@ export function AgentPage() {
                 </button>
               </div>
               <div className="agent-model-picker-body">
+                {/* M-21 (stitch écran 4 « Réflexion et modèle ») : les 3
+                    niveaux affichés Rapide / Équilibré / Approfondi — les
+                    VALEURS restent low / medium / high|max (max hérité du
+                    picker v1 ≠ Approfondi, même choix). */}
                 <div className="agent-picker-section">
                   <div className="agent-picker-section-label">Niveau de réflexion</div>
                   <div className="agent-thinking-levels" role="radiogroup" aria-label="Niveau de réflexion">
-                    {THINKING_LEVELS.map((lvl, i) => (
-                      <button
-                        key={lvl}
-                        type="button"
-                        role="radio"
-                        aria-checked={thinkingLevel === lvl}
-                        tabIndex={thinkingLevel === lvl ? 0 : -1}
-                        className={`agent-thinking-level ${thinkingLevel === lvl ? 'is-active' : ''}`}
-                        onClick={() => setThinkingLevel(lvl)}
-                        onKeyDown={(e) => {
-                          // Roving radio pattern: arrows move focus + selection.
-                          if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            const next = THINKING_LEVELS[(i + 1) % THINKING_LEVELS.length]!;
-                            setThinkingLevel(next);
-                          } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            const prev = THINKING_LEVELS[(i + 3) % THINKING_LEVELS.length]!;
-                            setThinkingLevel(prev);
-                          }
-                        }}
-                      >
-                        {lvl}
-                      </button>
-                    ))}
+                    {THINKING_LEVELS_BY_GROUP.map((group) => {
+                      const active = group.values.includes(thinkingLevel);
+                      const value = active ? thinkingLevel : group.values[0]!;
+                      return (
+                        <button
+                          key={group.label}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          tabIndex={active ? 0 : -1}
+                          className={`agent-thinking-level ${active ? 'is-active' : ''}`}
+                          onClick={() => setThinkingLevel(value)}
+                        >
+                          {group.label}
+                        </button>
+                      );
+                    })}
                   </div>
+                  <p className="agent-thinking-level-help">
+                    Plan court et vérification légère. Plus l'agent réfléchit, plus la réponse est
+                    fiable, mais plus elle est lente.
+                  </p>
                 </div>
 
+                {/* M-21 (Q12) : le MODÈLE par palier typé (Auto / Léger /
+                    Standard / Avancé) — paramètre du profil de tâche
+                    (taskProfile.modelTier), jamais un mot-clé du prompt
+                    (ADR §6). Le choix de palier efface le pin d'un modèle
+                    précis (le palier résout côté routeur). */}
                 <div className="agent-picker-section">
                   <div className="agent-picker-section-label">Modèle</div>
+                  <div
+                    className="agent-model-tier-list"
+                    role="radiogroup"
+                    aria-label="Palier de modèle"
+                  >
+                    {MODEL_TIER_OPTIONS.map((opt) => (
+                      <label
+                        key={opt.id}
+                        className={`agent-model-tier ${modelTier === opt.id ? 'is-active' : ''}`}
+                      >
+                        <input
+                          type="radio"
+                          name="agent-model-tier"
+                          value={opt.id}
+                          checked={modelTier === opt.id}
+                          onChange={() => {
+                            setModelTier(opt.id);
+                            if (opt.id !== 'auto') setModelChoice(null);
+                          }}
+                        />
+                        <span className="agent-model-tier-label">
+                          <span className="agent-model-tier-title">
+                            {opt.label}
+                            {opt.id === 'auto' && (
+                              <span className="agent-model-tier-badge">Recommandé</span>
+                            )}
+                          </span>
+                          <span className="agent-model-tier-hint">{opt.hint}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* Le pin précis d'un modèle (picker v1) reste disponible —
+                      il prime sur le palier (applyModelTierToProfile). */}
                   <button
                     type="button"
-                    className={`agent-model-picker-option ${!modelChoice ? 'is-active' : ''}`}
+                    className={`agent-model-picker-option ${modelChoice ? 'is-active' : ''}`}
                     onClick={() => {
-                      setModelChoice(null);
-                      setShowPicker(false);
+                      // « Auto » = le routeur décide : on revient au palier
+                      // auto (pas de pin précis).
+                      if (!modelChoice) {
+                        setModelTier('auto');
+                        setShowPicker(false);
+                      }
                     }}
+                    aria-label="Auto — le router choisit"
                   >
                     <Sparkles size={14} aria-hidden />
                     <span>Auto — le router choisit</span>
@@ -944,6 +1055,7 @@ export function AgentPage() {
                           }`}
                           onClick={() => {
                             setModelChoice({ provider: entry.provider, model: m });
+                            setModelTier('auto');
                             setShowPicker(false);
                           }}
                         >

@@ -41,6 +41,58 @@
   max-width: 28ch;
 }
 
+/* M-11b (v2 MVP S1) — l'orbe Aurora dans l'état vide du chat : la
+   disposition « orbe (au-dessus) + titre + sous-titre + puces
+   suggestions » suit la maquette Stitch `agent_accueil_fraunces`
+   (l'orbe est positionné AU-DESSUS du titre « Que puis-je faire pour
+   vous ? », les quick-actions pills sous le sous-titre). */
+.agent-empty__orb {
+  margin-bottom: 4px;
+}
+.agent-empty__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--aurora-text-primary);
+  max-width: 22ch;
+}
+.agent-empty__subtitle {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--aurora-text-secondary);
+  max-width: 34ch;
+}
+.agent-empty__suggestions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.agent-empty__suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--aurora-text-primary);
+  background: var(--aurora-surface, var(--ion-color));
+  border: 1px solid var(--aurora-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 100ms ease-linear;
+}
+.agent-empty__suggestion:hover {
+  background: var(--aurora-bg-subtle);
+}
+.agent-empty__suggestion--plain {
+  gap: 0;
+}
+
 /* The thinking state = AgentThinkingLoader (@aurora/ui, ui-libraries §9.3:
    3 morphing blobs + rotating thinking-words, S9-compliant). The class below
    only positions it inside the transcript column. */
@@ -493,6 +545,86 @@
   color: var(--aurora-accent-on-primary);
   background: var(--aurora-accent-primary);
   border-color: var(--aurora-accent-primary);
+}
+.agent-thinking-level-help {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--aurora-text-muted);
+}
+
+/* ——— M-21 (Q12) : paliers de modèle typés (stitch écran 4) ———
+   Radio list Auto / Léger / Standard / Avancé : paramètre typé du profil
+   de tâche (taskProfile.modelTier), jamais un mot-clé du prompt (ADR §6). */
+.agent-model-tier-list {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--aurora-border);
+}
+.agent-model-tier {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  cursor: pointer;
+  border-top: 1px solid var(--aurora-border);
+}
+.agent-model-tier:first-child {
+  border-top: none;
+}
+.agent-model-tier input[type='radio'] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 2px solid var(--aurora-border-strong, var(--aurora-border));
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+}
+.agent-model-tier input[type='radio']::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--aurora-accent-primary);
+  transform: scale(0);
+  transition: transform 0.1s ease;
+}
+.agent-model-tier input[type='radio']:checked {
+  border-color: var(--aurora-accent-primary);
+}
+.agent-model-tier input[type='radio']:checked::before {
+  transform: scale(1);
+}
+.agent-model-tier-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.agent-model-tier-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aurora-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.agent-model-tier-badge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--aurora-accent-primary);
+  border: 1px solid var(--aurora-accent-primary);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+.agent-model-tier-hint {
+  font-size: 12px;
+  color: var(--aurora-text-muted);
 }
 
 /* ————————————————————————————————————————————————————————————————
