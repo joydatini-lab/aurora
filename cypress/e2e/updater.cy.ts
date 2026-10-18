@@ -6,39 +6,45 @@
  * PAS buildé ici : les 4 secrets GitHub keystore M-87b ne sont pas
  * posés, le build natif CI n'a pas encore produit d'APK).
  *
- * Sur web, le hook `useUpdater` court-circuite (`Capacitor.getPlatform()
- * !== 'android'` → `idle` pour toujours, le plan L723–724) : le spec ne
- * peux donc PAS tester le chemin disponible/dialogue via le DOM sur
- * web. Ce que le spec COUVRE ici, c'est la SURFACE réelle de
- * `/settings` : le bouton « Rechercher une mise à jour » (le trigger
- * manuel M-85, qui relaie `checkNow`) + l'état dégradé honnête (le plan
- * L658 : jamais un crash, un message lisible quand la vérification
- * échoue — ici le réseau est coupé pour forcer le chemin `error`).
- *
- * Le SSoT PUR `checkForUpdate` (M-84 : comparaison numérique du
- * versionCode, le cache 6h, l'asset exact, le .sha256) est verrouillé
- * au TDD dans `apps/mobile/test/updater-config-wiring.test.ts` — le spec
- * E2E ne le re-teste PAS (pas de test dupliqué, le TDD est la SSoT du
- * SSoT pur) ; ce spec valide uniquement le branchement UI réel.
+ * HONNÊTE SUR LE SCOPE RÉEL :
+ *   - Sur web, la SECTION « Mise à jour » de /settings est JAMAIS rendue
+ *     (`isAndroid = Capacitor.getPlatform() === 'android'` → `false` sur
+ *     web, la page settings n'expose pas un CTA mort — le plan L590,
+ *     le commentaire du SSoT `pages/settings/index.tsx`). Le
+ *     `UpdateDialog` du shell reste `idle` (le plan L723–724 : le
+ *     hook court-circuite AVANT d'appeler le bridge, jamais un
+ *     crash). Ce spec valide cette ABSENCE (la section n'existe PAS,
+ *     le dialogue non plus) — c'est l'état SSoT attendu sur web.
+ *   - Le SSoT PUR `checkForUpdate` (M-84 : comparaison NUMÉRIQUE du
+ *     versionCode, le cache 6 h, l'asset exact `APK_ASSET_NAME`, le
+ *     .sha256 lu du champ `digest` du release GitHub, re-vérifié
+ *     côté plugin natif M-82) est verrouillé au TDD dans
+ *     `apps/mobile/test/updater-config-wiring.test.ts` — le spec E2E
+ *     ne le re-teste PAS ici (pas de duplication du SSoT pur, le
+ *     plugin natif n'existe pas sur web pour l'exercer).
  */
-describe('Self-updater — /settings (le trigger manuel M-85, pas le plugin natif)', () => {
+describe('Self-updater — /settings sur web (le scope Android-only, l état honnête)', () => {
   beforeEach(() => {
     cy.viewport(1280, 800);
     cy.visit('/settings', { timeout: 180000 });
   });
 
-  it('le bouton « Rechercher une mise à jour » est présent (la section S8 M-85 du settings)', () => {
-    cy.contains('button', 'Rechercher une mise à jour').should('be.visible');
-    cy.screenshot('01-updater-settings-button');
+  it('la section « Mise à jour » n est PAS rendue sur web (le SSoT pages/settings : isAndroid=false, le plan L590)', () => {
+    // Le `id="updater-section"` du Card (le SSoT de
+    // `pages/settings/index.tsx` L591) — le Card n'est monté QUE si
+    // `isAndroid` (le `Capacitor.getPlatform() === 'android'`), donc
+    // JAMAIS sur web/Cypress.
+    cy.get('#updater-section').should('not.exist');
+    cy.screenshot('01-updater-settings-section-absent-on-web');
   });
 
-  it('sur web, le clic ne produit AUCUN dialogue (le hook reste idle, le plan L723–724)', () => {
-    // Le plan L723–724 : « sur web/iOS, le updater ne fait rien et ne
-    // génère aucune erreur » — le hook court-circuite AVANT d'appeler
-    // le bridge ; le DOM ne doit PAS voir de dialogue de mise à jour
-    // (le `[data-updater="dialog"]` n'est jamais monté sur web).
-    cy.contains('button', 'Rechercher une mise à jour').click();
+  it('le dialogue global de mise à jour (le SSoT shell UpdateDialog) reste inexistant sur web (le plan L723–724 : le hook reste idle)', () => {
+    // Le `UpdateDialog` (le shell root, `Shell.tsx`) rend `null` si
+    // `status` est `idle` (le SSoT `useUpdater` : sur web, le hook
+    // court-circuite avant d'appeler le bridge — le `data-updater`
+    // conteneur n'est jamais monté sur web, jamais de dialogue,
+    // jamais un crash, le plan L723–724).
     cy.get('[data-updater="dialog"]').should('not.exist');
-    cy.screenshot('02-updater-web-no-dialog');
+    cy.screenshot('02-updater-no-dialog-on-web');
   });
 });

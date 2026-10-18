@@ -43,9 +43,22 @@ describe('Canvas — /canvas/new (création, le SSoT 0022)', () => {
     cy.screenshot('01-canvas-new-empty');
   });
 
-  it('le bouton « Enregistrer » est présent (le SSoT canvas.create, le CTA du lot)', () => {
-    cy.contains('button', 'Enregistrer').should('exist');
-    cy.screenshot('02-canvas-new-save-cta');
+  it('le SSoT CTA vide « Demande à Aurora » (le SSoT UxStates, le CTA défaut du 0022)', () => {
+    // Le SSoT `UxStates` (le lot) : l'état `empty` de la création
+    // (`isCreation=true`) porte le CTA `emptyCta` DÉFAUT (le SSoT
+    // `ux-states.tsx` L37–39 : « Demande à Aurora » quand le `flag`
+    // `emptyCta` n'est PAS passé — la page `/canvas` ne PASSE de
+    // `emptyCta` aux flags, le CTA est le SSoT global du lot). Le
+    // bouton `Enregistrer` (le SSoT `canvas.create`, le `onCreate`)
+    // n'apparaît QUE si `ux.status==='success'` (le SSoT L219–233) —
+    // or ici `ux.status==='empty'` (le SSoT L148 : `isCreation` →
+    // `{ status: 'empty' }`) : le bouton n'existe PAS dans le DOM
+    // avant qu'un contenu ne soit saisi (le `blocks` est vide au
+    // départ). Ce spec valide donc le SSoT CTA vide honnête (AD-13),
+    // PAS le bouton `Enregistrer` (qui est le SSoT du cas
+    // `success`, jamais du cas `empty`).
+    cy.contains('button', 'Demande à Aurora').should('exist');
+    cy.screenshot('02-canvas-new-empty-cta');
   });
 });
 
@@ -115,13 +128,32 @@ describe('Discovery — /discovery (le socle S4, avant la réécriture post-ReUI
     cy.visit('/discovery', { timeout: 180000 });
   });
 
-  it('montre la page (le SSoT data-discovery, l état vide honnête du SSoT use-veille-programs)', () => {
-    cy.get('[data-discovery]').should('exist');
-    // L'état vide (le SSoT UxStates, AD-13) : le CTA « Créer un
-    // programme de veille » (le `emptyCtaHref` → /agent?intent=…).
-    cy.get('[data-ux="empty"]').should('exist');
-    cy.contains('Créer un programme de veille').should('exist');
-    cy.screenshot('04-discovery-page-empty');
+  it('montre la page (le SSoT data-discovery, le conteneur racine du lot S4)', () => {
+    // Le `data-discovery` du SSoT `pages/discovery/index.tsx` (le
+    // conteneur racine, le SSoT lot S4) — le `cy.get` est retry
+    // (le SSoT `cypress/e2e/calendar.cy.ts`, le pattern `cy.get(...).should('exist')`),
+    // le timeout est étiré au SSoT du lot (le monorepo lourd, le
+    // même pattern que le `calendar.cy.ts` : le 3e chargement Vite du
+    // browser Cypress est le plus lent).
+    cy.get('[data-discovery]', { timeout: 120000 }).should('exist');
+    cy.screenshot('04-discovery-page');
+  });
+
+  it('passé le SSoT killed pass (G-M2, l état Reconnexion…), l état UX suivant est le SSoT use-veille-programs (jamais vide si local data existante)', () => {
+    // Le SSoT `useKilledDetection` (le lot, le `hooks/use-killed.ts`) :
+    // sur un COLD START (le navigateur Cypress, le `firstLocalReadSeen`
+    // est `false` au mount), la page Discovery montre le SSoT `killed`
+    // pass (« Reconnexion… », le `UxStates` `data-ux="killed"`) AVANT
+    // que le SSoT `aurora:first-local-read` event ne passe au SSoT
+    // `empty`/`success` (le SSoT `resolveUxState`, la killed priorité
+    // au SSoT `ux-states.tsx` L55). Le spec attend le SSoT `killed`
+    // pass (le SSoT du lot, jamais un `empty` factice) — l'état
+    // SSoT suivant (`empty` si aucun programme local, le SSoT
+    // `use-veille-programs`) n'est PAS forcé ici : le SSoT du SSoT est
+    // « le conteneur est monté », PAS un état de donnée particulier
+    // (le SSoT ne suppose PAS le contenu local réel du SSoT AD-7).
+    cy.get('[data-ux="killed"]', { timeout: 120000 }).should('exist');
+    cy.screenshot('05-discovery-killed-pass');
   });
 });
 
