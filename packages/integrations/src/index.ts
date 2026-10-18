@@ -19,6 +19,11 @@ export * from './automations.ts';
 // kernel émet des thin commands `integrations.automation_*` que
 // `applyAutomationCommand` applique sur le port `AutomationWriter`.
 export * from './automation-writer.ts';
+// M-42 (S4 plan veille 2026-10-17) — Matérialiseur AD-8 : une automation
+// due (schedule, non déjà courue cette minute) → UN job `research` de
+// `job_queue` avec le payload EXACT du handler discovery (M-43).
+// Idempotent (dedupKey kind|automationId|minute, ON CONFLICT DO NOTHING).
+export * from './automation-scheduler.ts';
 // OQ-03 (2026-10-14) — the R2 storage adapter (AD-1 vendor isolation +
 // AD-3 no-credential-on-device): the real SigV4 presigned-URL path for
 // the `R2StoragePort` SSoT contract from @aurora/scientific-engine.
