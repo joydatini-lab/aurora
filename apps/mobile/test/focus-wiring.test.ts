@@ -28,7 +28,13 @@ import {
   launchProfile,
   type FocusProfile,
 } from '../src/lib/focus-profiles.ts';
-import type { FocusControllerService, FocusSessionOptions } from '@aurora/focus';
+import { createMinimalTask } from '../src/lib/productivity-repo.ts';
+import {
+  formatElapsed,
+  formatRemaining,
+  remainingSecOf,
+} from '../src/pages/focus/timer-format.ts';
+import type { FocusSessionOptions, FocusTimerState } from '@aurora/focus';
 
 // ---------------------------------------------------------------------------
 // Fixtures — un profil Pomodoro et un profil Chronomètre (S5 écran 9)
@@ -141,4 +147,48 @@ test('M-52 linkTaskToProfile + launchTask: le ▶ d’une tâche lance le focus 
     ['t1'],
     'la session liée porte la tâche (SSoT row focus_sessions)',
   );
+});
+
+test('M-52 createMinimalTask: une tâche simple (Q11) crée une row du store', () => {
+  const store = new InMemoryLocalStore();
+  const task = createMinimalTask(store, { userId: 'user1', title: 'Rendre le TD de béton armé' }, 't3');
+  assert.equal(task.title, 'Rendre le TD de béton armé');
+  assert.equal(task.status, 'todo');
+  const row = store.row('tasks', 't3') as { title?: string; subject?: string } | undefined;
+  assert.ok(row, 'row tasks/t3 écrite par la création de la tâche simple');
+  assert.equal(row.title, 'Rendre le TD de béton armé', 'titre miroir');
+});
+
+// ---------------------------------------------------------------------------
+// M-53 — écrans de minuteurs : l'anneau Pomodoro (reste + progression) et le
+// chrono (temps écoulé HH:MM:SS) rendus par les helpers du timer v2.
+// ---------------------------------------------------------------------------
+
+test('M-53 formatRemaining + remainingSecOf: l’anneau Pomodoro rend le reste + la progression', () => {
+  // anneau : r=118, C = 2πr ≈ 741.4 ; le test vérifie le temps restant + la
+  // progression fractionnelle (l'arc strokeDashoffset = C·(1−progress)).
+  const timer: FocusTimerState = {
+    state: 'active',
+    activeAnchor: 1000,
+    activeSec: 780, // 13 min écoulé d'un pomodoro de 25 min (planned 1500 s)
+    pausedSec: 0,
+    pauseAnchor: null,
+    plannedSec: 1500,
+    endReason: null,
+  };
+  assert.equal(remainingSecOf(timer), 720, '1500 − 780 = 720 s restant');
+  assert.equal(formatRemaining(720), '12:00', 'restant MM:SS');
+  // la progression de l'anneau = 1 − restant/planned (0→1).
+  const progress = 1 - (remainingSecOf(timer) as number) / 1500;
+  assert.ok(
+    Math.abs(progress - 780 / 1500) < 1e-9,
+    'l’arc pomodoro avance avec le temps écoulé (780/1500)',
+  );
+});
+
+test('M-53 formatElapsed: le chrono rend le temps écoulé HH:MM:SS', () => {
+  // le chrono Stitch affiche 00:42:18 (42 min 18 s écoulées).
+  assert.equal(formatElapsed(2538), '00:42:18', 'HH:MM:SS');
+  assert.equal(formatElapsed(0), '00:00:00', 'bornes basses');
+  assert.equal(formatElapsed(3661), '01:01:01', '1 h +');
 });
