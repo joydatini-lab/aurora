@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application
         android:allowBackup="true"
@@ -33,9 +34,44 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- S8 M-81 (plan 2026-10-17 L636–638) : le receiver du résultat
+             d'installation du self-updater APK. Le manifest le déclare
+             {@code exported=false} (le plan L638) — il ne reçoit que les
+             broadcasts de l'APK (l'applicationId, jamais un autre package)
+             et relaie le résultat au plugin ApkUpdaterPlugin (le
+             handleOnActivityResult du plugin est le premier filet, le
+             receiver est le second). Le receiver attend les actions
+             PACKAGE_CHANGED / PACKAGE_FULLY_REMOVED de l'APK courant (le
+             package manager les émet après le commit PackageInstaller).
+             Le filter {@code data scheme="package"} + le
+             {@code package"} propre (le manifest ne porte PAS de
+             {@code android:sharedUserId} — chaque APK a son propre
+             package, le receiver ne reçoit QUE ses propres broadcasts). -->
+        <receiver
+            android:name=".apkUpdater.InstallResultReceiver"
+            android:exported="false"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_CHANGED" />
+                <action android:name="android.intent.action.PACKAGE_FULLY_REMOVED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
     </application>
 
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- S8 M-81 (plan 2026-10-17 L636–637) : la permission
+         REQUEST_INSTALL_PACKAGES (Android 8+ / API 26+) — l'APK est
+         distribué hors Play Store (le plan L620–622), le self-updater
+         l'installe lui-même via le PackageInstaller (le plan L647).
+         Avant Android 8 (le minSdk est 24), la permission est ignorée
+         par le OS (l'install se fait sans écran de confirmation
+         spécifique, le plugin M-82 gère ce cas). -->
+    <uses-permission
+        android:name="android.permission.REQUEST_INSTALL_PACKAGES"
+        tools:ignore="ProtectedPermissions" />
 </manifest>
