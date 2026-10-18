@@ -20,7 +20,12 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { ImageThemeSlug, ThemeName } from '@aurora/ui';
 
-export type TabId = 'home' | 'tasks' | 'learn' | 'progress' | 'agent';
+/** M-13 (v2 MVP S1) : la navigation v2 = 4 entrées SSoT (Agent / Discovery /
+ *  Focus / Plus). Les ids legacy `home` / `tasks` / `learn` / `progress`
+ *  restent des ROUTES (les écrans existent), mais ne sont PLUS des
+ *  entrées de la barre — l'app est centrée sur l'agent + les 3 modules
+ *  Discovery/Focus + le hub « Plus » (Intégrations, plan S1 §M-13). */
+export type TabId = 'agent' | 'discovery' | 'focus' | 'plus';
 
 export interface UiStateStore {
   /** active primary tab (02 §6.1: max 5, 44-60 px tab bar). */
@@ -122,7 +127,7 @@ export interface UiStateStore {
 export const useUiStateStore = create<UiStateStore>()(
   persist(
     (set) => ({
-      activeTab: 'home',
+      activeTab: 'agent',
       // PRD-1 (2026-10) : la vue quotidienne est la vue par défaut du
       // module Tâches (« Aujourd'hui » avant « Liste »).
       tasksView: 'today',

@@ -60,7 +60,16 @@ export function emitAgentEffect(effect: AgentUiEffect): void {
 /** The known command set (re-checks the closed set at runtime, §62). */
 const KNOWN = new Set<string>(AGENT_UI_COMMANDS);
 
-const TABS: ReadonlySet<string> = new Set(['home', 'tasks', 'learn', 'progress', 'agent']);
+/**
+ * M-13 (v2 MVP S1) : la barre d'onglets v2 = 4 entrées (agent /
+ * discovery / focus / plus). Le bus n'active plus `activeTab` que pour
+ * les 4 ids de la barre (l'activation par route reste à la barre ; le
+ * bus n'est qu'une projection cosmétique AD-7). Les cibles legacy
+ * (tasks / learn / progress / home) NAVIGUENT toujours (targetToPath),
+ * mais ne mettent plus d'onglet actif — elles ne sont plus des
+ * entrées SSoT du plan S1 §M-13.
+ */
+const TABS: ReadonlySet<string> = new Set(['agent', 'discovery', 'focus', 'plus']);
 
 /** A NavigationIntent → app path (target = route id, params → path values). */
 export function targetToPath(target: string, params?: Record<string, unknown>): string {

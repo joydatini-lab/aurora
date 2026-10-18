@@ -1,24 +1,32 @@
 /**
- * ShellTabBar — la barre d'onglets mobile (02 §6.1 : max 5 tabs,
- * 44-60 px). Montage UNIQUE dans <Shell /> (permanente sur toutes les
- * routes ; les détails s'ouvrent AU-DESSUS de l'onglet courant — la barre
- * reste, l'onglet actif ne change pas).
+ * ShellTabBar — la barre d'onglets mobile v2 (M-13, plan v2 MVP S1).
+ *
+ * 4 entrées SSoT (plan S1 §M-13) : `Agent · Discovery · Focus · Plus`
+ * (Intégrations vit dans « Plus » — le hub /settings). La page Agent
+ * N'A PAS de barre : le Shell (Shell.tsx) masque l'IonFooter sur
+ * `/agent*` — la sortie de l'assistant passe par son menu latéral
+ * (nouvelle conversation / navigation / récentes, Stitch `agent_menu_
+ * lat_ral_fraunces`).
+ *
+ * Règle de prefix (l'onglet actif suit la route courante) :
+ *   `/discovery*` → Discovery · `/focus*` → Focus ·
+ *   `/settings*`  → Plus · `/agent*`     → (barre masquée, Shell)
  *
  * Navigation : React Router (navigate) + state cosmétique `activeTab`
- * (ui-state, AD-7 — jamais de données entités). Icônes lucide 20 px,
- * labels 10–11 px, tokens only (--aurora-*), tap target ≥ 44 px,
- * safe-area basse (Capacitor/Android).
+ * (ui-state, AD-7 — jamais de données entités). Icônes lucide 20 px
+ * (strokeWidth 2, taille multiple de 4 — règle du repo), tokens only
+ * (--aurora-*), tap target ≥ 44 px, safe-area basse (Capacitor/Android).
  */
-import { Bot, BookOpen, Home, ListChecks, TrendingUp } from 'lucide-react';
+import { Bot, Compass, Focus, Plus } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUiStateStore, type TabId } from '../state/ui-state';
 
-const TABS: Array<{ id: TabId; path: string; label: string; Icon: typeof Home }> = [
-  { id: 'home', path: '/', label: 'Accueil', Icon: Home },
-  { id: 'tasks', path: '/tasks', label: 'Tâches', Icon: ListChecks },
-  { id: 'learn', path: '/learn', label: 'Apprendre', Icon: BookOpen },
-  { id: 'progress', path: '/progress', label: 'Progrès', Icon: TrendingUp },
+/** Les 4 entrées v2 (le SSoT du plan S1 §M-13). */
+const TABS: Array<{ id: TabId; path: string; label: string; Icon: typeof Bot }> = [
   { id: 'agent', path: '/agent', label: 'Agent', Icon: Bot },
+  { id: 'discovery', path: '/discovery', label: 'Discovery', Icon: Compass },
+  { id: 'focus', path: '/focus', label: 'Focus', Icon: Focus },
+  { id: 'plus', path: '/settings', label: 'Plus', Icon: Plus },
 ];
 
 export function ShellTabBar() {
@@ -26,10 +34,19 @@ export function ShellTabBar() {
   const location = useLocation();
   const { setActiveTab } = useUiStateStore();
 
+  /** L'onglet actif suit le PREFIX de la route (le détail s'ouvre
+   *  au-dessus de l'onglet courant — la barre reste, l'onglet actif ne
+   *  change pas, 02 §6.1). `/agent*` ne met AUCUN onglet actif : la
+   *  barre est masquée sur l'assistant (Shell), la sortie = menu
+   *  latéral (plan S1). */
   const isActive = (tab: (typeof TABS)[number]) =>
-    tab.id === 'home'
-      ? location.pathname === '/'
-      : location.pathname === tab.path || location.pathname.startsWith(`${tab.path}/`);
+    tab.id === 'discovery'
+      ? location.pathname === '/discovery' || location.pathname.startsWith('/discovery/')
+      : tab.id === 'focus'
+        ? location.pathname === '/focus' || location.pathname.startsWith('/focus/')
+        : tab.id === 'plus'
+          ? location.pathname === '/settings' || location.pathname.startsWith('/settings/')
+          : location.pathname === '/agent' || location.pathname.startsWith('/agent/');
 
   return (
     <nav className="shell-tabbar" data-tabbar="true" aria-label="Navigation principale">
@@ -48,7 +65,7 @@ export function ShellTabBar() {
               navigate(path);
             }}
           >
-            <Icon size={20} aria-hidden />
+            <Icon size={20} strokeWidth={2} aria-hidden />
             <span className="shell-tab-label">{label}</span>
           </button>
         );

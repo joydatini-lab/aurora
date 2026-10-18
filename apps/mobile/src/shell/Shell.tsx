@@ -19,7 +19,7 @@
  * ne montent PLUS ici — le shell mobile = onglets bas + écrans.
  */
 import { IonApp, IonFooter, IonHeader } from '@ionic/react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Settings } from 'lucide-react';
 import { IN_APP_LOGO, IN_APP_LOGO_ASSET } from '../brand/logo';
 import { AgentBus } from './AgentBus';
@@ -27,6 +27,17 @@ import { ShellTabBar } from './ShellTabBar';
 
 export function Shell() {
   const navigate = useNavigate();
+  const location = useLocation();
+  /** M-13 (v2 MVP S1, plan S1 §M-13) : la page Agent N'A PAS de barre
+   *  d'onglets (« AUCUNE barre de navigation sur la page Agent ») — la
+   *  sortie de l'assistant passe par SON MENU LATÉRAL (nouvelle
+   *  conversation / navigation / récentes, Stitch `agent_menu_lat_ral_
+   *  fraunces` : bouton menu en haut à gauche → feuille basse). Le Shell
+   *  masque l'IonFooter global sur `/agent*` (règle de prefix) ; sur
+   *  toutes les autres routes la barre v2 (4 entrées) reste permanente
+   *  (02 §6.1 : les détails s'ouvrent AU-DESSUS de l'onglet courant). */
+  const tabBarHidden =
+    location.pathname === '/agent' || location.pathname.startsWith('/agent/');
   return (
     <IonApp>
       {/* Global app header (ui-libraries §9.1 l.380, owner 2026-09-27) :
@@ -57,12 +68,16 @@ export function Shell() {
         </button>
       </IonHeader>
       <Outlet />
-      {/* 02 §6.1 : la barre d'onglets est permanente (5 tabs) ; un
-          IonFooter place le chrome sous chaque IonContent de page
-          (layout Ionic natif, safe-area basse gérée en CSS). */}
-      <IonFooter>
-        <ShellTabBar />
-      </IonFooter>
+      {/* 02 §6.1 : la barre d'onglets est permanente SAUF sur /agent*
+          (M-13, plan S1 : la page Agent n'a PAS de barre — la sortie
+          passe par le menu latéral de l'assistant). Un IonFooter place
+          le chrome sous chaque IonContent de page (layout Ionic natif,
+          safe-area basse gérée en CSS). */}
+      {!tabBarHidden && (
+        <IonFooter>
+          <ShellTabBar />
+        </IonFooter>
+      )}
       <AgentBus />
     </IonApp>
   );

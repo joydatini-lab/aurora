@@ -1,6 +1,6 @@
 /* =============================================================================
-   shell.css — la barre d'onglets mobile du shell (02 §6.1 : 5 tabs,
-   44-60 px, safe-area basse Android/iOS via Capacitor).
+   shell.css — la barre d'onglets mobile du shell (02 §6.1 : 4 tabs v2
+   M-13, 44-60 px, safe-area basse Android/iOS via Capacitor).
    Pack 05 / AD-17 : tokens only (--aurora-*), radius ≤ 8 px, tap ≥ 44 px,
    transitions 150–250 ms GPU-only (couleurs/opacity — jamais de layout).
    ============================================================================= */
@@ -107,6 +107,22 @@ html[data-aurora-focus-mode="on"] ion-footer {
   .shell-tab {
     transition: none;
   }
+}
+
+/* ── AuroraEmptyBackdrop (M-13, v2 MVP S1) : le motif monochrome in-app
+   (IN_APP_LOGO, l'asset A de brand/logo.ts) en ARRIÈRE-PLAN DISCRET des
+   états vides de page — opacité 10 % (borne SSoT du plan : 8–12 %). Le
+   parent doit être `position: relative`. Tokens only (AD-17). */
+.aurora-empty-backdrop {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: min(40vw, 160px);
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
 }
 
 /* ── Skeletons "shape-feature" (AD-13 : le chargement prévisualise la FORME
