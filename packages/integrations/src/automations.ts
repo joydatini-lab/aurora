@@ -22,7 +22,17 @@
  * `not exists (pending/running same key)` predicate (0010/0011
  * pattern), so a double cron firing is a no-op.
  */
-import type { Automation, JobCompletedEvent, JobKind } from '@aurora/domain';
+import type {
+  Automation,
+  JobCompletedEvent,
+  JobKind,
+  NotificationPreference,
+} from '@aurora/domain';
+import {
+  createOneSignalServerClient,
+  decideChannel,
+} from './notifications.ts';
+import type { NotificationPlan, OneSignalClient } from './notifications.ts';
 
 /** Payload shape of an automation-driven job (typed per kind by the
  *  worker, 01 §5.3). Carries the dedup key so the handler can replay-
@@ -41,6 +51,21 @@ export interface AutomationJobPayload {
   triggerEvent?: string;
   /** the cron-minute epoch the tick belongs to (AD-8 dedup input) */
   tick?: number;
+  // — M-72 (S7 finitions) — le payload de la notification de veille
+  // (M-43 runVeillePipeline, `channelId`/`title`/`body` SSoT) est
+  // porté ici quand le dispatcher enfile le `notificationJob` du
+  // module Discovery sur le module 'integrations' / jobKind
+  // 'notification' (chevauchement ORION, fn-job-dispatcher L217).
+  /** le channel OneSignal (l'adapter résout l'identifiant). */
+  channelId?: string;
+  /** le titre du push. */
+  title?: string;
+  /** le body du push (le `topic` du run y est porté, SSoT M-72). */
+  body?: string;
+  /** AD-16b : le flag `uncertain` du run (JAMAIS supprimé). */
+  uncertain?: boolean;
+  /** le deep-link du push (optionnel). */
+  deepLink?: string;
 }
 
 /**
@@ -130,6 +155,22 @@ export function isJobKind(k: string): k is JobKind {
  * fn-job-dispatcher). Idempotent (AD-8): when the dispatcher
  * re-claims a job whose payload.dedupKey doesn't match what we
  * would compute for this tick, we report a skip.
+ *
+ * M-72 (S7 finitions) : le handler `notification` est maintenant
+ * branché sur le client OneSignal REST (notifications.ts, AD-1 : le
+ * vendor reste dans l'adapter). Quand le payload est une notification
+ * de veille (M-43 runVeillePipeline, `channelId`/`title`/`body` SSoT)
+ * ou une automation reminder (l'action G1), le handler :
+ *  1. résout le `NotificationPlan` via `decideChannel` (anti-double-push,
+ *     04 §7 : EXACTLY ONE channel — push/local/in-app) ;
+ *  2. appelle `createOneSignalServerClient().send(plan)` — si le
+ *     secret OneSignal est ABSENT (AD-1, l'optionnelle capability n'est
+ *     jamais configurée) le client retourne `{accepted:false,
+ *     reason:'onesignal_not_configured'}` (pas une rupture) ;
+ *  3. retourne `{ ok, result:{ delivered, reason? } }` au dispatcher
+ *     (le `JobCompleted` est produit par le job system, AD-9).
+ * Le cas replay idempotent (`dedupKey` incohérente) reste prioritaire
+ * (le replay est un no-op AD-8, pas un re-send).
  */
 export const INTEGRATIONS_JOB_HANDLERS: ReadonlyArray<{
   jobKind: JobKind;
@@ -143,7 +184,7 @@ export const INTEGRATIONS_JOB_HANDLERS: ReadonlyArray<{
   {
     jobKind: 'notification',
     module: 'integrations',
-    handler: async (_jobId, _userId, payload) => {
+    handler: async (_jobId, userId, payload) => {
       const p = payload as unknown as AutomationJobPayload;
       if (p.module !== 'integrations' || p.automationId === undefined) {
         // Not an integrations-scoped payload: ORION routes by
@@ -160,15 +201,54 @@ export const INTEGRATIONS_JOB_HANDLERS: ReadonlyArray<{
       if (p.dedupKey !== undefined && p.dedupKey !== expected) {
         return { ok: true, result: { skipped: 'idempotent-replay' } };
       }
-      // Best-effort delivery (overview.md §17: push is best-effort,
-      // the job result records done/failed; JobCompleted is produced
-      // by the job system, not here).
+
+      // M-72 (S7 finitions) — le branchement réel : le handler
+      // `integrations/notification` APPRELE le client OneSignal (AD-1,
+      // notifications.ts). Le payload du run veille (M-43
+      // runVeillePipeline, `channelId`/`title`/`body` SSoT + le flag
+      // `uncertain` AD-16b) est converti en `NotificationPlan` via
+      // `decideChannel` (anti-double-push 04 §7 : EXACTLY ONE channel),
+      // puis envoyé au vendor via `createOneSignalServerClient().send`.
+      //
+      // Quand le payload est un `AutomationJobPayload` classique
+      // (le tick cron d'une automation reminder, sans `title`), le
+      // message retombe sur l'`action` de l'automation (le G1 du
+      // kernel le mappe là) ; le `channelId` par défaut est
+      // `default` (la convention du `MaterializeDueAutomationRow`
+      // d'automation-scheduler, L118).
+      //
+      // AD-1 (notifications.ts, §7.2e) : quand le secret OneSignal
+      // n'est PAS configuré, le client retourne `{ accepted:false,
+      // reason:'onesignal_not_configured' }` — le job est fait
+      // (best-effort, overview §17), la dégradation est propre,
+      // JAMAIS une rupture.
+      const channelPref: Pick<NotificationPreference, 'enabled' | 'quietHours' | 'channels'> = {
+        enabled: true,
+        quietHours: undefined,
+        channels: ['push'],
+      };
+      const req = {
+        userId,
+        title: p.title ?? p.action ?? 'Veille',
+        body: p.body ?? p.action ?? '',
+        priority: 'job-result' as const,
+        nowIso: new Date().toISOString(),
+        deepLink: p.deepLink,
+      };
+      const plan: NotificationPlan = decideChannel(req, channelPref);
+      const client: OneSignalClient = createOneSignalServerClient();
+      const outcome = await client.send(plan);
+
+      // Best-effort delivery (overview.md §17 : push est best-effort,
+      // le job result enregistre done/failed ; le JobCompleted est
+      // produit par le job system, PAS ici).
       return {
         ok: true,
         result: {
           automation: p.automationId,
           action: p.action ?? undefined,
-          delivered: true,
+          channel: plan.channel,
+          ...(outcome.accepted ? { delivered: true } : { delivered: false, reason: outcome.reason }),
         },
       };
     },

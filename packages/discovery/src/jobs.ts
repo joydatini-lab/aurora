@@ -210,11 +210,28 @@ export function buildDiscoveryResearchHandler(deps: DiscoveryJobDeps): Registere
         // payload à enfileter par le dispatcher (module 'integrations',
         // jobKind 'notification' — le vendor OneSignal N'EST JAMAIS
         // appelé ici, AD-1).
+        //
+        // M-72 (S7 finitions) : le payload `title`/`body` du
+        // notification job est le SSoT correct — le `topic` du run
+        // (query.topic) DOIT figurer dans le body (« ta veille sur
+        // {topic} est prête ») pour que le push OneSignal fin de run
+        // soit lisible. Le `title` conserve le `payload.sheetTitle`
+        // (l'en-tête de la sheet, déjà le sujet) quand il est porté,
+        // sinon `query.topic`.
         if (payload.discoverySheet === true) {
+          const topic = String(query.topic ?? '');
+          const channelId = String(payload.channelId ?? 'default');
+          const title = String(payload.sheetTitle ?? topic);
+          const body: string =
+            typeof payload.sheetBody === 'string' && payload.sheetBody !== ''
+              ? payload.sheetBody
+              : topic !== ''
+                ? `ta veille sur ${topic} est prête`
+                : 'ta veille est prête';
           const notification = {
-            channelId: String(payload.channelId ?? 'default'),
-            title: String(payload.sheetTitle ?? query.topic),
-            body: typeof payload.sheetBody === 'string' ? payload.sheetBody : undefined,
+            channelId,
+            title,
+            body,
           };
           const draft: Partial<SheetDraft> = {
             userId,

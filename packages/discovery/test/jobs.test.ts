@@ -219,6 +219,185 @@ test('LOT 1: buildFilterCtx maps the G-D14 profile (disciplines/region/target/bu
 });
 
 /**
+ * M-72 (S7 finitions) — le payload notificationJob produit par le handler
+ * `research` porte le `topic` du run dans le `body` (SSoT correct :
+ * « ta veille sur {topic} est prête »), et le `channelId` est l'id du
+ * run/vault (pas un placeholder vide) — le trigger push OneSignal fin
+ * de run est bien câblé end-to-end.
+ */
+test('M-72 : le notificationJob du run research porte le topic du run dans le body (SSoT, M-72 S7)', async () => {
+  const handler = buildDiscoveryResearchHandler({
+    filterCtx: { disciplines: ['structures'] },
+    provider: mockProvider([
+      makeHit({ discipline: 'structures', title: 'S', credibility: 'documented' }),
+    ]),
+  });
+
+  const res = await handler.handler('j72', USER, {
+    op: 'multi-source',
+    discoverySheet: true,
+    channelId: 'vault-ch1',
+    // PAS de sheetTitle/sheetBody portées : le pipeline doit dériver le
+    // body depuis le `topic` du run (query.topic).
+    query: { userId: USER, topic: 'structures', domains: ['structures'], kinds: ['other'] } as never,
+  });
+
+  assert.equal(res.ok, true, 'M-72: le handler ne casse jamais (dégradation AD-1)');
+  const r = res.result as {
+    notificationJob: {
+      module: string;
+      jobKind: string;
+      channelId: string;
+      title: string;
+      body?: string;
+      uncertain: boolean;
+    };
+  };
+  // M-72 SSoT : le body du notification job DOIT porter le `topic` du run
+  // (« ta veille sur structures est prête ») — pas un placeholder vide,
+  // pas « ta veille est prête » générique sans le topic.
+  assert.equal(r.notificationJob.body, 'ta veille sur structures est prête', 'M-72: le body porte le topic du run (SSoT correct)');
+  // Le channelId est l'id du run/vault (non vide), pas un placeholder.
+  assert.equal(r.notificationJob.channelId, 'vault-ch1', 'M-72: le channelId est l\'id du run/vault (pas un placeholder vide)');
+  // Le titre tombe sur le topic quand le sheetTitle n\'est pas porté.
+  assert.equal(r.notificationJob.title, 'structures', 'M-72: le title tombe sur le topic du run');
+  // La chaîne reste module-scoped 'integrations' + jobKind 'notification' (chevauchement ORION).
+  assert.equal(r.notificationJob.module, 'integrations');
+  assert.equal(r.notificationJob.jobKind, 'notification');
+  // AD-16b : le flag `uncertain` reste porté par le payload.
+  assert.equal(typeof r.notificationJob.uncertain, 'boolean');
+});
+
+/**
+ * M-72 (S7 finitions) — avec un `sheetBody` explicite porté, le pipeline
+ * conserve le body fourni (pas de surscription) mais le topic reste
+ * SSoT du run quand le sheetBody est absent.
+ */
+test('M-72 : le sheetBody explicite est conservé ; le topic du run est le SSoT quand absent', async () => {
+  const handler = buildDiscoveryResearchHandler({
+    filterCtx: { disciplines: ['structures'] },
+    provider: mockProvider([
+      makeHit({ discipline: 'structures', title: 'S', credibility: 'documented' }),
+    ]),
+  });
+
+  // Cas 1 : sheetBody explicit → le body fourni est conservé.
+  const res1 = await handler.handler('j72a', USER, {
+    op: 'multi-source',
+    discoverySheet: true,
+    channelId: 'ch1',
+    sheetBody: 'custom body',
+    query: { userId: USER, topic: 'structures', domains: ['structures'], kinds: ['other'] } as never,
+  });
+  const r1 = res1.result as { notificationJob: { body?: string } };
+  assert.equal(r1.notificationJob.body, 'custom body', 'M-72: le sheetBody explicite est conservé');
+
+  // Cas 2 : sheetTitle porté + sheetBody absent → le body retombe sur le
+  // topic du run (SSoT M-72).
+  const res2 = await handler.handler('j72b', USER, {
+    op: 'multi-source',
+    discoverySheet: true,
+    channelId: 'ch1',
+    sheetTitle: 'Veille structures',
+    query: { userId: USER, topic: 'structures', domains: ['structures'], kinds: ['other'] } as never,
+  });
+  const r2 = res2.result as { notificationJob: { body?: string; title: string } };
+  assert.equal(r2.notificationJob.title, 'Veille structures', 'M-72: le sheetTitle explicite est conservé');
+  assert.equal(r2.notificationJob.body, 'ta veille sur structures est prête', 'M-72: le body retombe sur le topic du run quand le sheetBody est absent');
+});
+
+/**
+ * M-72 (S7 finitions) — le body tombe sur le topic aussi quand le
+ * topic est vide : la dégradation AD-1 produit un message générique
+ * « ta veille est prête » (pas une rupture).
+ */
+test('M-72 : topic vide → le body retombe sur le message générique (dégradation AD-1)', async () => {
+  const handler = buildDiscoveryResearchHandler({
+    filterCtx: { disciplines: ['structures'] },
+    provider: mockProvider([
+      makeHit({ discipline: 'structures', title: 'S', credibility: 'documented' }),
+    ]),
+  });
+
+  const res = await handler.handler('j72c', USER, {
+    op: 'multi-source',
+    discoverySheet: true,
+    channelId: 'ch1',
+    query: { userId: USER, topic: '', domains: ['structures'], kinds: ['other'] } as never,
+  });
+
+  assert.equal(res.ok, true);
+  const r = res.result as { notificationJob: { body?: string; title: string } };
+  assert.equal(r.notificationJob.body, 'ta veille est prête', 'M-72: topic vide → message générique (AD-1 dégradation)');
+});
+
+/**
+ * M-72 (S7 finitions) — le `channelId` par défaut est « default »
+ * (pas un placeholder vide), quand le payload n\'en porte pas.
+ */
+test('M-72 : le channelId par défaut est « default » (pas un placeholder vide)', async () => {
+  const handler = buildDiscoveryResearchHandler({
+    filterCtx: { disciplines: ['structures'] },
+    provider: mockProvider([
+      makeHit({ discipline: 'structures', title: 'S', credibility: 'documented' }),
+    ]),
+  });
+
+  const res = await handler.handler('j72d', USER, {
+    op: 'multi-source',
+    discoverySheet: true,
+    // PAS de channelId porté → le défaut « default » doit s\'appliquer.
+    query: { userId: USER, topic: 'structures', domains: ['structures'], kinds: ['other'] } as never,
+  });
+
+  assert.equal(res.ok, true);
+  const r = res.result as { notificationJob: { channelId: string } };
+  assert.equal(r.notificationJob.channelId, 'default', 'M-72: le channelId par défaut est « default »');
+});
+
+/**
+ * M-72 (S7 finitions) — le trigger end-to-end : le `research` handler du
+ * module Discovery retourne le `notificationJob` payload que le dispatcher
+ * (ORION) enfile sur le module `integrations` / jobKind `notification`
+ * (le handler `integrations/notification` de `automations.ts` l\'exécute,
+ * le client OneSignal est appelé, AD-1 : le vendor reste dans l'adapter).
+ * Le test pinne la chaîne de wiring : le payload a le `module`/`jobKind`
+ * exact que le dispatcher attend.
+ */
+test('M-72 end-to-end : le notificationJob retourné par le handler research est routable par le dispatcher ORION (wiring trigger)', async () => {
+  const handler = buildDiscoveryResearchHandler({
+    filterCtx: { disciplines: ['structures'] },
+    provider: mockProvider([
+      makeHit({ discipline: 'structures', title: 'S', credibility: 'documented' }),
+    ]),
+  });
+
+  const res = await handler.handler('j72e', USER, {
+    op: 'multi-source',
+    discoverySheet: true,
+    channelId: 'vault-ch1',
+    query: { userId: USER, topic: 'structures', domains: ['structures'], kinds: ['other'] } as never,
+  });
+
+  assert.equal(res.ok, true);
+  const r = res.result as {
+    discoveryItems: unknown[];
+    notificationJob: { module: string; jobKind: string; channelId: string; title: string; body?: string; uncertain: boolean };
+  };
+  // Le dispatcher (fn-job-dispatcher L217 wireGlobalJobSwitch) route par
+  // (jobKind, module) — le payload doit porter EXACTEMENT le tuple
+  // ('notification', 'integrations') pour être routable.
+  assert.equal(r.notificationJob.jobKind, 'notification', 'M-72 e2e: le jobKind est « notification » (routable par ORION)');
+  assert.equal(r.notificationJob.module, 'integrations', 'M-72 e2e: le module est « integrations » (le handler OneSignal y vit)');
+  // Le topic du run est dans le body (SSoT M-72).
+  assert.equal(r.notificationJob.body, 'ta veille sur structures est prête', 'M-72 e2e: le body porte le topic du run');
+  // Le channelId est l\'id du run/vault (non vide).
+  assert.equal(r.notificationJob.channelId, 'vault-ch1');
+  // AD-16b : le flag uncertain est porté.
+  assert.equal(typeof r.notificationJob.uncertain, 'boolean');
+});
+
+/**
  * LOT 1: `DISCOVERY_JOB_HANDLERS` still exposes the module's static
  * 'research' handler (the export the module owns + tests pin) — the
  * dispatcher re-builds it with env seams, the table stays intact.
