@@ -13,7 +13,9 @@
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
 import { useParams } from 'react-router-dom';
-import { FileQuestion } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const FileQuestion = AURORA_ICONS.FileQuestion;
+
 import { UxStates, type UxStateFlags } from '../../ux-states';
 import { useOnlineStatus } from '../../hooks/use-online';
 import { useUiStateStore } from '../../state/ui-state';

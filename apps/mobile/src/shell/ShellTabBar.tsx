@@ -17,7 +17,12 @@
  * (strokeWidth 2, taille multiple de 4 — règle du repo), tokens only
  * (--aurora-*), tap target ≥ 44 px, safe-area basse (Capacitor/Android).
  */
-import { Bot, Compass, Focus, Plus } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Bot = AURORA_ICONS.Bot;
+const Compass = AURORA_ICONS.Compass;
+const Focus = AURORA_ICONS.Focus;
+const Plus = AURORA_ICONS.Plus;
+
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUiStateStore, type TabId } from '../state/ui-state';
 
@@ -65,7 +70,7 @@ export function ShellTabBar() {
               navigate(path);
             }}
           >
-            <Icon size={20} strokeWidth={2} aria-hidden />
+            <Icon size={20} aria-hidden />
             <span className="shell-tab-label">{label}</span>
           </button>
         );

@@ -17,7 +17,14 @@
  *    course import surface) — no dead link.
  */
 import { IonButton, IonButtons, IonContent, IonHeader, IonTitle } from '@ionic/react';
-import { ArrowLeft, FileText, Image, Info, Plus, FolderOpen } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const ArrowLeft = AURORA_ICONS.ArrowLeft;
+const FileText = AURORA_ICONS.FileText;
+const Image = AURORA_ICONS.Image;
+const Info = AURORA_ICONS.Info;
+const Plus = AURORA_ICONS.Plus;
+const FolderOpen = AURORA_ICONS.FolderOpen;
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 

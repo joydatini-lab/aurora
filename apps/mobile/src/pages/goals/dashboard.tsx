@@ -23,7 +23,9 @@
  * WITHOUT background (`assets/aurora_icon_a_integre_dans_l'applciation.png`),
  * never the full app icon, never a re-invented logo.
  */
-import { Compass } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Compass = AURORA_ICONS.Compass;
+
 import * as React from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { IN_APP_LOGO, IN_APP_LOGO_ASSET } from '../../brand/logo';
@@ -275,7 +277,6 @@ function WorkflowLines({ layout }: { layout: GoalDashboardLayout }) {
           y2={l.to.y}
           stroke="currentColor"
           strokeOpacity={0.4}
-          strokeWidth={1}
           strokeLinecap="round"
         />
       ))}

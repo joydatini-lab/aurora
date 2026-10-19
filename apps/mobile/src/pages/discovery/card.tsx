@@ -41,14 +41,14 @@
  * (`data-card-tone="accent"` → le CSS applique `--aurora-accent-primary`
  * à la pastille), zéro valeur brute. Radius ≤ 8px, tap ≥ 44px.
  */
-import {
-  Ellipsis,
-  Pencil,
-  Trash2,
-  Files,
-  Minus,
-  Compass,
-} from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Ellipsis = AURORA_ICONS.Ellipsis;
+const Pencil = AURORA_ICONS.Pencil;
+const Trash2 = AURORA_ICONS.Trash2;
+const Files = AURORA_ICONS.Files;
+const Minus = AURORA_ICONS.Minus;
+const Compass = AURORA_ICONS.Compass;
+
 import {
   DropdownMenu,
   DropdownMenuContent,

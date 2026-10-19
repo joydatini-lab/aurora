@@ -18,20 +18,20 @@
  * stays a custom token element (the DS swatch is not a shadcn control).
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import {
-  Award,
-  Brain,
-  Calendar,
-  Compass,
-  Inbox,
-  LogIn,
-  Moon,
-  PenTool,
-  Plug,
-  RefreshCw,
-  Sun,
-  Timer,
-} from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Award = AURORA_ICONS.Award;
+const Brain = AURORA_ICONS.Brain;
+const Calendar = AURORA_ICONS.Calendar;
+const Compass = AURORA_ICONS.Compass;
+const Inbox = AURORA_ICONS.Inbox;
+const LogIn = AURORA_ICONS.LogIn;
+const Moon = AURORA_ICONS.Moon;
+const PenTool = AURORA_ICONS.PenTool;
+const Plug = AURORA_ICONS.Plug;
+const RefreshCw = AURORA_ICONS.RefreshCw;
+const Sun = AURORA_ICONS.Sun;
+const Timer = AURORA_ICONS.Timer;
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {

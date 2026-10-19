@@ -11,7 +11,9 @@
  * KPI tile.
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import { CalendarClock } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const CalendarClock = AURORA_ICONS.CalendarClock;
+
 import { useState } from 'react';
 import { useOnlineStatus } from '../../hooks/use-online';
 import { useKilledDetection } from '../../hooks/use-killed';

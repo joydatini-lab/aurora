@@ -28,16 +28,7 @@
  *   - `error` : le message d'erreur lisible (le plan L658 : jamais un
  *     crash, un dialogue honnête + le dismiss).
  */
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  Progress,
-  Button,
-} from '@aurora/ui';
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Progress, Button } from '@aurora/ui';
 
 import type { UpdaterState } from './useUpdater';
 

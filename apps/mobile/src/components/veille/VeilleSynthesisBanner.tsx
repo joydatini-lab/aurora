@@ -43,7 +43,12 @@
  *     du 1er run") → la bannière est MASQUÉE (pas de verdict SSoT
  *     sans run, l'état vide honnête AD-7).
  */
-import { ShieldCheck, ShieldX, Files, Compass } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const ShieldCheck = AURORA_ICONS.ShieldCheck;
+const ShieldX = AURORA_ICONS.ShieldX;
+const Files = AURORA_ICONS.Files;
+const Compass = AURORA_ICONS.Compass;
+
 import type { VeilleSynthesis } from '../../hooks/veille-synthesis-join';
 
 /**

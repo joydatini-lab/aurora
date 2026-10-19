@@ -39,30 +39,30 @@
  */
 import { IonButton, IonButtons, IonContent, IonHeader, IonTitle } from '@ionic/react';
 import { AgentThinkingLoader } from '@aurora/ui';
-import {
-  Bot,
-  Brain,
-  Compass,
-  Cpu,
-  ChevronLeft,
-  FolderOpen,
-  Link2,
-  Loader2,
-  Menu,
-  MessageSquare,
-  MessageSquarePlus,
-  PenLine,
-  Plus,
-  Search,
-  Send,
-  SlidersHorizontal,
-  Sparkles,
-  Timer,
-  Zap,
-  Copy,
-  ArrowRight,
-  Quote,
-} from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Bot = AURORA_ICONS.Bot;
+const Brain = AURORA_ICONS.Brain;
+const Compass = AURORA_ICONS.Compass;
+const Cpu = AURORA_ICONS.Cpu;
+const ChevronLeft = AURORA_ICONS.ChevronLeft;
+const FolderOpen = AURORA_ICONS.FolderOpen;
+const Link2 = AURORA_ICONS.Link2;
+const Loader2 = AURORA_ICONS.Loader2;
+const Menu = AURORA_ICONS.Menu;
+const MessageSquare = AURORA_ICONS.MessageSquare;
+const MessageSquarePlus = AURORA_ICONS.MessageSquarePlus;
+const PenLine = AURORA_ICONS.PenLine;
+const Plus = AURORA_ICONS.Plus;
+const Search = AURORA_ICONS.Search;
+const Send = AURORA_ICONS.Send;
+const SlidersHorizontal = AURORA_ICONS.SlidersHorizontal;
+const Sparkles = AURORA_ICONS.Sparkles;
+const Timer = AURORA_ICONS.Timer;
+const Zap = AURORA_ICONS.Zap;
+const Copy = AURORA_ICONS.Copy;
+const ArrowRight = AURORA_ICONS.ArrowRight;
+const Quote = AURORA_ICONS.Quote;
+
 import {
   useEffect,
   useMemo,

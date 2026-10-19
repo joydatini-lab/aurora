@@ -43,15 +43,15 @@
  * catalog vide/absente.
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import {
-  Check,
-  Loader2,
-  CircleOff,
-  ChevronRight,
-  Plus,
-  RefreshCw,
-  Search,
-} from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Check = AURORA_ICONS.Check;
+const Loader2 = AURORA_ICONS.Loader2;
+const CircleOff = AURORA_ICONS.CircleOff;
+const ChevronRight = AURORA_ICONS.ChevronRight;
+const Plus = AURORA_ICONS.Plus;
+const RefreshCw = AURORA_ICONS.RefreshCw;
+const Search = AURORA_ICONS.Search;
+
 import { useEffect, useMemo, useState } from 'react';
 import { useMobileData } from '../../query/context';
 import type {

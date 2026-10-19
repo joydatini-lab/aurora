@@ -13,7 +13,10 @@
  * statique si le SSoT est vide (état AD-13 « premier run en attente »).
  */
 import { VaultMdEditor } from './VaultMdEditor';
-import { BookOpenText, FileText } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const BookOpenText = AURORA_ICONS.BookOpenText;
+const FileText = AURORA_ICONS.FileText;
+
 
 export function VaultMdView({
   vaultMd,

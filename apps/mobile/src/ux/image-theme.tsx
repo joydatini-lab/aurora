@@ -28,12 +28,7 @@
  * `auroraTheme === 'auto'` (le thème couleur est le par défaut).
  */
 import { useEffect, useState } from 'react';
-import {
-  NEUTRAL_STYLES,
-  accentInk,
-  getImageTheme,
-  resolveImageThemeFile,
-} from '@aurora/ui';
+import { NEUTRAL_STYLES, accentInk, getImageTheme, resolveImageThemeFile } from '@aurora/ui';
 import { useUiStateStore } from '../state/ui-state';
 
 /** The CSS variables the layer owns (removed on 'none' / unmount). */

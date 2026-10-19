@@ -18,7 +18,13 @@
  * GATED DEV, SUPPRIMER AVANT v1.0 avec l'EF `supabase/functions/fn-dev-auth`.
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import { KeyRound, Loader2, LogOut, MailCheck, UserPlus } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const KeyRound = AURORA_ICONS.KeyRound;
+const Loader2 = AURORA_ICONS.Loader2;
+const LogOut = AURORA_ICONS.LogOut;
+const MailCheck = AURORA_ICONS.MailCheck;
+const UserPlus = AURORA_ICONS.UserPlus;
+
 import { useEffect, useState } from 'react';
 import {
   Button,

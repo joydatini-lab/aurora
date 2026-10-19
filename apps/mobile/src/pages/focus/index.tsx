@@ -14,7 +14,15 @@
  *  - Chrono: user sets an end time + picks a focus sound (concentration)
  */
 import { IonButton, IonButtons, IonContent, IonHeader, IonTitle, IonToolbar } from '@ionic/react';
-import { Timer, Play, Square, ListX, ShieldCheck, Music, AlarmClock } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Timer = AURORA_ICONS.Timer;
+const Play = AURORA_ICONS.Play;
+const Square = AURORA_ICONS.Square;
+const ListX = AURORA_ICONS.ListX;
+const ShieldCheck = AURORA_ICONS.ShieldCheck;
+const Music = AURORA_ICONS.Music;
+const AlarmClock = AURORA_ICONS.AlarmClock;
+
 import { useEffect, useMemo, useState } from 'react';
 import { useUiStateStore } from '../../state/ui-state';
 import { useMobileData } from '../../query/context';

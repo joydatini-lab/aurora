@@ -21,17 +21,17 @@
  *  radius ≤ 8 px ; tap ≥ 44 px.
  */
 import { IonButton, IonButtons, IonContent, IonHeader, IonTitle } from '@ionic/react';
-import {
-  ArrowLeft,
-  Brain,
-  CalendarDays,
-  Code,
-  Globe,
-  Lock,
-  MapPin,
-  Sparkles,
-  Wrench,
-} from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const ArrowLeft = AURORA_ICONS.ArrowLeft;
+const Brain = AURORA_ICONS.Brain;
+const CalendarDays = AURORA_ICONS.CalendarDays;
+const Code = AURORA_ICONS.Code;
+const Globe = AURORA_ICONS.Globe;
+const Lock = AURORA_ICONS.Lock;
+const MapPin = AURORA_ICONS.MapPin;
+const Sparkles = AURORA_ICONS.Sparkles;
+const Wrench = AURORA_ICONS.Wrench;
+
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUiStateStore } from '../../state/ui-state';

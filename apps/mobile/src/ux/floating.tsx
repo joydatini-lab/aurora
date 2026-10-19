@@ -8,7 +8,9 @@
  * Token-only (no Tailwind): this is the mobile page-layer stand-in for the
  * @aurora/ui shadcn Sheet (which needs the mobile Tailwind build).
  */
-import { Plus } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Plus = AURORA_ICONS.Plus;
+
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 

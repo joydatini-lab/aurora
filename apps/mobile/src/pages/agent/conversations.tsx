@@ -16,7 +16,11 @@
  *   offline → badge + last-known · killed → Reconnexion….
  */
 import { IonButton, IonButtons, IonContent, IonHeader, IonTitle } from '@ionic/react';
-import { ArrowLeft, Bot, Search } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const ArrowLeft = AURORA_ICONS.ArrowLeft;
+const Bot = AURORA_ICONS.Bot;
+const Search = AURORA_ICONS.Search;
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UxStates, type UxStateFlags } from '../../ux-states';

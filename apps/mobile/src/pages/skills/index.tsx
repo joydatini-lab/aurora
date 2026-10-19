@@ -28,17 +28,17 @@
  * All user-facing text is French.
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import {
-  ChevronLeft,
-  Compass,
-  Loader2,
-  Pencil,
-  Plus,
-  Search,
-  Sparkles,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const ChevronLeft = AURORA_ICONS.ChevronLeft;
+const Compass = AURORA_ICONS.Compass;
+const Loader2 = AURORA_ICONS.Loader2;
+const Pencil = AURORA_ICONS.Pencil;
+const Plus = AURORA_ICONS.Plus;
+const Search = AURORA_ICONS.Search;
+const Sparkles = AURORA_ICONS.Sparkles;
+const Trash2 = AURORA_ICONS.Trash2;
+const X = AURORA_ICONS.X;
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMobileData } from '../../query/context';
 import type { SkillCatalogEntry, UserSkillRow } from '../../lib/skills-client';

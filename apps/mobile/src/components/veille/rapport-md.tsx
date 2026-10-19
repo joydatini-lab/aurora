@@ -35,7 +35,9 @@
  * system du projet), le body est le `font-sans`.
  */
 import { useMemo } from 'react';
-import { Lock } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Lock = AURORA_ICONS.Lock;
+
 import { markdownToHtml } from '@aurora/ui';
 import {
   parseVaultSections,

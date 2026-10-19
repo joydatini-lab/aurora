@@ -33,13 +33,13 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
-import {
-  Plus,
-  CirclePlay,
-  Play,
-  Square,
-  Check,
-} from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Plus = AURORA_ICONS.Plus;
+const CirclePlay = AURORA_ICONS.CirclePlay;
+const Play = AURORA_ICONS.Play;
+const Square = AURORA_ICONS.Square;
+const Check = AURORA_ICONS.Check;
+
 import { useMemo, useState, useCallback } from 'react';
 import { useUiStateStore } from '../../state/ui-state';
 import { useMobileData } from '../../query/context';

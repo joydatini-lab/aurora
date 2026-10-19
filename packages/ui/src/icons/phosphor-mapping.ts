@@ -50,7 +50,7 @@ export type LucideName =
   | 'Share2' | 'ShieldAlert' | 'ShieldCheck' | 'Shield' | 'ShieldX' | 'Signal'
   | 'SlidersHorizontal' | 'Smile' | 'Sparkles' | 'Square' | 'Star' | 'Sun'
   | 'Target' | 'Terminal' | 'ThumbsDown' | 'ThumbsUp' | 'Timer' | 'Trash'
-  | 'Trash2' | 'TrendingUp' | 'Undo2' | 'Upload' | 'User' | 'Users' | 'Video'
+  | 'Trash2' | 'TrendingUp' | 'Undo2' | 'Upload' | 'User' | 'UserPlus' | 'Users' | 'Video'
   | 'Volume2' | 'Waves' | 'Wind' | 'Wrench' | 'X' | 'XCircle' | 'Zap'
   | 'AlertCircle' | 'AlertTriangle';
 
@@ -247,6 +247,7 @@ export const PHOSPHOR_NAME_MAP: Record<LucideName, PhosphorIconName> = {
   Upload: 'Upload',
   // U
   User: 'User',
+  UserPlus: 'UserPlus',
   Users: 'Users',
   Video: 'Video',
   Volume2: 'SpeakerSimpleHigh',

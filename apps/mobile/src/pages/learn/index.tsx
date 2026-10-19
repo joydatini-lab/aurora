@@ -14,19 +14,19 @@
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
 import { useParams } from 'react-router-dom';
 import { useState } from 'react';
-import {
-  AlignLeft,
-  Award,
-  BookOpen,
-  Brain,
-  Eye,
-  FileText,
-  Layers,
-  ListChecks,
-  SearchCheck,
-  Sparkles,
-  TrendingUp,
-} from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const AlignLeft = AURORA_ICONS.AlignLeft;
+const Award = AURORA_ICONS.Award;
+const BookOpen = AURORA_ICONS.BookOpen;
+const Brain = AURORA_ICONS.Brain;
+const Eye = AURORA_ICONS.Eye;
+const FileText = AURORA_ICONS.FileText;
+const Layers = AURORA_ICONS.Layers;
+const ListChecks = AURORA_ICONS.ListChecks;
+const SearchCheck = AURORA_ICONS.SearchCheck;
+const Sparkles = AURORA_ICONS.Sparkles;
+const TrendingUp = AURORA_ICONS.TrendingUp;
+
 import { useUiStateStore } from '../../state/ui-state';
 import { UxStates, type UxStateFlags } from '../../ux-states';
 import { useOnlineStatus } from '../../hooks/use-online';

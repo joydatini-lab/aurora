@@ -14,13 +14,7 @@
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
 import { useLocation, Link } from 'react-router-dom';
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardTitle,
-} from '@aurora/ui';
+import { Button, Card, CardContent, CardDescription, CardTitle } from '@aurora/ui';
 import { IN_APP_LOGO, IN_APP_LOGO_ASSET } from '../../brand/logo';
 
 export function NotFoundPage() {

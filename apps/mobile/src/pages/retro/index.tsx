@@ -29,7 +29,12 @@
  * never a decorative claim.
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import { CalendarCheck, Flag, ListChecks, Sparkles } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const CalendarCheck = AURORA_ICONS.CalendarCheck;
+const Flag = AURORA_ICONS.Flag;
+const ListChecks = AURORA_ICONS.ListChecks;
+const Sparkles = AURORA_ICONS.Sparkles;
+
 
 /** A missed milestone (S-07 : the milestone IS a goal — tapping drills
  *  into the goal's detail, PAGE_TRANSITION). */

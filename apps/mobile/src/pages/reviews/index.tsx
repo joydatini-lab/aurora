@@ -21,7 +21,11 @@
  * the late Callout routes to the agent's suggestion, not to a free proposal.
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import { AlarmClock, ClipboardList, Compass } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const AlarmClock = AURORA_ICONS.AlarmClock;
+const ClipboardList = AURORA_ICONS.ClipboardList;
+const Compass = AURORA_ICONS.Compass;
+
 import { useState } from 'react';
 
 type ReviewPeriod = 'jour' | 'semaine' | 'mois';

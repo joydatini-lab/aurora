@@ -8,7 +8,17 @@
  *
  * Icons = lucide 20 px (ui-libraries §4: real icons, never emoji/SVG).
  */
-import { Award, Brain, Calendar, Compass, Flame, Inbox, PenTool, Plug, Timer } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Award = AURORA_ICONS.Award;
+const Brain = AURORA_ICONS.Brain;
+const Calendar = AURORA_ICONS.Calendar;
+const Compass = AURORA_ICONS.Compass;
+const Flame = AURORA_ICONS.Flame;
+const Inbox = AURORA_ICONS.Inbox;
+const PenTool = AURORA_ICONS.PenTool;
+const Plug = AURORA_ICONS.Plug;
+const Timer = AURORA_ICONS.Timer;
+
 import { useNavigate } from 'react-router-dom';
 import { useUserFeatures } from '../query/user-features';
 

@@ -16,7 +16,11 @@
  * est à la charge du caller (ui-state T4, AD-7 cosmétique) — ce
  * composant n'est que le chrome + l'overlay.
  */
-import { MoreVertical, SlidersHorizontal, type LucideIcon } from 'lucide-react';
+import { AURORA_ICONS, type PhosphorComponent } from '@aurora/ui';
+const MoreVertical = AURORA_ICONS.MoreVertical;
+const SlidersHorizontal = AURORA_ICONS.SlidersHorizontal;
+// type LucideIcon remplacé par PhosphorComponent (le SSoT de @aurora/ui)
+type LucideIcon = PhosphorComponent;
 import { useState } from 'react';
 
 export interface PageOptionItem {

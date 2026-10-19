@@ -13,18 +13,18 @@
  *  - sinon → wizard ; « Commencer » pose le flag puis part sur l'accueil.
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import {
-  ArrowRight,
-  Check,
-  Home,
-  Loader2,
-  LogIn,
-  Moon,
-  Sparkles,
-  Sun,
-  Target,
-  Timer,
-} from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const ArrowRight = AURORA_ICONS.ArrowRight;
+const Check = AURORA_ICONS.Check;
+const Home = AURORA_ICONS.Home;
+const Loader2 = AURORA_ICONS.Loader2;
+const LogIn = AURORA_ICONS.LogIn;
+const Moon = AURORA_ICONS.Moon;
+const Sparkles = AURORA_ICONS.Sparkles;
+const Sun = AURORA_ICONS.Sun;
+const Target = AURORA_ICONS.Target;
+const Timer = AURORA_ICONS.Timer;
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {

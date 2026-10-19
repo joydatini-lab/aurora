@@ -20,7 +20,9 @@
  */
 import { IonApp, IonFooter, IonHeader } from '@ionic/react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Settings } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Settings = AURORA_ICONS.Settings;
+
 import { IN_APP_LOGO, IN_APP_LOGO_ASSET } from '../brand/logo';
 import { AgentBus } from './AgentBus';
 import { ShellTabBar } from './ShellTabBar';

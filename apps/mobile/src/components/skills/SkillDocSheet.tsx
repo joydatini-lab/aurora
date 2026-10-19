@@ -6,7 +6,10 @@
 // Fermeture par clic sur le fond ou bouton X (accessibilité : focus trap
 // minimal, Escape n'est pas géré par Ionic — clic sur backdrop suffit).
 
-import { FileText, X } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const FileText = AURORA_ICONS.FileText;
+const X = AURORA_ICONS.X;
+
 import { useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';

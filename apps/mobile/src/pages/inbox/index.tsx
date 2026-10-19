@@ -9,7 +9,9 @@
  * is not removed, it just is inert for now).
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import { Check } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Check = AURORA_ICONS.Check;
+
 import { useState } from 'react';
 
 export function InboxPage() {

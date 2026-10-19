@@ -41,7 +41,12 @@
  * (le brand du design system).
  */
 import { useEffect, useState } from 'react';
-import { X, ExternalLink, Copy, List } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const X = AURORA_ICONS.X;
+const ExternalLink = AURORA_ICONS.ExternalLink;
+const Copy = AURORA_ICONS.Copy;
+const List = AURORA_ICONS.List;
+
 import {
   Sheet,
   SheetContent,

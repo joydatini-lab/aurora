@@ -23,7 +23,15 @@
  * the return-to-parent always finds the same family (05 §3.4 l.720–723).
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import { Clock, Flame, ListChecks, Moon, Plus, Sun, Timer } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Clock = AURORA_ICONS.Clock;
+const Flame = AURORA_ICONS.Flame;
+const ListChecks = AURORA_ICONS.ListChecks;
+const Moon = AURORA_ICONS.Moon;
+const Plus = AURORA_ICONS.Plus;
+const Sun = AURORA_ICONS.Sun;
+const Timer = AURORA_ICONS.Timer;
+
 import { useState } from 'react';
 
 type RoutineFamily = 'matin' | 'soir' | 'etude';

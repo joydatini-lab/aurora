@@ -15,18 +15,18 @@
  * panel + the menu items carry the colored 16px icons (ref_045).
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import {
-  AlignLeft,
-  Check,
-  ChevronDown,
-  Flag,
-  LayoutGrid,
-  List,
-  Plus,
-  Repeat,
-  Signal,
-  type LucideIcon,
-} from 'lucide-react';import { useState } from 'react';
+import { AURORA_ICONS, type PhosphorComponent } from '@aurora/ui';
+const AlignLeft = AURORA_ICONS.AlignLeft;
+const Check = AURORA_ICONS.Check;
+const ChevronDown = AURORA_ICONS.ChevronDown;
+const Flag = AURORA_ICONS.Flag;
+const LayoutGrid = AURORA_ICONS.LayoutGrid;
+const List = AURORA_ICONS.List;
+const Plus = AURORA_ICONS.Plus;
+const Repeat = AURORA_ICONS.Repeat;
+const Signal = AURORA_ICONS.Signal;
+// type LucideIcon remplacé par PhosphorComponent (le SSoT de @aurora/ui)
+type LucideIcon = PhosphorComponent;import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { AppError, Task, TaskStatus } from '@aurora/domain';
 import { useTasks, useTask } from '../../query/hooks';

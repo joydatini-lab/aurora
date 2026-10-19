@@ -59,19 +59,19 @@
  * CTAs that route somewhere real — never fake data.
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import {
-  AlignCenter,
-  AlignLeft,
-  Flag,
-  CalendarRange,
-  ClipboardList,
-  ListTree,
-  Plus,
-  Signal,
-  Sparkles,
-  Timer,
-  TrendingUp,
-} from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const AlignCenter = AURORA_ICONS.AlignCenter;
+const AlignLeft = AURORA_ICONS.AlignLeft;
+const Flag = AURORA_ICONS.Flag;
+const CalendarRange = AURORA_ICONS.CalendarRange;
+const ClipboardList = AURORA_ICONS.ClipboardList;
+const ListTree = AURORA_ICONS.ListTree;
+const Plus = AURORA_ICONS.Plus;
+const Signal = AURORA_ICONS.Signal;
+const Sparkles = AURORA_ICONS.Sparkles;
+const Timer = AURORA_ICONS.Timer;
+const TrendingUp = AURORA_ICONS.TrendingUp;
+
 import { useUiStateStore } from '../../state/ui-state';
 import { PageOptionsMenu, settingsItem, type PageOptionItem } from '../../ux/page-options-menu';
 import { useHorizontalSwiper } from '../../ux/use-horizontal-swiper';

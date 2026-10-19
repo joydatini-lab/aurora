@@ -64,7 +64,13 @@
  * le Q1 gelé S0).
  */
 import { IonButton, IonButtons, IonContent, IonHeader, IonTitle } from '@ionic/react';
-import { Check, ChevronLeft, Clock, Loader2, RotateCcw } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Check = AURORA_ICONS.Check;
+const ChevronLeft = AURORA_ICONS.ChevronLeft;
+const Clock = AURORA_ICONS.Clock;
+const Loader2 = AURORA_ICONS.Loader2;
+const RotateCcw = AURORA_ICONS.RotateCcw;
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuroraEmptyBackdrop } from '../../components/AuroraEmptyBackdrop';
@@ -269,7 +275,7 @@ export function VeilleCreatePage() {
             onClick={() => navigate('/discovery')}
             aria-label="Retour aux programmes de veille"
           >
-            <ChevronLeft size={20} strokeWidth={2} aria-hidden />
+            <ChevronLeft size={20} aria-hidden />
           </IonButton>
         </IonButtons>
         <IonTitle>Nouvelle veille</IonTitle>
@@ -301,7 +307,7 @@ export function VeilleCreatePage() {
                     void submit();
                   }}
                 >
-                  <RotateCcw size={14} strokeWidth={2} aria-hidden /> Réessayer
+                  <RotateCcw size={14} aria-hidden /> Réessayer
                 </button>
               ) : null}
             </div>
@@ -315,7 +321,7 @@ export function VeilleCreatePage() {
               le vault). */}
           {phase === 'success' ? (
             <div data-veille-create-success role="status">
-              <Check size={20} strokeWidth={2} aria-hidden />
+              <Check size={20} aria-hidden />
               <p>
                 La veille « {form.name.trim() || 'sans nom'} » est créée —
                 le 1er run est en attente.
@@ -433,7 +439,7 @@ export function VeilleCreatePage() {
                   <div className="schedule-line">
                     <span className="schedule-line-label">Heure</span>
                     <span className="schedule-line-value">
-                      <Clock size={13} strokeWidth={2} aria-hidden /> {timeLabel}
+                      <Clock size={13} aria-hidden /> {timeLabel}
                     </span>
                   </div>
                 </div>
@@ -533,7 +539,7 @@ export function VeilleCreatePage() {
                 >
                   {phase === 'loading' ? (
                     <>
-                      <Loader2 size={14} strokeWidth={2} aria-hidden className="spin" />
+                      <Loader2 size={14} aria-hidden className="spin" />
                       En cours…
                     </>
                   ) : (

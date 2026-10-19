@@ -22,7 +22,9 @@
  * monté dans l'IonContent de la page Focus v2 (écran 8), l'en-tête «
  * Nouveau profil de focus » est fourni par l'IonHeader de la page.
  */
-import { ChevronLeft } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const ChevronLeft = AURORA_ICONS.ChevronLeft;
+
 import { useMemo, useState } from 'react';
 import type { FocusProfile, FocusProfileStore } from '../../lib/focus-profiles';
 import type { Task } from '@aurora/domain';
@@ -85,7 +87,7 @@ export function NewFocusProfileBody({
           onClick={onCancel}
           aria-label="Retour"
         >
-          <ChevronLeft size={24} strokeWidth={2.5} />
+          <ChevronLeft size={24} />
         </button>
         <h1>Nouveau profil de focus</h1>
       </header>

@@ -17,32 +17,32 @@
  * a real action, never a dead affordance.
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import {
-  Apple,
-  BedDouble,
-  Bike,
-  BookOpen,
-  Brain,
-  Brush,
-  CalendarDays,
-  Coffee,
-  Droplets,
-  Dumbbell,
-  Flag,
-  Footprints,
-  Moon,
-  PiggyBank,
-  Plus,
-  Salad,
-  Smile,
-  Sparkles,
-  Sun,
-  Timer,
-  Waves,
-  Wind,
-  List,
-  type LucideIcon,
-} from 'lucide-react';
+import { AURORA_ICONS, type PhosphorComponent } from '@aurora/ui';
+const Apple = AURORA_ICONS.Apple;
+const BedDouble = AURORA_ICONS.BedDouble;
+const Bike = AURORA_ICONS.Bike;
+const BookOpen = AURORA_ICONS.BookOpen;
+const Brain = AURORA_ICONS.Brain;
+const Brush = AURORA_ICONS.Brush;
+const CalendarDays = AURORA_ICONS.CalendarDays;
+const Coffee = AURORA_ICONS.Coffee;
+const Droplets = AURORA_ICONS.Droplets;
+const Dumbbell = AURORA_ICONS.Dumbbell;
+const Flag = AURORA_ICONS.Flag;
+const Footprints = AURORA_ICONS.Footprints;
+const Moon = AURORA_ICONS.Moon;
+const PiggyBank = AURORA_ICONS.PiggyBank;
+const Plus = AURORA_ICONS.Plus;
+const Salad = AURORA_ICONS.Salad;
+const Smile = AURORA_ICONS.Smile;
+const Sparkles = AURORA_ICONS.Sparkles;
+const Sun = AURORA_ICONS.Sun;
+const Timer = AURORA_ICONS.Timer;
+const Waves = AURORA_ICONS.Waves;
+const Wind = AURORA_ICONS.Wind;
+const List = AURORA_ICONS.List;
+// type LucideIcon remplacé par PhosphorComponent (le SSoT de @aurora/ui)
+type LucideIcon = PhosphorComponent;
 import { useState } from 'react';
 import { useUiStateStore } from '../../state/ui-state';
 import {

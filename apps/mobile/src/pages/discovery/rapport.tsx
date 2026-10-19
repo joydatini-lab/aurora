@@ -43,7 +43,11 @@
  * module Integrations (le single-writer, AD-7).
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import { ChevronLeft, Ellipsis, List } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const ChevronLeft = AURORA_ICONS.ChevronLeft;
+const Ellipsis = AURORA_ICONS.Ellipsis;
+const List = AURORA_ICONS.List;
+
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@aurora/ui';

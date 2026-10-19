@@ -17,10 +17,7 @@
  */
 import { useEffect, useMemo } from 'react';
 import { useReducedMotion } from 'motion/react';
-import {
-  AuroraThemeProvider,
-  type AuroraThemeProviderProps,
-} from '@aurora/ui';
+import { AuroraThemeProvider, type AuroraThemeProviderProps } from '@aurora/ui';
 
 /**
  * A Layer-3 local adaptation record (05 §5.2): screen-scoped token

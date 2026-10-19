@@ -17,7 +17,9 @@
  * writer (AD-7 single-writer).
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import { Compass } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const Compass = AURORA_ICONS.Compass;
+
 import { useNavigate } from 'react-router-dom';
 import { UxStates, type UxStateFlags } from '../../ux-states';
 import { useOnlineStatus } from '../../hooks/use-online';

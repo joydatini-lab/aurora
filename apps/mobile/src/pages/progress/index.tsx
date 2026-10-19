@@ -10,7 +10,10 @@
  * fake numbers, 05 §4). Full 6 UX states + killed (AD-13, G-M2).
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
-import { BrainCircuit, RotateCcw } from 'lucide-react';
+import { AURORA_ICONS } from '@aurora/ui';
+const BrainCircuit = AURORA_ICONS.BrainCircuit;
+const RotateCcw = AURORA_ICONS.RotateCcw;
+
 import { AuroraCard } from '@aurora/ui';
 import { useParams } from 'react-router-dom';
 import { useUiStateStore } from '../../state/ui-state';
