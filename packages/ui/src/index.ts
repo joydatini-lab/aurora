@@ -1373,3 +1373,17 @@ export * from "./components/assistant-ui/elements/assistant-modal.aui";
 export * from "./components/assistant-ui/elements/assistant-sidebar.aui";
 export * from "./components/assistant-ui/elements/threadlist-sidebar.aui";
 export { DemoAuiProvider, useDemoAuiRuntime, type DemoThread } from "./components/assistant-ui/demo/demo-aui-provider";
+export {
+  AURORA_ICONS,
+  AURORA_ICONS_FILL,
+  AURORA_ICONS_BOLD,
+  strokeWeightToPhosphorWeight,
+  type PhosphorComponent,
+  type LucideName,
+  type PhosphorWeight,
+} from "./icons/phosphor";
+export {
+  PHOSPHOR_NAME_MAP,
+  PHOSPHOR_WEIGHT,
+} from "./icons/phosphor-mapping";
+
