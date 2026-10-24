@@ -1048,7 +1048,6 @@ export function OnboardingView({
           onBack={() => {
             setForgotSubmitted(false);
             setForgotEmail("");
-            data.forgotPasswordTarget;
           }}
         />
       </AuthShell>
@@ -1109,7 +1108,7 @@ export function OnboardingView({
         isSubmitting={isSubmitting}
       >
         <div className="flex flex-col gap-2.5">
-          {(authTab === "signup" || true) && (
+          {(authTab === "signup" || authTab === "signin") && (
             <div className="flex flex-col gap-2">
               <OAuthProviderButton
                 provider="google"

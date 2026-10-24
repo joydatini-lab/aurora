@@ -202,7 +202,10 @@ export const OuvreMenu: Story = {
       const menu = await new Promise<HTMLElement>((resolve) => {
         const obs = new MutationObserver(() => {
           const m = document.querySelector('[role="menu"], [data-radix-context-menu-content]');
-          if (m) obs.disconnect(), resolve(m as HTMLElement);
+          if (m) {
+          obs.disconnect();
+          resolve(m as HTMLElement);
+        }
         });
         obs.observe(document.body, { childList: true, subtree: true });
       });
@@ -249,7 +252,10 @@ export const Accessible: Story = {
     const menu = await new Promise<HTMLElement>((resolve) => {
       const obs = new MutationObserver(() => {
         const m = document.querySelector('[role="menu"], [data-radix-context-menu-content]');
-        if (m) obs.disconnect(), resolve(m as HTMLElement);
+        if (m) {
+          obs.disconnect();
+          resolve(m as HTMLElement);
+        }
       });
       obs.observe(document.body, { childList: true, subtree: true });
     });

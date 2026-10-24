@@ -62,7 +62,7 @@ const TASK_VIEWS = [
   ['eisenhower', 'Quadrants'],
 ] as const;
 
-function taskFlags(refetch: () => void, online: boolean) {
+function useTaskFlags(refetch: () => void, online: boolean) {
   const killed = useKilledDetection(refetch);
   const flags: UxStateFlags = { offline: !online, killed, onRetry: refetch };
   return flags;
@@ -337,7 +337,7 @@ export function TasksPage() {
   const panelOpen = useUiStateStore((s) => s.panelOpen);
   const setPanelOpen = useUiStateStore((s) => s.setPanelOpen);
   const online = useOnlineStatus();
-  const flags = taskFlags(() => refetch(), online);
+  const flags = useTaskFlags(() => refetch(), online);
 
   /** C5.4 : le glissement horizontal REVOILE le panneau latéral caché
       (05 §3.6.15 l.1402-1411) — `useHorizontalSwiper` partagé (pointer-
@@ -517,7 +517,7 @@ export function TaskDetailPage() {
   const navigate = useNavigate();
   const { data: task, isPending, isError, refetch } = useTask(id);
   const online = useOnlineStatus();
-  const flags = taskFlags(() => refetch(), online);
+  const flags = useTaskFlags(() => refetch(), online);
 
   const detailState = isError
     ? ({ status: 'error', error: { code: 'task/not_found', message: 'Tâche introuvable' } as AppError } as const)

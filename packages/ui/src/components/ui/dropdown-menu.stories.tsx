@@ -87,7 +87,10 @@ export const OuvreReferme: Story = {
       const menu = await new Promise<HTMLElement>((resolve) => {
         const obs = new MutationObserver(() => {
           const m = body.querySelector('[role="menu"]');
-          if (m) obs.disconnect(), resolve(m as HTMLElement);
+          if (m) {
+          obs.disconnect();
+          resolve(m as HTMLElement);
+        }
         });
         obs.observe(body, { childList: true, subtree: true });
       });

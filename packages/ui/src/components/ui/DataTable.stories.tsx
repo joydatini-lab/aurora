@@ -40,7 +40,7 @@ const meta = {
 } satisfies Meta<never>;
 
 export default meta;
-type Story = StoryObj<any>;
+type Story = StoryObj;
 
 /**
  * Défaut : 3 lignes, 4 colonnes (2 textes + 2 mono). La colonne

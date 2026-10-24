@@ -123,7 +123,7 @@ function AudioPlayer({
       audio.removeEventListener("pause", onPauseHandler);
       audio.removeEventListener("ended", onEndedHandler);
     };
-  }, [src, volume, muted, playbackRate]);
+  }, [src, volume, muted, playbackRate, startPosition, onTimeUpdate, onPlay, onPause, onEnded]);
 
   const toggle = () => {
     const audio = audioRef.current;

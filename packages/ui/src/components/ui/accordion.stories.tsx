@@ -25,7 +25,7 @@ const meta = {
 } satisfies Meta<never>;
 
 export default meta;
-type Story = StoryObj<any>;
+type Story = StoryObj;
 
 /**
  * Défaut : accordéon simple (un item ouvert à la fois, pas de

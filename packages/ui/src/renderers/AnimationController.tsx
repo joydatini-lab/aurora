@@ -114,7 +114,7 @@ export function AnimationSlot({
 
   React.useEffect(() => {
     animate();
-  }, [key]);
+  }, [animate]);
 
   return (
     <motion.div

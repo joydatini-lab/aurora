@@ -21,7 +21,7 @@ const meta = {
 } satisfies Meta<never>;
 
 export default meta;
-type Story = StoryObj<any>;
+type Story = StoryObj;
 
 /**
  * WobbleCard : carte interactive (wobble sur le survol, GPU

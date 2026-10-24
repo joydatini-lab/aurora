@@ -21,10 +21,10 @@ import { Input } from "./input";
  * lire les schémas v4). Convertit l'objet d'erreurs zod (par message de
  * champ) en le format attendu par react-hook-form.
  */
-function zodResolverV4<T extends Record<string, any>>(
+function zodResolverV4<T extends Record<string, unknown>>(
   schema: z.ZodType<T>,
-): import("react-hook-form").Resolver<T, any, T> {
-  const resolver: import("react-hook-form").Resolver<T, any, T> = async (
+): import("react-hook-form").Resolver<T> {
+  const resolver: import("react-hook-form").Resolver<T> = async (
     values: T,
   ): Promise<import("react-hook-form").ResolverResult<T, T>> => {
     const result = await schema.safeParseAsync(values);
@@ -66,7 +66,7 @@ const meta = {
 } satisfies Meta<never>;
 
 export default meta;
-type Story = StoryObj<any>;
+type Story = StoryObj;
 
 /**
  * Défaut : un formulaire contrôlé (react-hook-form) validé par zod.

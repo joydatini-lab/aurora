@@ -67,8 +67,8 @@ function EventCard({
   const end = data.end ? new Date(data.end) : null;
   const timeFmt = start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
   const endTimeFmt = end?.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-  /* const sameDay = */
-    end && start.toDateString() === end.toDateString();
+  // (l'ancien calcul `sameDay` etait une expression non assignee —
+  //  no-unused-expressions. Le label d'heure ci-dessous porte l'info.)
 
   const hourLabel = end
     ? `${timeFmt} – ${endTimeFmt}`

@@ -44,7 +44,7 @@ const meta = {
 } satisfies Meta<never>;
 
 export default meta;
-type Story = StoryObj<any>;
+type Story = StoryObj;
 
 /**
  * Défaut : 3 lignes, 3 colonnes (dont une `progress`). La virtualisation

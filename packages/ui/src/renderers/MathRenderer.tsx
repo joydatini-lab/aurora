@@ -52,7 +52,7 @@ export function MathRenderer({
       });
       return { ok: false as const };
     }
-  }, [latex, displayMode]);
+  }, [latex, displayMode, onError]);
 
   if (!rendered.ok) {
     // AD-8 degraded state: the raw source, styled (JetBrains Mono,

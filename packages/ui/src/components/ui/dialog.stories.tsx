@@ -132,7 +132,10 @@ export const OuvertFerme: Story = {
       const dialog = await new Promise<HTMLElement>((resolve) => {
         const obs = new MutationObserver(() => {
           const d = body.querySelector('[role="dialog"]');
-          if (d) obs.disconnect(), resolve(d as HTMLElement);
+          if (d) {
+          obs.disconnect();
+          resolve(d as HTMLElement);
+        }
         });
         obs.observe(body, { childList: true, subtree: true });
       });

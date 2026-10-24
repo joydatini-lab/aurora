@@ -1,21 +1,23 @@
-// @ts-nocheck — combobox: issue Radix PopoverProps/children
+/* Radix `PopoverPrimitive.Root` ne declare pas de prop `ref` dans ses
+   types, alors que `React.forwardRef` en fournit une : l'incompatibilite
+   est localisee a ce seul composant (les autres sous-composants du
+   fichier sont typés normalement). */
 import * as React from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
 import { Command as CommandPrimitive } from "cmdk"
 
 import { cn } from "../../lib/utils"
 
-const Combobox = React.forwardRef<
-  React.ElementRef<typeof PopoverPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Root>
->(function Combobox({ children, ...props }, ref) {
-  return (
-    <PopoverPrimitive.Root ref={ref} {...props}>
-      {children}
-    </PopoverPrimitive.Root>
-  )
-})
-Combobox.displayName = "Combobox"
+type ComboboxProps = React.ComponentPropsWithoutRef<
+  typeof PopoverPrimitive.Root
+>
+
+/* `PopoverPrimitive.Root` ne propage pas de ref : la racine n'est pas un
+   noeud DOM. On rend une fonction simple (le forwardRef precedent ne
+   servait a rien et ne compilait qu'avec le @ts-nocheck retire). */
+function Combobox({ children, ...props }: ComboboxProps) {
+  return <PopoverPrimitive.Root {...props}>{children}</PopoverPrimitive.Root>
+}
 
 const ComboboxTrigger = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Trigger>,

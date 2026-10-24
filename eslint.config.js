@@ -1,5 +1,6 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import storybook from "eslint-plugin-storybook";
+import reactHooks from "eslint-plugin-react-hooks";
 
 /**
  * Aurora ESLint 9 flat config — boundary rules.
@@ -66,10 +67,40 @@ const AD10_ENGINES = [
   'motion',
 ];
 
-export default tseslint.config(// 1. Base: recommended JS rules.
+/**
+ * Code VENDORED (installé par un registre, pas écrit par Aurora) — exclu du
+ * lint, comme `node_modules`. Justification : ce sont des sources tierces
+ * réinstallables (`npx shadcn`, MCP ReUI, registre assistant-ui) ; les linter
+ * revient à maintenir un fork qu'on ne possède pas.
+ *   - components/reui/**         : ReUI (installé via le MCP ReUI)
+ *   - components/assistant-ui/** : registre assistant-ui
+ *   - components/examples/**     : exemples ReUI (c-kanban-*)
+ * `components/ui/**` (base shadcn + composants Aurora) N'EST PAS exclu.
+ */
+const VENDORED_IGNORES = [
+  'packages/ui/src/components/reui/**',
+  'packages/ui/src/components/assistant-ui/**',
+  'packages/ui/src/components/examples/**',
+];
+
+export default tseslint.config(
+// 0. Code vendored — jamais linté (cf. VENDORED_IGNORES).
+{ ignores: VENDORED_IGNORES }, // 1. Base: recommended JS rules.
 js.configs.recommended, // 2. TypeScript: parser + recommended (non type-checked, no project setup needed).
 ...tseslint.configs.recommended, // Skeleton: allow unused vars during wave 0 (tsconfig noUnusedLocals covers it
 // at typecheck time). We don't want a flood of style noise on stub packages.
+{
+  plugins: {
+    'react-hooks': reactHooks,
+  },
+  rules: {
+    // Les règles react-hooks DOIVENT être déclarées : les sources portent des
+    // directives `eslint-disable-next-line react-hooks/exhaustive-deps`, et une
+    // directive pointant une règle inconnue est elle-même une ERREUR.
+    'react-hooks/rules-of-hooks': 'error',
+    'react-hooks/exhaustive-deps': 'warn',
+  },
+}, // 1b. Règles de base (skeleton wave 0).
 {
   rules: {
     '@typescript-eslint/no-unused-vars': 'off',
@@ -159,16 +190,23 @@ js.configs.recommended, // 2. TypeScript: parser + recommended (non type-checked
     ],
   },
 }, // ============================================================
-// packages/{domain,ui} + apps/mobile —
+// packages/domain + apps/mobile —
 //   ban vendor SDKs + AD-10 engines (AD-1, AD-10)
 // NOTE: packages/agent is EXEMPT for the Vercel AI SDK layer
 //   (`ai`, `@ai-sdk/*`) per AD-1 wave 3 (ORACLE) — it is the
 //   designated model layer. Agent still bans all OTHER vendors
 //   + AD-10 engines (handled by the agent-only block below).
+// NOTE (bug corrige) : `packages/ui` a ete RETIRE de ce bloc. AD-10
+//   dit « the 5 frozen viz engines are restricted TO packages/ui » —
+//   les bannir DANS ui contredisait l'invariant (ui est leur seul
+//   proprietaire legitime). Consequence visible : `src/index.ts`
+//   (le barrel) etait en echec pour avoir re-exporte son propre
+//   `./motion`. ui reste verrouille par le bloc dedie ci-dessus
+//   (AD-6 : jamais @aurora/data ni @aurora/platform).
 // ============================================================
 {
   files: [
-    'packages/{domain,ui}/**/*.ts',
+    'packages/domain/**/*.ts',
     'apps/mobile/**/*.ts',
   ],
   rules: {
