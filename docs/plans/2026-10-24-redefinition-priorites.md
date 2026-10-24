@@ -48,7 +48,7 @@ lot ajoute de la surface au lieu de réduire l'écart.
 | `docs/architecture/status-register.md` | ✅ **LIVRÉ** (`bfaa298`, §10.2 items 1–3) |
 | `docs/architecture/navigation-mapping.md` | ✅ **LIVRÉ** (`bab32df`, item 10) |
 | `docs/architecture/design-space-integration.md` | ✅ **LIVRÉ** (item 11) |
-| **`docs/adr/ADR-INT-002-web-first.md`** | ❌ **ABSENT** (remplacé par `adr-018`, non renommé) |
+| `docs/adr/ADR-INT-002-web-first.md` | ✅ **LIVRÉ** — **pointeur** vers `adr-018` (la décision, ACTÉE, reste unique ; pas de duplication) |
 | **POC PowerSync Web bout-en-bout** | ❌ **NON EXÉCUTÉ** (item 8) — *partiellement désamorcé* : voir note |
 | **POC outils Design Space** | ❌ **NON EXÉCUTÉ** (item 9) — dépend d'OQ-8 |
 | **Migration de données** | ❌ **NON DÉFINIE** (item 12) |
