@@ -169,9 +169,11 @@ jobs:
       - name: "RLS penetration (static, 01 S2.2 / S7)"
         if: ${{ hashFiles('scripts/check-rls.sh') != '' }}
         run: sh scripts/check-rls.sh
-        # TODO(wave1): run against live Supabase — le gate static ne couvre
-        # que le shape des policies ; le test live (user A ne lit pas user B)
-        # sera branche sur la DB dev, avec les secrets GitHub (cf secrets-checklist).
+        # Ce gate est STATIQUE (il lit les migrations). La preuve live
+        # d'isolation (user A ne lit pas user B, sur CHAQUE table) est
+        # scripts/rls-live-check.sh — reproductible SANS credential, via
+        # Docker + supabase/postgres. Non branchee en CI pour l'instant :
+        # elle demande un runner avec Docker (~2 min de pull d'image).
 
       - name: "No cross-module JOIN (03 S5.4 / F-03)"
         if: ${{ hashFiles('scripts/check-view-joins.ts') != '' }}

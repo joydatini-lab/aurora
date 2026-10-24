@@ -165,3 +165,40 @@ sh scripts/check-rls.sh
 node --experimental-strip-types --no-warnings scripts/check-view-joins.ts
 node --experimental-strip-types --no-warnings tests/spine/spine.test.ts
 ```
+
+### 5.1 Vérification **live** de la base et de la RLS (2026-10-24)
+
+Le gate ci-dessus est **statique** : `check-rls.sh` lit le texte des migrations.
+Il prouve la *forme* des policies, pas qu'elles **isolent réellement** deux
+utilisateurs. Deux vérifications live ont été ajoutées, exécutables **sans
+credential** (Docker uniquement) :
+
+```sh
+sh scripts/rls-live-check.sh      # RLS live : 2 users + contrôle négatif
+```
+
+Ce que `scripts/rls-live-check.sh` fait, et pourquoi c'est probant :
+
+1. démarre `supabase/postgres:15.8.1.085` (mêmes schémas `auth`/`cron`/`vault`
+   et extensions `vector`/`pg_cron` que le projet live) ;
+2. applique **les 28 migrations dans l'ordre** — une migration qui ne
+   s'applique pas fait échouer le script ;
+3. crée **deux** `auth.users` (A et B) ;
+4. exécute `tests/rls-penetration.sql` : pour **chaque** table publique portant
+   `user_id`, une ligne possédée par B doit être invisible **et** intouchable
+   (SELECT/UPDATE/DELETE) par A. Toute fuite lève une exception ;
+5. **contrôle négatif** : désactive la RLS sur `tasks` et **exige** que le test
+   échoue. Un test qui ne peut pas échouer ne prouve rien.
+
+**Résultat 2026-10-24 :** 28/28 migrations appliquées, **58 tables** contrôlées,
+**41** amorcées, **0 pénétration** ; contrôle négatif déclenché comme attendu.
+Les 17 tables non amorcées le sont pour une raison **structurelle** (FK ou CHECK
+qu'un générateur ne peut pas inventer), pas par échec de policy — la raison de
+chaque saut est imprimée en `NOTICE`.
+
+> **Ce que ce script a révélé.** Avant lui, `tests/rls-penetration.sql` **n'avait
+> jamais été exécuté** : il portait une liste figée de 49 tables et supposait une
+> colonne `id` partout. Les deux étaient faux (73 tables portent `user_id` ; 4 de
+> la liste n'ont pas d'`id`). Il échouait donc dès la première table. Corrigé :
+> le test **découvre** désormais les tables depuis le catalogue et ne peut plus
+> dériver.

@@ -155,6 +155,25 @@ périmètre Design Space). Les **preuves d'exécution** n'existent pas : les 2 P
 (§10.2 items 8–9) n'ont jamais tourné, la migration de données (item 12) n'est pas
 définie, et ce registre est le premier livrable de la porte de sortie à voir le jour.
 
+> **Mise à jour 2026-10-24 — l'écart C3 se réduit par la preuve, pas par la décision.**
+> La **vérification live de la base** est désormais **exécutée et verte** :
+> `sh scripts/rls-live-check.sh` applique les **28 migrations** sur
+> `supabase/postgres:15.8.1.085` et contrôle l'isolation RLS de deux utilisateurs
+> réels sur **58 tables** (41 amorcées, **0 pénétration**), avec un **contrôle
+> négatif** qui exige l'échec quand une policy est retirée. Détail : `docs/ci/gate.md` §5.1.
+>
+> **Deux défauts réels ont été trouvés par cette exécution** — ils étaient
+> **invisibles au gate statique**, qui ne fait que lire les migrations :
+> 1. `supabase/migrations/0019_user_skills.sql` — **19 valeurs de colonne en
+>    guillemets doubles** (syntaxe SQL invalide) + **1 apostrophe non échappée**
+>    dans un tableau JSON. La migration ne s'appliquait pas.
+> 2. `supabase/migrations/0025_discovery_vault.sql` — **1 apostrophe non
+>    échappée** dans un `COMMENT`. Idem.
+> 3. `tests/rls-penetration.sql` — liste de tables figée et colonne `id`
+>    supposée partout ; **le test n'avait jamais tourné** et échouait d'emblée.
+> Les trois sont corrigés. **Leçon :** un gate qui n'exécute rien ne peut pas
+> distinguer une migration qui s'applique d'une migration qui ne s'applique pas.
+
 ---
 
 ## 7. Dette et doc-lag (signalés, non réécrits — `AI_RULES.md` §2)
