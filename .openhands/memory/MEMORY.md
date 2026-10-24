@@ -137,30 +137,24 @@ Plans: `docs/plans/2026-10-23-repriorisation.md`, `docs/plans/2026-10-24-phase0-
 `git remote set-url origin "https://${GITHUB_TOKEN}@github.com/joydatini-lab/aurora.git"` then
 push. (gh CLI is unauthenticated; use curl against api.github.com.)
 
-## CI gate: the trap that hid 100+ "errors" (2026-10-24, commit b2d7040)
-- **`eslint-plugin-react-hooks` was never installed**, yet ~31 `react-hooks/*` "errors" appeared.
-  They were NOT violations: ESLint reports *"Definition for rule 'react-hooks/x' was not found"*
-  for every `eslint-disable-next-line react-hooks/...` directive whose rule is unresolvable.
-  Lesson: an unresolvable-rule error means the PLUGIN is missing, not that the code is bad.
-  `eslint --print-config <file>` is the authoritative check (`plugins` list / rules present).
+## CI gate: the trap that hid 100+ "errors" (2026-10-24, b2d7040)
+- **A `react-hooks/*` error can mean the PLUGIN is missing, not that the code is bad.** ESLint
+  reports *"Definition for rule 'react-hooks/x' was not found"* for every
+  `eslint-disable-next-line react-hooks/...` directive whose rule is unresolvable. 26 of ~31
+  "violations" were this. `eslint --print-config <file>` is the authoritative check: it lists the
+  actually-loaded plugins/rules.
 - **`packages/ui` was in its own AD-10 ban block** (the engines are *restricted TO* ui), so the
-  barrel `src/index.ts` failed for re-exporting `./motion`. Read AD text literally before
-  encoding it in lint globs.
-- **Vendored vs Aurora**: `packages/ui/src/components/{reui,assistant-ui,examples}/**` are
-  registry-installed third-party code (ReUI via MCP, assistant-ui registry, ReUI examples).
-  Treat them like `node_modules` (ignore block), NOT like Aurora sources. `components/ui/**`
-  IS Aurora (shadcn base + local components) and stays linted.
-- **CRLF trap**: editing CRLF files with Python `open(w)` silently rewrites them to LF, turning a
-  1-line fix into a 200-line diff. 4 files affected (eslint.config.js, 2 stories, tsconfig.base).
-  Check with `git diff --stat -w`; restore via `b.replace(b'\r\n',b'\n').replace(b'\n',b'\r\n')`.
-- **`build:web` OOMs** with the default Node heap (17050 modules, SIGABRT / exit 134 at chunk
-  render). Not a code bug: re-run with `NODE_OPTIONS=--max-old-space-size=8192`.
-- **`check-boundaries.sh G2` false-positived** on `sk-[A-Za-z0-9]{8,}`, matching skill IDs
-  (`sk-capacite-portante`) + skeleton CSS (`sk-progress`) — 20 hits, 0 real secret. Threshold is
-  now `{20,}`. `code_files()` only scans `git ls-files`, so untracked probe files never trigger it.
-- **`check-view-joins.ts` must run via `node --experimental-strip-types`** (as CI does); `pnpm exec
-  tsx` fails ("Command tsx not found" — tsx is not a workspace dep).
-- Gate baseline after b2d7040: typecheck 0 · lint 0 (0 err/0 warn) · test **661/661** · build 0 ·
-  boundaries G1–G4 OK · RLS OK (28 files) · view-joins OK (88 sql) · spine OK.
-- CI `continue-on-error` is tied to `!exists('packages/domain/package.json')` — since that EXISTS,
-  **every gate step is now blocking**. Don't assume a red gate is "just wave 0 noise".
+  barrel `src/index.ts` failed for re-exporting `./motion`. Read an AD literally before encoding it
+  in lint globs.
+- **Vendored != Aurora**: `packages/ui/src/components/{reui,assistant-ui,examples}/**` is
+  registry-installed third-party code (ReUI MCP, assistant-ui registry). Treat like `node_modules`
+  (ignore block). `components/ui/**` IS Aurora (shadcn base + local) and stays linted.
+- **CRLF trap**: editing a CRLF file with Python `open(w)` silently rewrites it to LF, turning a
+  1-line fix into a 200-line diff. Check `git diff --stat -w`; restore with
+  `b.replace(b'\r\n',b'\n').replace(b'\n',b'\r\n')`.
+- `build:web` OOMs on the default heap (SIGABRT/exit 134 at chunk render) — use
+  `NODE_OPTIONS=--max-old-space-size=8192`. `check-view-joins.ts` needs
+  `node --experimental-strip-types`; `pnpm exec tsx` fails (tsx is not a workspace dep).
+- `check-boundaries.sh G2` false-positived on `sk-[A-Za-z0-9]{8,}` (skill IDs, skeleton CSS);
+  threshold is now `{20,}`. `code_files()` scans only `git ls-files` (untracked files never match).
+- Root causes + full evidence: `.openhands/memory/2026-10-24.md`.
