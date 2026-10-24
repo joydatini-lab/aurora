@@ -54,50 +54,37 @@ Docs SSoT: `docs/` (agent, mobile, design-system, integration). Repo conventions
 - `packages/ui` tests use a local `test/render.ts` (React 18 `act` + createRoot), not RTL.
 
 ## LibreChat — DISPROVEN (do not resurrect)
-- The whole "LibreChat integration" story (branch `integration/librechat`, `docs/integration/`,
-  ADR-INT-001, milestones M1→M5.2, SHA e8f3be08…) was **FALSE**. `GET .../git/ref/heads/
-  integration%2Flibrechat` → **404**; `docs/integration/` **does not exist**; `docs/plans/
-  2026-10-23-repriorisation.md` documents the refutation. Owner decision 2026-10-24:
-  **LibreChat abandoned**, LobeHub = design reference (see Phase 0 section).
+- The "LibreChat integration" story (branch `integration/librechat`, `docs/integration/`,
+  ADR-INT-001, M1→M5.2, SHA e8f3be08…) was **FALSE**: the branch is a **404** and
+  `docs/integration/` does not exist. Owner decision: **LibreChat abandoned**, LobeHub = design
+  reference only. Refutation: `docs/plans/2026-10-23-repriorisation.md`.
+
 ## Phase 0 rebaselining (2026-10-24, branch `rebaseline/2026-10-23`)
-- Owner decisions: **web-first → desktop → mobile** (adr-extract §23 "mobile-only" is
-  SUPERSEDED); **LibreChat abandoned**; **LobeHub = design reference only**; `packages/ui`
-  KEPT (screens rebuilt on top); Ionic kept; backend NOT refactored this phase.
+- Owner decisions: **web-first → desktop → mobile** (adr-extract §23 "mobile-only" SUPERSEDED);
+  **LibreChat abandoned**; **LobeHub = design reference only**; `packages/ui` KEPT; Ionic kept.
 - **AD-13 in the spine = "Contract Packs gate parallel work"** — NOT mobile-only. The
-  "Phase 1 mobile-only" text is in `adr-extract.md` §23 (l.649). Never conflate them.
-- Deliverables: `docs/ci/gate.md` · `docs/architecture/adr-018-direction-plateforme-web-first.md`
-  · `docs/frontend/{ui-brick-inventory,web-shell-and-responsive,spec-template-v1}.md`
-  (+ pilot §15–§20 in `docs/design-system/screens/taches-liste.md`). Per-lot detail in the
-  daily log `.openhands/memory/2026-10-24.md`.
-- **Licences (verified at source 2026-10-24)**: LobeHub = "LobeHub Community License"
-  (Apache-2.0 **+ cond. 1b**: a commercial licence is REQUIRED to develop and distribute a
-  derivative work) despite its `package.json` saying `MIT` — the LICENSE file prevails.
-  LibreChat `LICENSE` = MIT (package.json says ISC). => NEVER copy LobeHub code/assets.
-- **UI**: `packages/ui` = ~272 component files; `src/index.ts` has 190 export LINES (175
-  `export … from` statements, 956 named exports) — the barrel re-exports nearly everything. `composites/` 34 with **11 having no
-  story**; `assistant-ui/elements/` 138 **never wired into any app** (brick reserve only).
-- **Screens**: 51 `.md` − 7 transverse = **44 screens** (matches ratified "44 docs / 54 slugs").
-- **No responsive system**: `packages/ui/tailwind.config.ts` defines NO `screens` breakpoints.
-- **OWNER RATIFIED 2026-10-24**: OQ-1 **Ionic = MOBILE ONLY** (web+desktop = React +
-  shadcn/ReUI, no `ion-*`) · OQ-2 **Electron confirmed, Tauri rejected** · OQ-3 scope =
-  **the 44 screens PLUS the new-feature screens** (Design Space Pro etc.) · OQ-4/OQ-6
-  **DECIDED by the agent on owner delegation ("fais ce qui est judicieux")**: responsive =
-  **5 breakpoints (Tailwind defaults: base/sm/md/lg/xl/2xl) × 8 screen gabarits**
-  (dashboard, list+detail, calendar, editor, flow, guided-session, form, special) × 7
-  contracts C1–C7 from reference §4.3; `lg`=1024px = the structural 1→2 panel threshold;
-  8 layout tokens (`aurora.layout.*`). OQ-10 **ratified**: create `apps/web-app` (React);
-  `apps/mobile` (Ionic) kept. Lot plan W0–W10 in `web-shell-and-responsive.md` §6. Because the Ionic choice contradicts reference **D-06**
-  (§8.7.1/§8.7.3: "Ionic React = the Web responsive business app"), the reference itself
-  (§10.2 item 6) demands a **motivating ADR** — written in `adr-018` §7.
-- **DESIGN SPACE PRO IS ENTIRELY MISSING from the repo** though it is a FIRST-VERSION module
-  (reference D-03, §6, Phase 1B §10.4): no package, no catalog row, no screen, no SQL table,
-  no route. Classified **MISSING**; it is the biggest vision↔repo gap. Scope doc:
-  `docs/frontend/design-space-scope.md` (~13 screens proposed → **44 + 13 ≈ 57**).
+  "Phase 1 mobile-only" text lives in `adr-extract.md` §23 (l.649). Never conflate them.
+- **OWNER RATIFIED**: Ionic = MOBILE ONLY (web+desktop = React + shadcn/ReUI, no `ion-*`) ·
+  Electron confirmed, Tauri rejected · scope = the 44 screens PLUS new-feature screens
+  (Design Space Pro etc.) · responsive = 5 Tailwind breakpoints × 8 gabarits × 7 contracts
+  C1–C7, `lg`=1024px is the structural 1→2 panel threshold · create `apps/web-app` (React),
+  keep `apps/mobile`. The Ionic choice contradicts reference **D-06**, so the reference itself
+  (§10.2 item 6) demands a motivating ADR — written in `adr-018` §7.
+- **DESIGN SPACE PRO IS ENTIRELY MISSING** though it is a first-version module (D-03, §6, §10.4):
+  no package, catalog row, screen, SQL table or route. The biggest vision↔repo gap. Scope:
+  `docs/frontend/design-space-scope.md` (→ 44 + ~13 ≈ 57 screens).
+- **Licences (verified at source)**: LobeHub = "LobeHub Community License" (Apache-2.0 **+ cond.
+  1b**: a commercial licence is REQUIRED to distribute a derivative) despite `package.json`
+  saying `MIT` — the LICENSE file prevails. LibreChat = MIT. => NEVER copy LobeHub code/assets.
+- `packages/ui` = ~272 component files; `src/index.ts` has 190 export LINES (175 `export … from`,
+  956 named exports). `assistant-ui/elements/` 138 files **never wired into any app** (brick
+  reserve). **No responsive system**: `packages/ui/tailwind.config.ts` has NO `screens`.
 - Reference §7.2 forbids new root entities before audit → a logo/poster/document = an existing
-  **`Artifact`** (`entities-artifact.ts` l.10); `Project`/`Goal`/`GoalProject` already exist.
-- Reference §4.2 proposes **9 web nav entries** (incl. **"Créer"** → Design Space Pro);
-  §4.3 imposes responsive CONTRACTS (collapsible panels, keyboard, resume after refresh,
-  non-blocking long jobs) — requirements, not proposals.
+  **`Artifact`**; `Project`/`Goal`/`GoalProject` already exist. §4.3 responsive CONTRACTS are
+  requirements, not proposals.
+- Deliverables: `docs/ci/gate.md` · `adr-018-direction-plateforme-web-first.md` ·
+  `docs/frontend/{ui-brick-inventory,web-shell-and-responsive,spec-template-v1}.md` ·
+  plans `2026-10-23-repriorisation.md`, `2026-10-24-phase0-rebaseline.md`.
 - Per-lot detail: `.openhands/memory/2026-10-24.md`.
 
 ## Sandbox facts (this environment)
@@ -113,24 +100,19 @@ Docs SSoT: `docs/` (agent, mobile, design-system, integration). Repo conventions
   every imported package's module-load side effects. Full detail: `.openhands/memory/2026-10-24.md`.
 
 ## agent-server file upload (422 "path must be inside the conversation workspace")
-- agent-server at `127.0.0.1:60000`; session key from its own env:
-  `tr '\0' '\n' < /proc/38/environ | grep '^SESSION_API_KEY='` (never echo it).
-- Scoped `POST /api/conversations/{cid}/file/upload` **rejects any path outside the
-  conversation workspace root**; unscoped `POST /api/file/upload` does not. So the 422 means the
-  CLIENT sent a relative or out-of-workspace path — **not an Aurora bug**. Reproductions and full
-  detail: `.openhands/memory/2026-10-24.md`.
-- `.agents_tmp/PLAN.md` at the workspace root is a *planning conversation's* artifact (another
+- Scoped `POST /api/conversations/{cid}/file/upload` rejects any path outside the conversation
+  workspace root; unscoped `POST /api/file/upload` does not. A 422 means the CLIENT sent a
+  relative/out-of-workspace path — **not an Aurora bug**. Session key from `/proc/<pid>/environ`
+  (`SESSION_API_KEY`, never echo). Detail: `.openhands/memory/2026-10-24.md`.
+- `.agents_tmp/PLAN.md` at the workspace root belongs to a *planning conversation* (another
   conversation shares `/workspace/project`). Leave it alone; don't commit it.
 
 ## Owner documents (uploaded 2026-10-24, commit 07d70a6 on main)
-5 files at repo ROOT: `Aurora-Reference-Produit-Fonctionnelle-v1.1.md` (1622 l, THE master
-product reference), `LOGO.md`, `AFFICHE.md`, `VIDEO.md`, `deep-research-report.md`.
-They SUPERSEDE the LibreChat brief (grep librechat/open-webui/assistant-ui = 0 hits).
-Decisions D-01…D-08 (§13.1): all prior modules KEPT; **Design Space Pro** = 1st creative
-extension; **Web responsive → Desktop → Mobile**; Ionic React KEPT; Next.js for the public
-site only (`apps/marketing`); TanStack per-responsibility. §10.2 = **Phase 0 rebaselining**
-is the explicit prerequisite (12 tasks). Detail: `.openhands/memory/2026-10-24.md`.
-Plans: `docs/plans/2026-10-23-repriorisation.md`, `docs/plans/2026-10-24-phase0-rebaseline.md`.
+5 files at repo ROOT: `Aurora-Reference-Produit-Fonctionnelle-v1.1.md` (1622 l, THE master product
+reference), `LOGO.md`, `AFFICHE.md`, `VIDEO.md`, `deep-research-report.md`. They SUPERSEDE the
+LibreChat brief. Decisions D-01…D-08 (§13.1): all prior modules KEPT; **Design Space Pro** = 1st
+creative extension; **Web responsive → Desktop → Mobile**; Next.js for the public site only
+(`apps/marketing`); TanStack per-responsibility. Detail: `.openhands/memory/2026-10-24.md`.
 
 ## Pushing from this sandbox
 `git push` with a tokenless https remote prompts for a username and HANGS. Fix:
