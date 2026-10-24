@@ -213,13 +213,48 @@ Tailwind, jamais des valeurs en dur dans un composant (`docs/design-system/overv
 
 ---
 
-## 7. Questions ouvertes (bloquantes)
+## 7. Questions ouvertes — **ratifiées par le owner le 2026-10-24**
 
-| # | Question | Bloque | Statut |
+| # | Question | **Décision owner** | Impact sur ce document |
 |---|---|---|---|
-| **OQ-1** | Ionic = shell 3 cibles, ou mobile seulement ? | W1 | **recommandation B**, à ratifier |
-| **OQ-4** | Seuil de bascule 2 panneaux = `lg` (1024 px) ? | W2 | proposition |
-| **OQ-5** | ~~Décompte normatif des écrans~~ | — | ✅ **FERMÉE** : 51 fichiers − 7 transverses = **44 écrans**, conforme à `impl-plan.md` OQ-1 |
-| **OQ-6** | Les tokens de layout proposés (§5) sont-ils validés ? | W0 | proposition |
-| **OQ-2** | Desktop = Electron confirmé (vs Tauri/PWA) ? | W8 | ADR-018 §6 |
-| **OQ-3** | Périmètre de la 1ʳᵉ livraison web (sous-ensemble ?) | plan de lots | ADR-018 §6 |
+| **OQ-1** | Ionic = shell 3 cibles, ou mobile seulement ? | ✅ **Ionic = MOBILE SEULEMENT.** Web + desktop = **React** (React Router + shadcn/ReUI purs) | §3.2 résolu : **option B retenue**. Le shell web (§3.1) est du **React pur, sans `ion-*`**. Motivation formelle de l'écart à D-06 : `adr-018` §7. |
+| **OQ-2** | Desktop : Electron / Tauri / PWA ? | ✅ **Electron confirmé. Tauri écarté.** | Lot W8 = Electron (spike `apps/desktop`). |
+| **OQ-3** | Périmètre de la 1ʳᵉ livraison web ? | ✅ **Les 44 écrans + les écrans des features nouvelles** (Design Space Pro, documents, charte…) | §4 : le périmètre **dépasse 44**. Voir `docs/frontend/design-space-scope.md` (~13 écrans proposés). |
+| **OQ-4** | Seuil de bascule 2 panneaux = `lg` (1024 px) ? | ⏳ **proposition, à ratifier** | §2 : la référence §4.3 impose des **contrats** responsive mais pas de valeur. `lg` reste proposé. |
+| **OQ-5** | Décompte normatif des écrans | ✅ **FERMÉE** : 51 fichiers − 7 transverses = **44 écrans** | conforme à `impl-plan.md` OQ-1 |
+| **OQ-6** | Tokens de layout (§5) validés ? | ⏳ proposition | lot W0 |
+
+### 7.1 Contrats responsive imposés par la référence produit (§4.3)
+
+À intégrer au lot W2 (ce ne sont plus des propositions mais des **exigences**) :
+
+- navigation compacte quand la largeur diminue ;
+- panneaux de contexte et d'inspection **repliables** ;
+- contrôles d'édition utilisables **au clavier et au pointeur** ;
+- tableaux transformés en vues adaptées **sans supprimer les actions** ;
+- sauvegarde d'état et **reprise après rafraîchissement** ;
+- confirmation visible des **sauvegardes et des exports** ;
+- travaux longs **hors du cycle bloquant** de l'interface.
+
+### 7.2 Impact de Design Space Pro sur le shell
+
+Les écrans de Design Space Pro sont des **grandes surfaces de travail**
+(référence §4.3). Ils imposent au shell :
+- un gabarit **« Éditeur »** (plein écran dès `lg`) ;
+- des **panneaux repliables** (calques, inspecteur, validateur) ;
+- une **navigation compacte** qui ne mange pas la toile.
+
+→ le lot **W3** (« Liste + détail ») doit être **précédé** d'un lot **« Éditeur »**,
+ou les deux menés ensemble. À intégrer au plan de lots.
+
+### 7.3 Référence : structure de navigation web proposée (§4.2)
+
+La référence propose **9 entrées** (non normatives : « le nom final, la barre
+latérale, le regroupement éventuel … doivent être testés sur des tâches réelles ») :
+
+**A.** Accueil personnalisé · **B.** Projets / Workspaces · **C. Créer** (→ Design
+Space Pro) · **D.** Apprendre · **E.** Découvrir · **F.** S'organiser ·
+**G.** Connaissances · **H.** Bibliothèque / Artefacts · **I.** Paramètres.
+
+À confronter au shell §3.1 (le panneau latéral actuel n'a pas d'entrée
+« **Créer** » — c'est l'ajout structurel le plus visible de Design Space Pro).
