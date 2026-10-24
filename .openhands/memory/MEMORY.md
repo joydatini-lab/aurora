@@ -102,6 +102,16 @@ Detail, evidence and per-lot narratives live in the daily logs (`.openhands/memo
   skeleton CSS); threshold is now `{20,}`. `code_files()` scans only `git ls-files`.
 - Root causes + full evidence: `.openhands/memory/2026-10-24.md`.
 
+## v1 scope register (2026-10-24)
+- `docs/architecture/scope-register-v1.md` — owner ratified families A–L in v1
+  (M = roadmap). Key finding: `OWNER_MODULE_BY_ENTITY` (packages/data/src/commands.ts:180)
+  names knowledge/artifact/identity as owners and **none has a package** (10+2+1
+  tables exist). Workstreams: T1 dispatcher → T2 packages/knowledge →
+  T3 packages/artifact → T4 Design Space Pro.
+- Eisenhower HAS a screen (`/tasks` view "Quadrants", pages/tasks/index.tsx:62).
+  OCR is only a JobKind (domain/jobs.ts:13), no provider. Knowledge = 10 tables.
+- Long markdown heredocs with code fences can FAIL SILENTLY — use file_editor.
+
 ## Live DB / RLS verification (2026-10-24)
 - The gate is STATIC (reads migrations). `scripts/rls-live-check.sh` applies all 28
   on supabase/postgres (Docker, no credentials) + runs `tests/rls-penetration.sql`
