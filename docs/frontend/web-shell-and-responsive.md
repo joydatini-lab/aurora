@@ -27,26 +27,80 @@ D-018.1. C'est le principal écart bloquant pour une livraison web.
 
 ---
 
-## 2. Breakpoints normatifs (proposition à ratifier)
+## 2. Système responsive — **DÉCISION** (OQ-4 tranchée le 2026-10-24)
 
-Alignés sur les défauts Tailwind pour éviter d'inventer une échelle (principe
-« tokens-only », `docs/design-system/overview.md` §2) :
+### 2.1 Principe directeur
 
-| Nom | Min-width | Cible | Layout |
-|---|---|---|---|
-| *(base)* | 0 | mobile | 1 colonne, tab bar basse |
-| `sm` | 640 px | grand mobile | 1 colonne |
-| `md` | 768 px | tablette | 1 colonne + navigation latérale repliable |
-| `lg` | 1024 px | **seuil desktop** | **2 panneaux** |
-| `xl` | 1280 px | desktop large | 2 panneaux + panneau latéral 3ᵉ optionnel |
-| `2xl` | 1536 px | très large | largeur de contenu plafonnée |
+> **Le palier de largeur décide du *mode* ; le gabarit de l'écran décide de
+> l'*arrangement*. Les deux sont indépendants.**
 
-**Règle de bascule (OQ-4)** : le passage **1 colonne → 2 panneaux** se fait à
-**`lg` (1024 px)**. C'est le seuil où la somme « sidebar (≥ 240 px) + contenu
-lisible (≥ 640 px) » tient sans compression.
+Un écran ne code pas « si desktop alors… ». Il déclare **son gabarit**, et le
+shell applique l'arrangement du gabarit pour le mode courant. C'est ce qui couvre
+**tous les cas** sans multiplier les cas particuliers.
 
-> ⚠️ **OQ-4 ouverte** : ce seuil est une **proposition**, pas une décision
-> ratifiée. Il doit être validé par le owner avant implémentation.
+### 2.2 Les 5 paliers de largeur (échelle = défauts Tailwind, jamais de valeurs inventées)
+
+| Palier | min-width | **Mode** | Navigation | Panneaux | Gouttière |
+|---|---|---|---|---|---|
+| *(base)* | 0 | `phone` | tab bar basse (5 onglets) | 1 seul | 16 px |
+| `sm` | 640 px | `phone-large` | tab bar | 1 seul | 16 px |
+| `md` | 768 px | `tablet` | **rail** (icônes seules, 64 px) | 1 + 1 repliable | 24 px |
+| **`lg`** | **1024 px** | **`desktop`** | **barre latérale** (240 px, libellés) | **2 panneaux** | 24 px |
+| `xl` | 1280 px | `wide` | barre latérale | **2–3 panneaux** (inspecteur) | 32 px |
+| `2xl` | 1536 px | `wide-plus` | barre latérale | 3 panneaux | 32 px |
+
+**Pourquoi ces valeurs suffisent à tous les cas :**
+
+- L'échelle est **celle de Tailwind par défaut** : on n'invente aucun nombre
+  (discipline « tokens-only », `docs/design-system/overview.md` §2).
+- **`lg` = 1024 px est le seuil structurant** (1 → 2 panneaux). Justification
+  arithmétique : `240 (sidebar) + 640 (colonne de lecture lisible) + 2×24 (gouttières)
+  = 928 px` → 1024 laisse une marge confortable sans comprimer.
+- **`xl` = 1280 px ouvre le 3ᵉ panneau** (inspecteur/validateur) :
+  `240 + 360 (liste) + 640 (détail) = 1240 px` → tient dans 1280.
+- **`2xl` = 1536 px** : au-delà, on **plafonne la largeur du contenu** (lire sur
+  2 m de large est illisible) et on donne la toile aux éditeurs.
+- Aucun palier au-delà : au-delà de 1536, la seule variable utile est la largeur
+  de la **toile d'édition**, pas la structure.
+
+### 2.3 Les 8 gabarits × 5 modes — matrice **tous les cas**
+
+`1` = une colonne · `2` = deux panneaux · `3` = trois panneaux · `T` = plein
+écran (toile) · `O` = overlay plein écran.
+
+| Gabarit | `phone` <768 | `tablet` 768–1023 | **`desktop` 1024–1279** | `wide` 1280–1535 | `wide-plus` ≥1536 | Écrans |
+|---|---|---|---|---|---|---|
+| **Tableau de bord** | 1 | 1 + rail | 2 (nav + contenu) | 2 + inspecteur | 3 | `home`, `progress-dashboard`, `analytics`, `design-space` |
+| **Liste + détail** | 1, détail `O` | 1 + détail `O` | **2** (liste \| détail) | 2 | 3 (+ inspecteur) | `taches-*`, `projets-*`, `objectifs-*`, `cours-*`, `fiches-*`, `knowledge-*`, `logo-variants`, `design-versions`, `design-exports`, `design-assets`, `brand-impact` |
+| **Calendrier** | 1 | 1 | **2** (mini-agenda + grille) | 2 | 2 | `calendrier-*`, `revues-*`, `timeline-gantt` |
+| **Éditeur** | 1, **toile `T`** | `T` + rail | **`T`** + panneau calques + inspecteur | `T` + 2 panneaux | `T` + 3 panneaux | `logo-studio`, `affiche-studio`, `document-studio`, `charte`, `focus-mode`, `exercises-proof`, `kanban` |
+| **Flux** | 1, détail `O` | 1 | **2** (liste \| conversation) | 2 | 3 | `discovery-feed`, `inbox`, `agent-chat` |
+| **Session guidée** | 1 centrée | 1 centrée | **1 centrée** (lecture max) | 1 centrée | 1 centrée | `flashcards`, `qcm`, `cours-detail`, `mirror-cognitive` |
+| **Formulaire** | 1 | 1 | **1 centrée** + inspecteur | 1 + inspecteur | 2 | `settings`, `onboarding`, `design-brief`, `brand-dna`, `objectifs-detail` |
+| **État spécial** | 1 | 1 | hérite du parent | hérite | hérite | `not-found`, `bibliotheque-ressources`, `slide-ascent` |
+
+**Règles issues de la matrice :**
+
+1. **Un écran n'a qu'un gabarit.** Il ne teste jamais la largeur lui-même.
+2. **Le détail est un overlay (`O`) sous `lg`, un panneau à `lg`+** — même
+   composant, conteneur différent. C'est la règle qui couvre le plus de cas.
+3. **L'éditeur est plein écran dès `md`** : il ne tient pas dans une colonne.
+4. **La session guidée reste à 1 colonne à tous les paliers** — choix de
+   concentration, pas contrainte technique.
+5. **La `phone` n'est jamais une version dégradée** : ce qui disparaît doit être
+   *déclaré* (§4).
+
+### 2.4 Contrats responsive imposés par la référence (§4.3) — **exigences**
+
+| # | Contrat | Mise en œuvre |
+|---|---|---|
+| C1 | Navigation compacte quand la largeur diminue | tab bar → rail → sidebar (5 paliers) |
+| C2 | Panneaux de contexte et d'inspection **repliables** | état replié persisté (`ui-state`), jamais perdu |
+| C3 | Contrôles d'édition utilisables **au clavier et au pointeur** | `focus-visible`, tab order, raccourcis ; pas de geste exclusif |
+| C4 | Tableaux transformés en vues adaptées **sans supprimer les actions** | < `md` : table → cartes ; chaque action reste atteignable |
+| C5 | **Reprise après rafraîchissement** | l'état de vue (filtres, tri, panneau replié, brouillon) survit au reload |
+| C6 | Confirmation visible des **sauvegardes et exports** | toast + état de l'artefact |
+| C7 | Travaux longs **hors du cycle bloquant** | job + statut observable ; l'UI reste interactive |
 
 ---
 
@@ -87,15 +141,20 @@ Deux options :
 | **A** | Ionic = shell sur **les 3 cibles** | 1 codebase, 1 routeur | les `ion-*` sont mobile-first ; le 2-panneaux desktop devient un combat contre Ionic ; les composants `packages/ui` (Radix) cohabitent mal avec les web components |
 | **B** | Ionic = **mobile seulement** ; web/desktop = **React Router + shadcn/ReUI pur** | `packages/ui` (Radix) est natif ; responsive propre ; shell desktop idiomatique | 2 shells à maintenir ; routes à dédoublonner |
 
-**Recommandation : option B.** Raison : `packages/ui` est bâti sur **Radix/shadcn**
-(confirmé : `components.json`, `@radix-ui/*` dans les deps). Ionic et Radix sont
-deux systèmes de composants concurrents ; les faire cohabiter dans un même shell
-produit des conflits de style et d'accessibilité. Séparer les shells laisse
-`packages/ui` s'exprimer pleinement en web/desktop, et conserve Ionic là où il
-excelle (natif mobile).
+**✅ DÉCISION OWNER (2026-10-24) : option B retenue — Ionic = MOBILE SEULEMENT.**
+Web et desktop = **React pur** (React Router + shadcn/ReUI, **sans `ion-*`**).
+Raison : `packages/ui` est bâti sur **Radix/shadcn** (23 paquets `@radix-ui/*`,
+`components.json` style `new-york`). Ionic et Radix sont deux systèmes de
+composants concurrents ; les faire cohabiter produit des conflits de style,
+de focus et d'a11y.
 
-> ⚠️ **OQ-1 ouverte** : cette recommandation doit être ratifiée par le owner
-> (elle touche `apps/mobile` et l'architecture du routeur).
+**Conséquence topologique (OQ-10 ratifiée)** : création d'**`apps/web-app`** —
+Electron l'enveloppe (même shell, pas un 3ᵉ front) ; `apps/mobile` (Ionic) reste
+inchangée.
+
+**Motivation formelle de l'écart à D-06** : la référence §8.7.1/§8.7.3/D-06
+retenait Ionic pour l'application métier web ; la référence **exige** un ADR
+motivé (§10.2 item 6). C'est fait : `adr-018` **§7**.
 
 ### 3.3 Répartition navigation : barre latérale vs tab bar
 
@@ -149,14 +208,17 @@ Formulaires · Pagination · Transitions · Thèmes · A11y · Offline · Logo �
 Les sections §15–§19 s'ajoutent **après** §14 (OQ), pour ne pas déplacer les
 numéros cités par les SSoT (`impl-plan.md` cite `05 §4 l.1316`, etc.).
 
-### 4.1 Classification des 51 specs par gabarit de composition
+### 4.1 Classification des 51 specs par gabarit — **référence unique : §2.3**
+
+> La matrice **§2.3** (8 gabarits × 5 modes) est la **source normative**. Ce tableau
+> n'est qu'un index de lecture par écran.
 
 | Gabarit | Écrans | Layout desktop |
 |---|---|---|
 | **Tableau de bord** | `home`, `progress-dashboard`, `analytics` | contenu centré, 7 slots AD-14 / grille de cartes |
 | **Liste + détail** | `taches-*`, `projets-*`, `objectifs-*`, `cours-*`, `fiches-*`, `knowledge-*` | split 2 panneaux |
 | **Calendrier** | `calendrier-jour/semaine/mois`, `revues-jour/semaine/mois`, `timeline-gantt` | plein écran, grille temporelle |
-| **Éditeur** | `canvas`(absent), `kanban`, `focus-mode`, `exercises-proof` | plein écran |
+| **Éditeur** | `kanban`, `focus-mode`, `exercises-proof` (+ 7 écrans Design Space, `design-space-scope.md` §3) | plein écran dès `md` |
 | **Flux** | `discovery-feed`, `inbox`, `agent-chat` | 2 panneaux (liste + conversation) |
 | **Session guidée** | `flashcards`, `qcm`, `cours-detail`, `focus-mode` | 1 colonne centrée, focus |
 | **Formulaire / réglages** | `settings`, `onboarding`, `objectifs-detail` | 1 colonne centrée |
@@ -174,22 +236,27 @@ exécution sur 44 docs). **Aucun écart** : les 54 slugs sont portés par les 44
 
 ---
 
-## 5. Tokens de layout à ajouter (proposition)
+## 5. Tokens de layout — **DÉCISION** (OQ-6 tranchée)
 
-Aucun token de layout n'existe. Proposition **minimale**, dans la discipline
-« tokens-only » (`docs/design-system/overview.md` §2) :
+Aucun token de layout n'existait. Décision : les introduire comme **tokens
+sémantiques** consommés par Tailwind — jamais de valeur en dur dans un composant
+(`docs/design-system/overview.md` §2 : « Any hardcoded value outside a token =
+blocking finding »).
 
-| Token proposé | Valeur | Usage |
-|---|---|---|
-| `aurora.layout.sidebar` | 240 px (replié : 64 px) | panneau latéral |
-| `aurora.layout.content-max` | 1280 px | largeur de contenu plafonnée |
-| `aurora.layout.reading-max` | 720 px | texte long (documents, fiches) |
-| `aurora.layout.detail-min` | 360 px | panneau de détail |
-| `aurora.layout.gutter` | 24 px | marge de page |
+| Token | `phone` | `tablet` | `desktop` | `wide`+ | Usage |
+|---|---|---|---|---|---|
+| `aurora.layout.rail` | — | 64 px | 240 px | 240 px | navigation latérale |
+| `aurora.layout.rail-collapsed` | — | 64 px | 64 px | 64 px | replié (C2) |
+| `aurora.layout.panel-min` | — | 320 px | 360 px | 360 px | panneau liste/détail |
+| `aurora.layout.inspector` | — | — | 320 px | 360 px | inspecteur/validateur |
+| `aurora.layout.reading-max` | 100 % | 720 px | 720 px | 720 px | texte long (fiches, documents) |
+| `aurora.layout.content-max` | 100 % | 100 % | 1120 px | 1280 px | contenu plafonné |
+| `aurora.layout.gutter` | 16 px | 24 px | 24 px | 32 px | marge de page |
+| `aurora.layout.tabbar` | 56 px | 56 px | — | — | tab bar basse |
 
-**Règle** : ces valeurs deviennent des **tokens sémantiques** consommés par
-Tailwind, jamais des valeurs en dur dans un composant (`docs/design-system/overview.md`
-§2 : « Any hardcoded value outside a token = blocking finding »).
+**Cas particulier — Éditeur** : le gabarit « Éditeur » **ignore** `content-max`
+(la toile prend tout l'espace) et n'applique que `gutter` + les panneaux. C'est la
+seule exception, et elle est déclarée.
 
 ---
 
@@ -197,19 +264,27 @@ Tailwind, jamais des valeurs en dur dans un composant (`docs/design-system/overv
 
 | Lot | Contenu | Dépend de | Gate |
 |---|---|---|---|
-| **W0** | breakpoints Tailwind + tokens de layout + tests | — | typecheck, lint, tests |
-| **W1** | shell web (barre sup + panneau latéral + zone contenu) | W0, OQ-1 | build + story |
-| **W2** | responsive : bascule 1 col ↔ 2 panneaux | W1 | tests viewport |
-| **W3** | gabarit « Liste + détail » (le plus fréquent) | W1, W2 | story + test |
-| **W4** | gabarit « Tableau de bord » (Home AD-14, Progress) | W1 | story + test |
+| **W0** | `apps/web-app` (squelette React + Vite) + breakpoints Tailwind + tokens de layout (§5) | — | typecheck, lint, tests |
+| **W1** | shell web : barre supérieure + sidebar **9 entrées** (§3.1) + zone contenu + tab bar mobile | W0 | build + story |
+| **W2** | responsive : 5 paliers, 8 gabarits, 7 contrats **C1–C7** (§2) | W1 | tests par viewport |
+| **W3** | gabarit « Liste + détail » (~11 écrans, le plus fréquent) | W1, W2 | story + test |
+| **W4** | gabarit « Tableau de bord » (Home AD-14, Progress, design-space) | W1 | story + test |
 | **W5** | gabarit « Calendrier » | W1 | story + test |
 | **W6** | gabarit « Session guidée » (flashcards, QCM) | W1 | story + test |
-| **W7** | `not-found` global + `feature-registry` | W1 | test |
-| **W8** | Desktop Electron (Phase 2) | W1–W7 | packaging |
-| **W9** | Mobile Ionic (Phase 3) | W8 | APK |
+| **W7** | gabarit **« Éditeur »** (prérequis Design Space Pro) | W1, W2 | story + test |
+| **W8** | `not-found` global + `feature-registry` | W1 | test |
+| **W9** | Desktop : **Electron enveloppe `web-app`** (pas un 3ᵉ front) | W1–W8 | packaging |
+| **W10** | Mobile : Ionic — **régressions seulement**, AD-14 préservé | W9 | APK |
 
 **Règle d'exécution (AD-13)** : 1 lot = 1 commit = 1 rollback ; `main` buildable
 à chaque lot ; gate vert **avant** le lot suivant.
+
+**Écart assumé** : le lot « Éditeur » (**W7**) est **remonté** avant les écrans
+Design Space (Phase 1B), parce que **7 des 13** écrans proposés
+(`docs/frontend/design-space-scope.md` §3) en dépendent.
+
+**Note** : W0–W8 sont bloqués par le **gate rouge** mesuré (`docs/ci/gate.md`).
+Corriger le gate est un préalable.
 
 ---
 
@@ -220,9 +295,10 @@ Tailwind, jamais des valeurs en dur dans un composant (`docs/design-system/overv
 | **OQ-1** | Ionic = shell 3 cibles, ou mobile seulement ? | ✅ **Ionic = MOBILE SEULEMENT.** Web + desktop = **React** (React Router + shadcn/ReUI purs) | §3.2 résolu : **option B retenue**. Le shell web (§3.1) est du **React pur, sans `ion-*`**. Motivation formelle de l'écart à D-06 : `adr-018` §7. |
 | **OQ-2** | Desktop : Electron / Tauri / PWA ? | ✅ **Electron confirmé. Tauri écarté.** | Lot W8 = Electron (spike `apps/desktop`). |
 | **OQ-3** | Périmètre de la 1ʳᵉ livraison web ? | ✅ **Les 44 écrans + les écrans des features nouvelles** (Design Space Pro, documents, charte…) | §4 : le périmètre **dépasse 44**. Voir `docs/frontend/design-space-scope.md` (~13 écrans proposés). |
-| **OQ-4** | Seuil de bascule 2 panneaux = `lg` (1024 px) ? | ⏳ **proposition, à ratifier** | §2 : la référence §4.3 impose des **contrats** responsive mais pas de valeur. `lg` reste proposé. |
+| **OQ-4** | Seuil de bascule 2 panneaux / système responsive | ✅ **TRANCHÉE** (§2) — 5 paliers, `lg`=1024 structurant, matrice 8 gabarits × 5 modes |
 | **OQ-5** | Décompte normatif des écrans | ✅ **FERMÉE** : 51 fichiers − 7 transverses = **44 écrans** | conforme à `impl-plan.md` OQ-1 |
-| **OQ-6** | Tokens de layout (§5) validés ? | ⏳ proposition | lot W0 |
+| **OQ-6** | Tokens de layout | ✅ **TRANCHÉE** (§5) — 8 tokens, valeur par palier |
+| **OQ-10** | Créer `apps/web-app` ? | ✅ **RATIFIÉE** — oui ; `apps/mobile` (Ionic) conservée (§3.2) |
 
 ### 7.1 Contrats responsive imposés par la référence produit (§4.3)
 
