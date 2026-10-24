@@ -53,22 +53,53 @@ progress-evidences-recompute = "0 4 * * *"
 [functions.fn-job-dispatcher]
 # the ONLY dispatcher (01 §5.2)
 entrypoint = "functions/fn-job-dispatcher/dist/index.ts"
+# verify_jwt = false: the caller is pg_cron via `wake_job_dispatcher()`
+# (migration 0028), which holds no user JWT. The platform check is therefore
+# off, and the function's OWN guard is the auth: the `x-aurora-internal`
+# header carrying INTERNAL_FN_SECRET, compared in constant time, failing
+# closed with 401 when the secret is absent or wrong.
+#
+# This MUST be declared. The CLI default is `true`, which would make the
+# platform reject the wake-up before the function's guard ever runs — the
+# wake-up would look broken while being correct. The other 4 deployed
+# functions are all verify_jwt=false for the same class of reason.
+verify_jwt = false
 [functions.fn-import-course]
 # {courseId, fileRefs[]} -> 202 {jobId}
 entrypoint = "functions/fn-import-course/dist/index.ts"
+# Service-internal: called by the dispatcher / other EFs, which hold no user
+# JWT. Declared explicitly because the CLI default is `true` and would break
+# every internal call the moment this function is redeployed.
+verify_jwt = false
 [functions.fn-notifications]
 # events trigger -> OneSignal (Phase 1), quiet-hours aware
 entrypoint = "functions/fn-notifications/dist/index.ts"
+# Service-internal (event-triggered), no user JWT at the call site.
+verify_jwt = false
 [functions.fn-agent-run]
 # {intent, contextRefs[], taskProfile} -> 202 {ok, data:{jobId}}
 entrypoint = "functions/fn-agent-run/dist/index.ts"
+# The caller supplies a user Bearer JWT, but the function resolves identity
+# ITSELF (from the validated JWT, never the body). Declared false to match the
+# live state; turning the platform check on is an auth-model decision, not a
+# side effect of a redeploy.
+verify_jwt = false
 [functions.fn-canvas]
 # le module Canvas (single-writer AD-7) applique les commandes canvas.read /
 # canvas.write / canvas.comment émises par le kernel (OQ-03). Authed (JWT user).
 entrypoint = "functions/fn-canvas/dist/index.ts"
+# Dual-path: device JWT OR the internal channel (x-aurora-internal). The
+# internal path has no user JWT, so the platform check must stay off — the
+# function's own guard is the auth (fail-closed).
+verify_jwt = false
 [functions.fn-integrations]
 # adaptateurs sortants (R2, providers) — 2 imports workspace, donc bundlé.
 entrypoint = "functions/fn-integrations/dist/index.ts"
+# Dual-path like fn-canvas: device JWT or the internal channel.
+verify_jwt = false
 [functions.fn-skills]
 # skills indexés (S5) — verify_jwt = true côté projet.
 entrypoint = "functions/fn-skills/dist/index.ts"
+# User-facing: identity comes from the Bearer JWT, never the body. This is the
+# ONE function whose platform check is on, matching the live state.
+verify_jwt = true

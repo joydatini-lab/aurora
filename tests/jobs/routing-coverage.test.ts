@@ -134,6 +134,37 @@ test('routing: the dispatcher is fail-closed (a wake-up without the secret must 
   assert.match(src, /401/, 'an unauthorized call must answer 401');
 });
 
+test('routing: config.toml declares verify_jwt for every EF (the CLI default would break them)', () => {
+  const toml = readFileSync(join(ROOT, 'supabase', 'config.toml'), 'utf8');
+  const fnsDir = join(ROOT, 'supabase', 'functions');
+  const slugs = execFileSync('git', ['ls-files', 'supabase/functions'], { cwd: ROOT, encoding: 'utf8' })
+    .split('\n')
+    .filter((f) => /^supabase\/functions\/[^/]+\/index\.ts$/.test(f))
+    .map((f) => f.split('/')[2]);
+  assert.ok(slugs.length >= 6, `expected at least 6 EFs, found ${slugs.length}`);
+
+  const missing = slugs.filter((slug) => {
+    // fn-dev-auth is DEV-ONLY and deliberately absent from config.toml: the
+    // deploy pipeline must never ship it ("jamais fn-dev-auth (DEV-only,
+    // P6-6)"). It is nonetheless STILL DEPLOYED live with verify_jwt=false and
+    // CORS '*', which its own header calls "SUPPRIMER AVANT v1.0" — recorded
+    // as a finding, not silently excluded.
+    if (slug === 'fn-dev-auth') return false;
+    const block = toml.match(
+      new RegExp(`\\[functions\\.${slug}\\]([\\s\\S]*?)(?=\\n\\[|$)`),
+    );
+    return !block || !/verify_jwt\s*=/.test(block[1]);
+  });
+  assert.deepEqual(
+    missing,
+    [],
+    `EF(s) without an explicit verify_jwt in config.toml: ${missing.join(', ')}. ` +
+      'The CLI default is TRUE, so redeploying one of these silently turns the platform ' +
+      'JWT check on and breaks every internal caller that holds no user JWT.',
+  );
+  void fnsDir;
+});
+
 test('routing: the wake-up cron does not rely on pg_notify (an EF cannot LISTEN)', () => {
   const sql = readFileSync(
     join(ROOT, 'supabase', 'migrations', '0028_job_dispatch_wakeup.sql'),

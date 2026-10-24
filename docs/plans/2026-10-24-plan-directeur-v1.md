@@ -192,13 +192,15 @@ VIEW-JOINS 0 · SPINE 0.
 | N5 | Le handler `skill_recompute` ne persistait rien (résultat jeté) | **CORRIGÉ** (4eae07c) — port `saveSkillState` |
 | N6 | `fn-job-dispatcher` n'avait **aucune** garde d'auth | **CORRIGÉ** (0028) — fail-closed |
 | N7 | Le dispatcher n'est pas déployé (404 prouvé) | **OUVERT — le seul blocage restant** |
-| N8 | 3 fonctions live-only, `SECURITY DEFINER` exécutables par `anon` | reset base = perte ; surface d'attaque | advisors (WARN ×3) |
-| N9 | Protection mots de passe compromis désactivée | sécurité auth | advisors (WARN) |
-| N10 | `vector` dans `public` ; 2 fonctions `search_path` mutable ; `keep_alive` RLS sans politique | hygiène | advisors (WARN/INFO) |
+| N8 | **`config.toml` ne déclare `verify_jwt` pour AUCUNE EF** → un redéploiement via le CLI applique le défaut `true` et casse silencieusement toutes les EF internes (le réveil serait rejeté par la plateforme *avant* d'atteindre la garde) | **CORRIGÉ** — les 7 EF déclarées explicitement, garde-fou de test |
+| N9 | `fn-dev-auth` (porte dérobée dev : `list-users`, reset mot de passe, `CORS *`, `verify_jwt=false`) est **toujours déployée live** alors que son propre en-tête dit « SUPPRIMER AVANT v1.0 » | **OUVERT** — à supprimer avant le tag |
+| N10 | 3 fonctions live-only, `SECURITY DEFINER` exécutables par `anon` | reset base = perte ; surface d'attaque | advisors (WARN ×3) |
+| N11 | Protection mots de passe compromis désactivée | sécurité auth | advisors (WARN) |
+| N12 | `vector` dans `public` ; 2 fonctions `search_path` mutable ; `keep_alive` RLS sans politique | hygiène | advisors (WARN/INFO) |
 
-N1–N3, N5, N6 sont corrigés et vérifiés. N4 et N7 sont le **même** blocage —
+N1–N3, N5, N6, N8 sont corrigés et vérifiés. N4 et N7 sont le **même** blocage —
 le déploiement des EF — et c'est le seul qui empêche les 34 jobs de drainer.
-N8–N10 sont de l'hygiène à traiter en tranche 4.
+N9–N12 sont de l'hygiène à traiter en tranche 4.
 
 ---
 
