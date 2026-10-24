@@ -146,6 +146,43 @@ Only #1 is fixed. **A green gate says NOTHING about the job chain.**
   protection disabled; `vector` in `public`; 2 functions with mutable `search_path`;
   `keep_alive` RLS without policy (INFO).
 
+## Job chain — the 16-day stall (root cause, 2026-10-24)
+- The stall had **TWO independent causes**, both needed fixing:
+  (a) cron `aurora_event_dispatch` ('*/5 * * * *') ran `SELECT pg_notify(...)` — a pure **no-op**.
+      An Edge Function is HTTP-triggered and has NO persistent Postgres session, so it **cannot
+      LISTEN**. 241+ "succeeded" runs that woke nothing. Same for `trg_job_queue_notify` (0010).
+      Fixed by migration **0028**: `pg_net` (0.20.4, available but NOT installed) + a real
+      `net.http_post`. Cron is `unschedule`d then re-`schedule`d, not duplicated.
+  (b) **`fn-job-dispatcher` was never deployed** (5 live EFs: fn-agent-run, fn-import-course,
+      fn-notifications, fn-skills, fn-dev-auth). **PROVEN**: the wake-up gets
+      `404 {"code":"NOT_FOUND","message":"Requested function was not found"}` — visible in
+      `net._http_response`. The deploy job is `if: false` in `release.yml` (gate **OQ-03** =
+      dev/staging/prod env values, `docs/release/README.md`). **This is the ONLY remaining blocker.**
+- **`route()` reads `job.payload.kind`, NOT the `kind` column** (`fn-job-dispatcher/index.ts:711`).
+  The call site injects it (`{...job.payload, kind: job.kind}`, line 836), so cron jobs with
+  `payload={}` DO route. The fallback at line 715 (`module === ""` → match by kind alone) is what
+  makes module-less cron jobs work. Know this before touching routing.
+- `skill_recompute` had a 3rd defect: the handler **persisted nothing** (computed a SkillState and
+  returned it). Fixed with a `saveSkillState` port (AD-7 single-writer).
+- `fn-job-dispatcher` had **NO auth guard** — any caller could force a sweep across ALL users.
+  Now fail-closed: `x-aurora-internal` header (`fn-agent-bootstrap.ts:409` convention),
+  constant-time compare, 401 — including when `INTERNAL_FN_SECRET` is unset.
+- **`verify_jwt` trap**: `supabase/config.toml` declared NONE, and the CLI default is **TRUE**. Any
+  `supabase functions deploy` would silently flip the platform JWT check ON for functions whose
+  callers hold no user JWT — the platform rejects them BEFORE their own guards, so correct code
+  looks broken. All 7 deployable EFs now declare it explicitly (`false` ×6, `true` for fn-skills).
+  `fn-dev-auth` is excluded on purpose (must never ship) but is **STILL DEPLOYED live** with
+  `verify_jwt=false` + `CORS '*'` — a dev backdoor to delete before the tag.
+- No `SUPABASE_ACCESS_TOKEN` / `.env.local` in this sandbox, **Docker unavailable** → cannot deploy
+  an EF or run `rls-live-check.sh` here. `vault.create_secret(...)` IS permitted via MCP, but
+  `alter database ... set app.settings.*` is **REFUSED** (`42501`). So 0028 reads the project URL
+  from vault (`SUPABASE_PROJECT_URL`), with the GUC as fallback.
+- `deno` is absent → EF tests cannot run locally (only `node --experimental-strip-types`).
+- Cron jobs are enqueued by `0014` with `payload = '{}'::jsonb`; `skill_states.freshness` is TEXT
+  (`fresh|stale|forgotten`) while the domain type is a 0..1 number — map both ways.
+- `skill_states` is EMPTY and `progress_evidences` has 0 rows live, so the deployed fix is a
+  verifiable no-op today (safe to enable).
+
 ## Sandbox facts (this environment)
 - FS is EPHEMERAL (`/tmp` and the Playwright cache can vanish mid-session — re-run
   `npx playwright install chromium`; prefer `git checkout -- <file>` over /tmp backups).
