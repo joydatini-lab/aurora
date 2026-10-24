@@ -128,3 +128,28 @@ reference), `LOGO.md`, `AFFICHE.md`, `VIDEO.md`, `deep-research-report.md`. They
 LibreChat brief. Decisions D-01…D-08 (§13.1): all prior modules KEPT; **Design Space Pro** = 1st
 creative extension; **Web responsive → Desktop → Mobile**; Next.js for the public site only
 (`apps/marketing`); TanStack per-responsibility.
+
+## CI / gate (lecon la plus chere de la Phase 0)
+- **Un gate vert en local peut etre FAUX.** `pnpm -r typecheck` etait vert avec 18
+  `dist/` (gitignores) laisses par un `pnpm -r build` anterieur ; le CI part propre
+  et voyait TS6305/TS6059/TS6307 pour le MEME commit. TOUJOURS `rm -rf packages/*/dist
+  apps/*/dist` avant de conclure. Corrige en `b61445b`.
+- `tsconfig.base.json` est en **CRLF** (comme 11 autres tsconfig) : editer en binaire,
+  sinon le diff devient le fichier entier. Piege deja rencontre.
+- `pnpm -r <script>` s'arrete au PREMIER package en echec : un « vert » sur cette base
+  masque tout ce qui suit. Diagnostiquer package par package.
+- **Le depot est un FORK** (`joydatini-lab/aurora` <- `joynagassi-cyber/aurora`). Les
+  evenements `push` n'y declenchent PAS le workflow (0 run sur 2 pushes, branche
+  pourtant matchee). `workflow_dispatch` a ete ajoute ; `gh`/API dispatch renvoie 204
+  et cree bien un run. `GET actions/permissions` -> 403 (integration).
+- `ci-base` (10 steps) tourne partout ; `ci-gate` (18 steps) est `main`-only
+  (`if: github.ref == 'refs/heads/main' || pull_request`) -> il faut une PR pour
+  l'exercer.
+- `sync-health` echoue **par conception** sans secrets (CF/R2) : l'en-tete du workflow
+  le documente. Ne pas le lire comme une regression.
+- Workflows : chromatic.yml, ci.yml, release-apk.yml, release.yml,
+  storybook-deploy.yml, sync-health.yml.
+- Pieges de lint deja purges (b2d7040) : `eslint-plugin-react-hooks` n'etait PAS
+  installe (les ~31 erreurs `react-hooks/*` etaient l'artefact « Definition for rule
+  ... was not found », pas des violations) ; `eslint-plugin-storybook` declare
+  seulement dans packages/ui ; G2 `sk-` resserre a `sk-[A-Za-z0-9_-]{20,}`.
