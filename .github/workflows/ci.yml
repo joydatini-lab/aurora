@@ -175,6 +175,14 @@ jobs:
         # Docker + supabase/postgres. Non branchee en CI pour l'instant :
         # elle demande un runner avec Docker (~2 min de pull d'image).
 
+      - name: "EF imports resolve (supabase/functions not in any tsconfig)"
+        # supabase/functions/** is in NO tsconfig, so typecheck never reads it.
+        # That hole hid a real defect: fn-job-dispatcher imported two symbols
+        # that do not exist, so the EF could not boot, was never deployed, and
+        # 34 cron jobs sat pending for 16 days.
+        if: ${{ hashFiles('scripts/check-ef-imports.mjs') != '' }}
+        run: node scripts/check-ef-imports.mjs
+
       - name: "No cross-module JOIN (03 S5.4 / F-03)"
         if: ${{ hashFiles('scripts/check-view-joins.ts') != '' }}
         # Node 22.20+ : --experimental-strip-types (run TS natif, zero dep).
