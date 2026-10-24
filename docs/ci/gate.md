@@ -110,6 +110,23 @@ les suivants. Itérer package par package pour un diagnostic.
 `ci-base` (10 étapes) tourne sur chaque push ; `ci-gate` (18 étapes) tourne sur
 `main` et sur les PR vers `main`.
 
+### 3.1 Vérification en CI réelle (2026-10-24)
+
+Le dépôt est un **fork** (`joydatini-lab/aurora` ← `joynagassi-cyber/aurora`) :
+les évènements `push` n'y déclenchent pas le CI de façon fiable (0 run sur
+2 pushes alors que la branche correspondait à `on.push.branches`). Un
+`workflow_dispatch` explicite crée bien un run → `workflow_dispatch` a été
+ajouté pour lever la dépendance à ce comportement.
+
+| Run | Déclencheur | `ci-base` | `ci-gate` |
+|---|---|---|---|
+| [40060549578](https://github.com/joydatini-lab/aurora/actions/runs/40060549578) | dispatch, avant `b61445b` | ❌ ROUGE (TS6305/TS7006/TS18048) | skipped |
+| [40061363155](https://github.com/joydatini-lab/aurora/actions/runs/40061363155) | dispatch, `b61445b` | ✅ **SUCCESS** | skipped (main-only) |
+
+`ci-gate` ne s'exécute que sur `main` ou sur une PR vers `main` : il faut une PR
+pour l'exercer. Le gate complet a été vérifié localement sur une arborescence
+sans `dist/` (§1).
+
 ---
 
 ## 4. Précautions d'environnement (sandbox de développement)
@@ -126,8 +143,19 @@ les suivants. Itérer package par package pour un diagnostic.
 
 ## 5. Recette de vérification
 
+> **Piège du *clean checkout* (`b61445b`).** Un `pnpm -r typecheck` lancé sur une
+> arborescence qui contient déjà des `dist/` (gitignorés, laissés par un
+> `pnpm -r build` antérieur) **peut être vert à tort** : les artefacts périmés
+> masquent les erreurs TS6305/TS6059/TS6307 que le CI, qui part propre, va
+> rencontrer. C'est exactement ce qui s'est produit : gate vert en local, rouge
+> en CI, pour le même commit. **Toujours supprimer les `dist/` avant de
+> conclure.** Corrigé dans `b61445b` (references + `composite` + `rootDir`
+> retirés ; 5 imports `src/...` rendus relatifs) : le typecheck passe désormais
+> avec **zéro** `dist/`.
+
 ```sh
 corepack pnpm install
+rm -rf packages/*/dist apps/*/dist tests/e2e/dist   # sinon vert trompeur
 corepack pnpm -r typecheck
 corepack pnpm -r lint
 corepack pnpm -r test
