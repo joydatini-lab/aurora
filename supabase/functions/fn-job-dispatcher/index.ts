@@ -17,8 +17,9 @@
  */
 import { ok, err, ulid } from "../_shared/envelope.ts";
 import type { UserContext } from "../../../packages/domain/src/index.ts";
+import type { ProgressEvidence, SkillState } from "../../../packages/domain/src/index.ts";
 import { PRODUCTIVITY_JOB_HANDLERS } from "../../../packages/productivity/src/jobs.ts";
-import { PROGRESS_JOB_HANDLERS } from "../../../packages/progress/src/jobs.ts";
+import { buildSkillRecomputeHandler, buildProgressResearchHandler, PROGRESS_JOB_HANDLERS } from "../../../packages/progress/src/jobs.ts";
 // The `fsrs-tick` and `course_import` handlers are LEARNING's, not Progress's.
 // The dispatcher used to import `PROGRESS_FSRS_TICK_HANDLER` and
 // `PROGRESS_COURSE_IMPORT_HANDLER` from packages/progress/src/jobs.ts and
@@ -328,6 +329,162 @@ function buildLearningHandlers(): RegisteredHandler[] {
   return [fsrsTick, courseImport];
 }
 
+/**
+ * Progress's `skill_recompute` handler, wired to the deployment-time REST
+ * seams — the exact counterpart of `buildLearningHandlers` above.
+ *
+ * The module table `PROGRESS_JOB_HANDLERS` is deliberately NOT registered:
+ * `registerHandlers` is FIRST-wins by (module, jobKind), so its no-op
+ * `skill_recompute` would shadow this REST-wired one and the job would report
+ * `ok` while writing nothing.
+ *
+ * `0014_cron_placeholders.sql` documents the intent of this kind as
+ * "Re-derives skill_states from evidence" and the cron carries
+ * `payload = '{}'::jsonb`: the sweep is over every skill the user has evidence
+ * for. A `payload.skillId` narrows it (the event-driven path).
+ *
+ * Absent SUPABASE_URL / SERVICE_ROLE_KEY → the ports are the documented no-op
+ * (AD-1/AD-8: the job still reports `ok`, nothing is lost).
+ */
+function buildProgressHandlers(): RegisteredHandler[] {
+  const configured = Boolean(SUPABASE_URL && SERVICE_ROLE_KEY);
+  const headers = restHeaders();
+  const rest = `${SUPABASE_URL}/rest/v1`;
+
+  /** The sweep input: distinct skill ids the user has evidence for. */
+  const listSkillIds = async (userId: string): Promise<string[]> => {
+    if (!configured) return [];
+    const qs =
+      `select=skill_id&user_id=eq.${encodeURIComponent(userId)}` +
+      `&skill_id=not.is.null&limit=1000`;
+    const res = await fetch(`${rest}/progress_evidences?${qs}`, { headers }).catch(
+      () => null,
+    );
+    if (!res || !res.ok) return [];
+    const rows = (await res.json()) as Array<Record<string, unknown>>;
+    return [...new Set(rows.map((r) => String(r.skill_id)).filter((s) => s !== ""))];
+  };
+
+  const getEvidences = async (
+    userId: string,
+    skillId: string,
+  ): Promise<ProgressEvidence[]> => {
+    if (!configured) return [];
+    const qs =
+      `select=id,user_id,skill_id,goal_id,type,level,date,context,confidence,source_event_id` +
+      `&user_id=eq.${encodeURIComponent(userId)}` +
+      `&skill_id=eq.${encodeURIComponent(skillId)}&order=date.asc&limit=1000`;
+    const res = await fetch(`${rest}/progress_evidences?${qs}`, { headers }).catch(
+      () => null,
+    );
+    if (!res || !res.ok) return [];
+    const rows = (await res.json()) as Array<Record<string, unknown>>;
+    return rows.map((r) => ({
+      id: String(r.id),
+      userId: String(r.user_id),
+      skillId: r.skill_id === null || r.skill_id === undefined ? undefined : String(r.skill_id),
+      goalId: r.goal_id === null || r.goal_id === undefined ? undefined : String(r.goal_id),
+      type: String(r.type) as ProgressEvidence["type"],
+      level: String(r.level ?? "discovered") as ProgressEvidence["level"],
+      confidence: Number(r.confidence ?? 0),
+      sourceEventId:
+        r.source_event_id === null || r.source_event_id === undefined
+          ? undefined
+          : String(r.source_event_id),
+      observedAt: String(r.date ?? new Date().toISOString()),
+      context: r.context === null || r.context === undefined ? undefined : String(r.context),
+    }));
+  };
+
+  const getSkillState = async (
+    userId: string,
+    skillId: string,
+  ): Promise<SkillState | null> => {
+    if (!configured) return null;
+    const qs =
+      `select=id,user_id,skill_id,level,freshness,confidence,last_evidence_at` +
+      `&user_id=eq.${encodeURIComponent(userId)}` +
+      `&skill_id=eq.${encodeURIComponent(skillId)}&limit=1`;
+    const res = await fetch(`${rest}/skill_states?${qs}`, { headers }).catch(() => null);
+    if (!res || !res.ok) return null;
+    const rows = (await res.json()) as Array<Record<string, unknown>>;
+    const r = rows[0];
+    if (!r) return null;
+    return {
+      id: String(r.id),
+      userId: String(r.user_id),
+      skillId: String(r.skill_id),
+      level: String(r.level ?? "discovered") as SkillState["level"],
+      freshness: freshnessWordToNumber(r.freshness),
+      confidence: Number(r.confidence ?? 0),
+      // `evidenceRefs` + `history` have NO column in `skill_states` (0005).
+      // The OR-Set and the level history are therefore not round-tripped; an
+      // empty set is the honest value, never an invented one (AD-1).
+      evidenceRefs: [],
+      updatedAt: String(r.last_evidence_at ?? new Date().toISOString()),
+    };
+  };
+
+  /**
+   * Persist the recomputed state (AD-7: Progress is the sole writer of
+   * `skill_states`). PostgREST upsert needs a unique constraint on the
+   * conflict target; `skill_states` only has a PK on `id`, so the row is
+   * located by (user_id, skill_id) and PATCHed, or POSTed when absent.
+   */
+  const saveSkillState = async (userId: string, state: SkillState): Promise<void> => {
+    if (!configured) return;
+    const body = JSON.stringify({
+      level: state.level,
+      freshness: freshnessNumberToWord(state.freshness),
+      confidence: state.confidence ?? 0,
+      last_evidence_at: state.updatedAt,
+      updated_at: new Date().toISOString(),
+    });
+    const qs = `user_id=eq.${encodeURIComponent(userId)}&skill_id=eq.${encodeURIComponent(state.skillId)}`;
+    const patched = await fetch(`${rest}/skill_states?${qs}`, {
+      method: "PATCH",
+      headers: { ...headers, Prefer: "return=representation" },
+      body,
+    }).catch(() => null);
+    if (patched && patched.ok) {
+      const rows = (await patched.json().catch(() => [])) as unknown[];
+      if (Array.isArray(rows) && rows.length > 0) return;
+    }
+    await fetch(`${rest}/skill_states`, {
+      method: "POST",
+      headers: { ...headers, Prefer: "return=minimal" },
+      body: JSON.stringify({ user_id: userId, skill_id: state.skillId, ...JSON.parse(body) }),
+    }).catch(() => null);
+  };
+
+  const skillRecompute = buildSkillRecomputeHandler({
+    listSkillIds,
+    getEvidences,
+    getSkillState,
+    saveSkillState,
+    now: () => new Date().toISOString(),
+  });
+
+  return [skillRecompute];
+}
+
+/** `skill_states.freshness` is TEXT ('fresh'|'stale'|'forgotten', 0005) while
+ *  the domain `SkillState.freshness` is a 0..1 number (ADR S18.2). Map both
+ *  ways so the column is never written with a raw float. */
+function freshnessWordToNumber(v: unknown): number {
+  const s = String(v ?? "");
+  if (s === "fresh") return 1;
+  if (s === "stale") return 0.5;
+  return 0;
+}
+
+function freshnessNumberToWord(n: number | undefined): string {
+  if (n === undefined) return "forgotten";
+  if (n >= 0.75) return "fresh";
+  if (n >= 0.25) return "stale";
+  return "forgotten";
+}
+
 /** The full global switch, wired at import time (chevauchement rule:
  *  this file is the ONLY place the wiring lives; module packages
  *  provide their handler tables). Unroutable jobs stay pending
@@ -338,8 +495,15 @@ function wireGlobalJobSwitch(): void {
   registerHandlers([
     ...PRODUCTIVITY_JOB_HANDLERS,
     ...buildDiscoveryHandlers(),
+    // Progress FIRST, then its module table. `registerHandlers` is FIRST-wins
+    // by (module, jobKind): `buildProgressHandlers()` registers the REST-wired
+    // `skill_recompute`, so the no-op one in `PROGRESS_JOB_HANDLERS` is ignored
+    // — which is the point. Reversing these two lines would silently shadow the
+    // real handler and the job would report `ok` while writing nothing.
+    // The module table still contributes Progress's `research`-scoped handler,
+    // which has no REST-wired counterpart.
+    ...buildProgressHandlers(),
     ...PROGRESS_JOB_HANDLERS,
-    // Learning's two kinds, wired with the deployment-time seams below.
     ...buildLearningHandlers(),
     ...SCIENTIFIC_JOB_HANDLERS,
     ...INTEGRATIONS_JOB_HANDLERS,

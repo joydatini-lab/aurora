@@ -201,6 +201,16 @@ jobs:
         # Pas de pnpm tsx (tsx n'est pas encore une dep du workspace wave 0).
         run: node --experimental-strip-types scripts/check-view-joins.ts
 
+      - name: "Job routing coverage (every JobKind has a handler)"
+        # check-ef-imports proves the dispatcher's imports RESOLVE; this proves
+        # the handlers they resolve to actually COVER the vocabulary. The two
+        # are different failures: PROGRESS_JOB_HANDLERS was a live, resolvable
+        # import of an EMPTY ARRAY, so 17 skill_recompute jobs were skipped
+        # silently for 16 days. Also guards the first-wins shadowing trap
+        # (a no-op table spread before its REST-wired counterpart).
+        if: ${{ hashFiles('tests/jobs/routing-coverage.test.ts') != '' }}
+        run: node --experimental-strip-types --no-warnings tests/jobs/routing-coverage.test.ts
+
       - name: Boundary greps (G1-G4)
         run: sh scripts/check-boundaries.sh
 
