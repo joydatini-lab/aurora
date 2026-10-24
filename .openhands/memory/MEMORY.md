@@ -102,6 +102,20 @@ Detail, evidence and per-lot narratives live in the daily logs (`.openhands/memo
   skeleton CSS); threshold is now `{20,}`. `code_files()` scans only `git ls-files`.
 - Root causes + full evidence: `.openhands/memory/2026-10-24.md`.
 
+## Live DB / RLS verification (2026-10-24)
+- The gate is STATIC (reads migrations). `scripts/rls-live-check.sh` applies all 28
+  on supabase/postgres (Docker, no credentials) + runs `tests/rls-penetration.sql`
+  with 2 auth users AND a negative control (disable RLS on `tasks` → test MUST fail).
+  Verified: 58 tables, 41 seeded, 0 penetration.
+- Found by applying for real: 0019 had 19 column values in DOUBLE quotes (+1
+  unescaped `'`); 0025 had an unescaped `'` in a COMMENT; `rls-penetration.sql` had
+  a frozen 49-table list + assumed `id` everywhere (never ran). All fixed.
+- supabase/postgres: use **supabase_admin** (superuser); `postgres` can't create
+  `vector`. `cron.job` needs supabase_admin and survives schema drops → test on a
+  FRESH container. `auth.users` uses `confirmed_at` (no `email_confirmed_at`).
+- Never propagate a claim a doc makes about another doc: finalisation-v1.md G8
+  misquotes AI_RULES.md ("20 migrations" vs the real 24 in the file, 28 on disk).
+
 ## Sandbox facts (this environment)
 - FS is EPHEMERAL (`/tmp` and the Playwright cache can vanish mid-session — re-run
   `npx playwright install chromium`; prefer `git checkout -- <file>` over /tmp backups).
