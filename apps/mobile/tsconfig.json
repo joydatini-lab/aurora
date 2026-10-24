@@ -2,7 +2,6 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
     "jsx": "react-jsx",
     /**
      * Sibling packages (focus / goal-engine / platform) typecheck with
@@ -34,7 +33,11 @@
        and never the lagging build artifact. */
     "baseUrl": ".",
     "paths": {
-      "@aurora/ui": ["../../packages/ui/src/index.ts"]
+      "@aurora/ui": ["../../packages/ui/src/index.ts"],
+      /* Le `paths` d'un enfant REMPLACE celui du base : re-declarer l'alias
+         `src/*` de packages/ui, sinon les 334 imports `src/...` du depot
+         echouent en TS2307 des que mobile lit les sources de @aurora/ui. */
+      "src/*": ["../../packages/ui/src/*"]
     }
   },
   "include": [
@@ -49,28 +52,4 @@
   ],
   "exclude": [
     "dist"
-  ],
-  "references": [
-    {
-      "path": "../../packages/domain"
-    },
-    {
-      "path": "../../packages/data"
-    },
-    {
-      "path": "../../packages/ui"
-    },
-    {
-      "path": "../../packages/platform"
-    },
-    {
-      "path": "../../packages/agent"
-    },
-    {
-      "path": "../../packages/focus"
-    },
-    {
-      "path": "../../packages/goal-engine"
-    }
-  ]
-}
+  ]}

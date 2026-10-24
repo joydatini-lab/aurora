@@ -2,7 +2,6 @@
   "extends": ["../../tsconfig.base.json", "./tsconfig.paths.json"],
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
     "jsx": "react-jsx",
     "resolveJsonModule": true,
     "lib": [
@@ -17,10 +16,5 @@
   ],
   "exclude": [
     "dist"
-  ],
-  "references": [
-    {
-      "path": "../domain"
-    }
   ]
 }
