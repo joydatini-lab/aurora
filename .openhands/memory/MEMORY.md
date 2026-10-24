@@ -82,7 +82,8 @@ Docs SSoT: `docs/` (agent, mobile, design-system, integration). Repo conventions
   (Apache-2.0 **+ cond. 1b**: a commercial licence is REQUIRED to develop and distribute a
   derivative work) despite its `package.json` saying `MIT` — the LICENSE file prevails.
   LibreChat `LICENSE` = MIT (package.json says ISC). => NEVER copy LobeHub code/assets.
-- **UI**: `packages/ui` = 272 components / 190 exports. `composites/` 34 with **11 having no
+- **UI**: `packages/ui` = ~272 component files; `src/index.ts` has 190 export LINES (175
+  `export … from` statements, 956 named exports) — the barrel re-exports nearly everything. `composites/` 34 with **11 having no
   story**; `assistant-ui/elements/` 138 **never wired into any app** (brick reserve only).
 - **Screens**: 51 `.md` − 7 transverse = **44 screens** (matches ratified "44 docs / 54 slugs").
 - **No responsive system**: `packages/ui/tailwind.config.ts` defines NO `screens` breakpoints.
