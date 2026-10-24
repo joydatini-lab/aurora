@@ -238,3 +238,118 @@ Module : Productivité · Route : `/tasks` · Statut : **additif** · SSoT écra
 - **OQ-7** — Filtre par défaut « priorité » (OQ-3 WDS close B) : le filtre par défaut est-il **appliqué** (priorité desc visible) ou **disponible mais inactif** au chargement ? L'impact sur l'ordre initial de la liste à trancher.
 - **OQ-8** — CTA secondaire optionnel du 404 (§4(c) : « Consulter l'écran parent », SSoT ui-libraries §6.1 l.202) : son libellé exact et sa cible (retour top-of-stack vs bibliothèque / parent du deep link) ne sont pas figés par SSoT → à trancher (le CTA primaire « Retour à l'accueil » = figé §6.1 l.202).
 - **OQ-9** — Dégradation AD-1 de la capture de `productivity.tasks` (§12) : le SSoT ne la fige pas. Master-feature-catalog L19 (`productivity.tasks`) dit seulement « agent: task.create/update FULL ; offline-capable ; core » — la ligne qui spécifie littéralement « degradation: manual entry (AD-1) » est `learning.import` (L34), pas L19. Deux SSoT en conflit possibles : (a) AD-1 = fallback saisie manuelle appliqué par analogie à tasks (pattern générique AD-1, 02 §7 « feature optionnelle absente = error doux ») ; (b) capture de tasks = FULL (agent task.create toujours dispo) donc **pas** de dégradation manuelle, seuls le scan/upsync meurent (05 §4.3.3 l.1605). → à trancher ; §12 s'appuie sur (a) par prudence.
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Liste + détail** (`docs/frontend/web-shell-and-responsive.md` §4.1).
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : liste plate + CTA Kanban fixe | tab bar basse (5 onglets, §2) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + nav latérale repliable (icônes) | barre latérale | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : liste à gauche, détail à droite (le BottomSheet §6 devient un panneau de droite) | panneau latéral | cible web/desktop (Phase 1–2) |
+
+**Règle** : le CTA « Ouvrir le Kanban » (§2, invariant AD-14) reste **visible et
+unique** aux 3 paliers. Le détail passe d'overlay (mobile) à panneau (desktop) —
+**même composant**, conteneur différent.
+
+> **OQ-10** — le seuil exact de bascule overlay→panneau (`lg` proposé) n'est pas ratifié (OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`master-feature-catalog.md`) |
+| R2 | Ligne de catalogue | ✅ | `productivity.tasks` (catalog L19) |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Task` + `TaskStatus` déclarés (`packages/domain/src/entities-productivity.ts` l.8/l.10) |
+| R4 | Spec §1–§14 complète, aucune case vide | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4(a) — loading/empty/error/success/offline/killed |
+| R6 | États §6.1 couverts | ✅ | §4(b) (N/A justifiés) + §4(c) 404 |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (catalog L19) |
+| R8 | Événements déclarés | ✅ | `TaskCompletedEvent` déclaré (`packages/domain/src/events.ts` l.23) — le §12 ne le citait pas, à compléter |
+| R9 | Permissions déclarées | ✅ | aucune (§2 : « none ») ; capture optionnelle = camera/mic |
+| R10 | Entrée de nav déclarée | ✅ | §2 : tab 2 ; `docs/mobile/navigation-and-page-composition.md` §2 |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») et §10 |
+| R12 | Contrat de données | ✅ | §12 : lecture locale AD-7, single-writer AD-7 |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-2 (composant `TaskRow` absent de `packages/ui`) est **bloquante** |
+
+**Verdict : `NOT_READY`** — 12 critères sur 13 sont satisfaits. **Le seul bloquant
+est R13**, qui agrège deux OQ : **OQ-2** (le composant de ligne `TaskRow`/`TaskListItem`
+n'existe pas dans `packages/ui` ; S3 interdit `ion-list` data) et **OQ-1** (route du
+CTA Kanban non figée).
+*Note : l'inventaire `docs/frontend/ui-brick-inventory.md` §4.1 confirme que `TaskRow`
+et `TaskInspector` sont parmi les 11 composites **sans story** — cohérent.*
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la liste lit le store local (AD-7) ; **interdit** : `state={{status:'empty'}}` figé ou tableau codé en dur (défaut « phantom empty state » déjà observé sur d'autres écrans) |
+| S2 | 6 états prouvés | §4(a) — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4(c) — pattern global, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : liste + CTA Kanban fonctionnels |
+| S5 | Retour arrière vérifié | relance froide → liste du miroir affichée (§12 « relance G-M2 ») |
+| S6 | Isolation utilisateur | RLS sur `tasks` (user A ≠ user B) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `quadrantOf` / tri par priorité corrects ? | Vitest ≥ 80 % sur `packages/domain` |
+| Intégration | ✅ | vue PowerSync `tasks` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | producteur `TaskCompletedEvent` (`domain/src/events.ts` l.23) | test AD-9 producer/consumer |
+| E2E | ✅ | « créer → compléter une tâche » ? | Playwright web |
+| Failure | ✅ | job en échec → état `error` + retry ? | test failure |
+| Permission | ✅ | refus camera/mic ne casse pas la liste ? | test permission |
+| Offline | ✅ | réseau coupé → liste + Kanban OK ? | test offline |
+| Recovery | ✅ | relance froide → état intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.tasks` | ≥ 1 test par classe applicable (8 classes) | à écrire |
+| Région « liste plate » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `taches-liste` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — `Tasks.stories.tsx` couvre `TaskCard`/`TaskFilterBar`/`EisenhowerMatrix`/`KanbanColumn`/`TodayFocusPanel`, **pas** l'écran liste |
+| Écran `taches-liste` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par OQ-1, OQ-2
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (camera/mic optionnel)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-10** — Seuil de bascule overlay→panneau (§15) : `lg` (1024 px) confirmé ? (cf. OQ-4 globale)
+- ~~**OQ-11**~~ — ✅ **FERMÉE** : `Task` + `TaskStatus` sont bien dans `packages/domain/src/entities-productivity.ts` (AD-15 respecté).
+- **OQ-12** — ✅ **FERMÉE (partiellement)** : le producteur existe (`TaskCompletedEvent`, `domain/src/events.ts` l.23). Reste à **compléter le §12** qui ne le citait pas. Le **consommateur** (qui écoute `TaskCompleted` → re-plan W3) reste à documenter.
