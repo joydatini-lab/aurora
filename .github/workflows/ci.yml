@@ -26,6 +26,11 @@ on:
     branches: [main, "wave0/**", "wave*/**", "rebaseline/**"]
   pull_request:
     branches: [main]
+  # Le depot est un FORK : les evenements `push` n'y declenchent pas le CI de
+  # facon fiable (0 run sur 2 pushes, alors qu'Actions est actif et qu'un
+  # dispatch explicite cree bien un run). Le dispatch manuel garantit qu'on
+  # peut lancer le gate a la demande sur n'importe quelle ref.
+  workflow_dispatch:
 
 # Concurrency : 1 run de travail par ref — un nouveau push sur la meme ref
 # remplace l'ancien (in-progress sur main est annule pour eviter la file).
