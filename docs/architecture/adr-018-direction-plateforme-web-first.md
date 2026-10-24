@@ -127,16 +127,80 @@ non réécrites** :
 elle **ne doit pas** être faite en silence — elle implique l'owner et l'équipe DS.
 À traiter comme un lot dédié (`P0-B` du plan Phase 0).
 
-## 6. Questions ouvertes
+## 6. Questions ouvertes — **ratifiées par le owner le 2026-10-24**
 
-| # | Question | Bloque |
+| # | Question | **Décision owner** | Conséquence |
+|---|---|---|---|
+| OQ-1 | Ionic = shell 3 cibles, ou mobile seulement ? | ✅ **Ionic = MOBILE SEULEMENT.** Web et desktop = **React** (React Router + shadcn/ReUI purs) | `packages/ui` (Radix, 23 paquets) s'exprime pleinement en web ; Ionic reste sur mobile. Shell web = React, sans `ion-*`. |
+| OQ-2 | Desktop : Electron, Tauri ou PWA ? | ✅ **Electron confirmé. Tauri écarté.** | Phase 2 = Electron (spike existant `apps/desktop`). |
+| OQ-3 | Périmètre de la 1ʳᵉ livraison web ? | ✅ **Les 44 écrans existants + les écrans des features nouvelles** (Design Space Pro, documents, charte, etc.) | Le périmètre **dépasse 44** : Design Space Pro (§6 de la référence) est un module de **première version** sans aucun écran aujourd'hui. |
+| OQ-4 | Seuil de bascule 2 panneaux = `lg` (1024 px) ? | ⏳ **proposition, à ratifier** | La référence §4.3 impose des *contrats* responsive (voir `docs/frontend/web-shell-and-responsive.md`) mais pas de valeur de breakpoint. |
+
+### 6.1 Conséquence de OQ-3 : un trou de périmètre vérifié
+
+**Design Space Pro** est acté comme faisant partie de la **première version cible**
+(référence §3, décision D-03 ; §6 « spécification fonctionnelle », ~200 lignes ;
+`LOGO.md` 680 l ; `AFFICHE.md` 369 l). Or, vérification faite dans le dépôt :
+
+| Artefact attendu | Constat |
+|---|---|
+| Package `packages/design-space` (ou équivalent) | ❌ **absent** (`ls packages/` : 19 packages, aucun studio) |
+| Ligne dans `master-feature-catalog.md` | ❌ **aucune** occurrence de `design space`/`brand`/`logo`/`charte`/`affiche` |
+| Écran dans `docs/design-system/screens/` | ❌ **aucun** (pas de `canvas`, `studio`, `logo`, `brand`) |
+| Table SQL (`brand_dna`, `design_project`, `logo_variant`…) | ❌ **aucune** |
+| Route dans `router.tsx` | ❌ **aucune** |
+
+→ **Design Space Pro est `MISSING` (au sens de la classification AI_RULES) : spécifié
+dans la référence produit, zéro implémentation, zéro spécification d'écran.**
+C'est le principal écart de périmètre entre la vision ratifiée et le dépôt.
+Détail et inventaire d'écrans proposé : `docs/frontend/design-space-scope.md`.
+
+## 7. Écart motivé à la référence produit D-06 (exigence §10.2 item 6)
+
+La référence produit v1.1 retient **Ionic React comme application métier web
+responsive** (D-06, §8.7.1, §8.7.3) et **exige** (Phase 0, §10.2 item 6) :
+> « proposer la topologie `Next.js site public` + `Ionic React application métier`,
+> **ou déposer un ADR motivant une topologie différente** »
+
+La décision owner du 2026-10-24 (OQ-1 : **Ionic = mobile seulement**) est une
+topologie différente. Cet ADR est donc la motivation exigée.
+
+### 7.1 Motivation
+
+| # | Argument | Preuve |
 |---|---|---|
-| OQ-1 | Ionic = shell sur les 3 cibles, ou **mobile seulement** (web = React Router + shadcn/ReUI pur) ? | architecture du shell web |
-| OQ-2 | Desktop : **Electron** (spike existant) confirmé, ou Tauri / PWA ? | Phase 2 |
-| OQ-3 | Périmètre : les 54 slugs d'écrans + tous les modules, ou un sous-ensemble pour la première livraison web ? | plan de lots |
-| OQ-4 | Breakpoints normatifs (web / tablette / mobile) et seuil du passage 2 panneaux → 1 colonne ? | système responsive |
+| 1 | `packages/ui` est bâti sur **Radix + shadcn**, pas sur Ionic | 23 paquets `@radix-ui/*` dans `packages/ui/package.json` ; `packages/ui/components.json` (`"style": "new-york"`, `$schema` shadcn) |
+| 2 | Ionic et Radix sont **deux systèmes de composants concurrents** — les mélanger dans un shell unique crée des conflits de style, de focus et d'a11y | Ionic = web components `ion-*` ; Radix = primitives React headless |
+| 3 | La porte de validation qu'Ionic s'assigne lui-même n'est **pas prouvée**, et porte précisément sur le besoin de Design Space Pro | référence §8.7.3 : « Navigation, accessibilité, **grands écrans**, petits écrans et **éditeurs** testés » |
+| 4 | Design Space Pro exige des **éditeurs plein écran** (canvas, calques, panneaux) — le terrain où un framework mobile-first coûte le plus cher | référence §4.3, §6.7, §10.4 |
+| 5 | Séparer les shells laisse `packages/ui` s'exprimer en web **sans modification** (il est conservé — D-018.2) | décision owner §3.1 item 3 |
 
-## 7. Rollback
+### 7.2 Coût assumé et mitigation
+
+- **Coût** : deux shells à maintenir (web React / mobile Ionic). Ce risque est
+  **signalé par la référence elle-même** en **A-01** (« réutilisation
+  insuffisante entre Web, Electron et Capacitor »).
+- **Mitigation** : contrats (`packages/domain`, AD-15), tokens (AD-17), data layer
+  (PowerSync/repositories) et logique métier restent **partagés**. Seule la
+  couche *shell/navigation* diffère. Aucun module métier n'est dupliqué.
+- **Réversibilité** : si le coût des deux shells devient prohibitif, la
+  réintroduction d'Ionic en web reste possible (l'inverse serait plus coûteux) —
+  les écrans seraient à recomposer, pas les données.
+
+### 7.3 Ce que cet ADR ne tranche pas
+
+- **Next.js pour le site public** (D-06) : conservé dans la vision, mais **hors
+  périmètre** de la phase courante — `apps/marketing` n'existe pas (OQ-9).
+- **`apps/web-app` séparée** : conséquence probable de OQ-1, non encore actée
+  (OQ-10, `docs/frontend/design-space-scope.md` §6.3).
+- **Topologie de packages** (§8.7.2) : la référence autorise une organisation
+  équivalente (§8.7.2 « pas une obligation de noms de répertoires »). On ne crée
+  ni `design-system` ni `modules` (déjà couverts par `packages/ui` et les 19
+  packages existants).
+
+---
+
+## 8. Rollback
 
 Cette ADR est **documentaire**. Rollback = `git revert <sha>` (1 story = 1 commit,
 AD-13). Aucun impact runtime.
