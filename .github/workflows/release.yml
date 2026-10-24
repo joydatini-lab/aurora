@@ -203,13 +203,21 @@ jobs:
         # provider keys) sont posés dans le dashboard Supabase (le
         # set-secrets.ps1) — le deploy ré-engage les EF avec les
         # secrets déjà provisionnés.
+        # IMPORTANT — bundle BEFORE deploy. build-ef.mjs writes
+        # supabase/functions/<name>/dist/index.ts with the workspace packages
+        # inlined, so the upload is self-contained and cannot fail on an
+        # import-resolution boundary. Set entrypoint = "dist/index.ts" in
+        # supabase/config.toml for each function (the CLI default is
+        # functions/<slug>/index.ts — see packages/config/src/functions-manifest.ts).
         run: |
-          echo "EF deploy (DRY-RUN, OQ-03 gate):"
+          echo "EF bundle + deploy (DRY-RUN, OQ-03 gate):"
+          echo "  node scripts/build-ef.mjs     # inline workspace pkgs -> dist/index.ts"
           echo "  supabase link ${SUPABASE_URL_DEV} (SUPABASE_ACCESS_TOKEN)"
           echo "  supabase functions deploy fn-agent-run fn-canvas"
           echo "    fn-import-course fn-integrations fn-job-dispatcher"
           echo "    fn-notifications fn-skills   # × 7, jamais fn-dev-auth"
           # Le réel (quand OQ-03 est ratifié) :
+          #   node scripts/build-ef.mjs
           #   supabase link ${SUPABASE_URL_DEV} --access-token ${SUPABASE_ACCESS_TOKEN}
           #   for fn in fn-agent-run fn-canvas fn-import-course fn-integrations \
           #             fn-job-dispatcher fn-notifications fn-skills; do

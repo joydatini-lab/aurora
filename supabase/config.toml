@@ -31,14 +31,44 @@ skill-states-recompute = "0 */6 * * *"
 #    (batch over the day's TaskCompleted / FlashcardReviewed events).
 progress-evidences-recompute = "0 4 * * *"
 
-[functions.fn_job_dispatcher]
+# ---------------------------------------------------------------------------
+# EF catalog.
+#
+# The slugs MUST match the directory names (supabase/functions/<slug>/), which
+# use HYPHENS. The previous keys used underscores (fn_job_dispatcher), which
+# never matched any directory: packages/config/src/functions-manifest.ts only
+# reads config for a slug that already exists on the filesystem, so every one
+# of these blocks was silently dead. No behaviour depended on them, but they
+# were misleading — an owner reading this file would think the dispatcher was
+# configured. Corrected to the real slugs.
+#
+# `entrypoint` points each function at the bundle produced by
+# `node scripts/build-ef.mjs` (supabase/functions/<slug>/dist/index.ts), which
+# inlines the workspace packages so the upload is self-contained. The CLI
+# default is functions/<slug>/index.ts
+# (packages/config/src/functions-manifest.ts:30); paths here are resolved
+# relative to the supabase/ directory.
+# ---------------------------------------------------------------------------
+
+[functions.fn-job-dispatcher]
 # the ONLY dispatcher (01 §5.2)
-[functions.fn_import_course]
+entrypoint = "functions/fn-job-dispatcher/dist/index.ts"
+[functions.fn-import-course]
 # {courseId, fileRefs[]} -> 202 {jobId}
-[functions.fn_notifications]
+entrypoint = "functions/fn-import-course/dist/index.ts"
+[functions.fn-notifications]
 # events trigger -> OneSignal (Phase 1), quiet-hours aware
-[functions.fn_agent_run]
+entrypoint = "functions/fn-notifications/dist/index.ts"
+[functions.fn-agent-run]
 # {intent, contextRefs[], taskProfile} -> 202 {ok, data:{jobId}}
-[functions.fn_canvas]
+entrypoint = "functions/fn-agent-run/dist/index.ts"
+[functions.fn-canvas]
 # le module Canvas (single-writer AD-7) applique les commandes canvas.read /
 # canvas.write / canvas.comment émises par le kernel (OQ-03). Authed (JWT user).
+entrypoint = "functions/fn-canvas/dist/index.ts"
+[functions.fn-integrations]
+# adaptateurs sortants (R2, providers) — 2 imports workspace, donc bundlé.
+entrypoint = "functions/fn-integrations/dist/index.ts"
+[functions.fn-skills]
+# skills indexés (S5) — verify_jwt = true côté projet.
+entrypoint = "functions/fn-skills/dist/index.ts"

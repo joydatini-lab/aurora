@@ -183,6 +183,18 @@ jobs:
         if: ${{ hashFiles('scripts/check-ef-imports.mjs') != '' }}
         run: node scripts/check-ef-imports.mjs
 
+      - name: "EF bundles deployable (workspace imports inlined)"
+        # check-ef-imports proves the symbols resolve in the repo; this proves
+        # the FUNCTION CAN SHIP self-contained. Measured live 2026-10-24: 5 EFs
+        # ACTIVE (0 workspace imports each) and 3 missing — fn-canvas (0),
+        # fn-integrations (2), fn-job-dispatcher (10). Deployment stopped
+        # (CI deploy is `if: false` pending OQ-03); fn-canvas is the
+        # counterexample showing workspace imports are not the sole cause.
+        # Rebuilds from source (a stale dist/ cannot satisfy it) and asserts no
+        # workspace path, no CJS require(), no bare specifier in the output.
+        if: ${{ hashFiles('scripts/check-ef-bundles.mjs') != '' }}
+        run: node scripts/check-ef-bundles.mjs
+
       - name: "No cross-module JOIN (03 S5.4 / F-03)"
         if: ${{ hashFiles('scripts/check-view-joins.ts') != '' }}
         # Node 22.20+ : --experimental-strip-types (run TS natif, zero dep).
