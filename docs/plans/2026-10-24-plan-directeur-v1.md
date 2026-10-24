@@ -74,25 +74,35 @@ fait pour Learning). Le dispatcher le `skip` silencieusement
 (`index.ts:632`, `handler === null → skipped += 1`), donc les jobs restent
 `pending` pour toujours.
 
-### 2.2 Le payload du cron est incompatible avec le handler
+### 2.2 Le payload du cron est incompatible avec le handler — **CORRIGÉ**
 
-Même une fois le handler câblé, il ne consommerait pas les jobs du cron. Le
+Même une fois le handler câblé, il ne consommait pas les jobs du cron. Le
 cron `aurora_skill_recompute` insère `payload = '{}'::jsonb` (vérifié dans
-`cron.job`), et le handler exige un `skillId` non vide :
+`cron.job`), et le handler exigeait un `skillId` non vide :
 
 ```
 packages/progress/src/jobs.ts:57  if (typeof skillId !== 'string' || skillId === '')
 packages/progress/src/jobs.ts:58    return { ok: false, error: 'progress/missing_skill_id' }
 ```
 
-Les 17 jobs `skill_recompute` passeraient donc `pending` → `failed` avec
-`missing_skill_id`. **C'est un défaut de conception du cron, pas du handler.**
-Le cron ne sait pas quel skill recalculer ; il faudrait soit un payload
-`{skillId}` par skill due, soit un handler « recompute all for user ».
+Les 17 jobs `skill_recompute` seraient passés `pending` → `failed` avec
+`missing_skill_id`. **C'était un défaut de conception, et l'arbitrage est
+revenu au handler** : 0014 documente l'intention du kind comme « Re-derives
+skill_states from evidence » (un balayage), et le cron n'a structurellement
+aucun moyen de savoir quels skills sont dus — il ne lit aucune table de skills,
+il insère une ligne par utilisateur avec `'{}'::jsonb`.
 
-### 2.3 Le réveil est structurellement impossible
+Le handler balaie donc tous les skills de l'utilisateur (`listSkillIds` lit
+`progress_evidences`, la connaissance réelle), et `payload.skillId` reste
+accepté comme filtre pour la voie événementielle (un insert d'evidence connaît
+son skill). Un payload vide n'est plus une erreur.
 
-C'est le point le plus grave, et il n'est **pas** résolu par le déploiement.
+**Troisième défaut trouvé en corrigeant celui-ci** : le handler **ne persistait
+rien**. Il calculait un `SkillState`, le renvoyait comme résultat de job, et
+n'écrivait jamais `skill_states` — un run « réussi » ne changeait donc rien.
+Le port `saveSkillState` a été ajouté (AD-7 : Progress est le seul écrivain).
+
+### 2.3 Le réveil est structurellement impossible — **CORRIGÉ (migration 0028)**
 
 ```
 cron.job #3  schedule '*/5 * * * *'
@@ -100,25 +110,44 @@ cron.job #3  schedule '*/5 * * * *'
 ```
 
 Un Edge Function HTTP **ne peut pas** tenir un `LISTEN` : `pg_notify` n'a aucun
-consommateur possible. Et le réveil par la base est fermé :
+consommateur possible. Ce cron a tourné 241+ fois, « succeeded » à chaque fois,
+et n'a jamais réveillé personne. Le `pg_notify` du trigger
+`trg_job_queue_notify` (0010) avait le même consommateur absent.
 
-```
-pg_available_extensions → pg_net  0.20.4  (installed_version: null)
-pg_extension            → pg_cron, pgcrypto, vector, supabase_vault, ...
-```
+**Résolu par `0028_job_dispatch_wakeup.sql`** — `pg_net` installé (0.20.4), le
+cron 3 remplacé par un `net.http_post` réel vers `fn-job-dispatcher`. Le choix
+`pg_net` vs GitHub Actions est **tranché** : `pg_net` est dans la base, ne
+dépend d'aucun secret CI, et la voie était déjà ouverte (extension disponible).
 
-`pg_net` est **disponible mais non installé** — donc la voie de correction
-existe (`net.http_post` depuis un cron). Alternatives : un cron GitHub Actions
-(motif déjà en place : `sync-health.yml`, `cron: '0 3 * * *'`) ou un appel HTTP
-externe. **À trancher** (§7).
+**Le réveil est prouvé fonctionnel, live** (`select public.wake_job_dispatcher()`
+→ `net._http_response.id = 1` → **HTTP 404** `Requested function was not
+found`). L'appel HTTP part, atteint la plateforme, et la plateforme elle-même
+répond que la fonction n'existe pas. C'est la démonstration la plus directe que
+le réveil marche *et* que le blocage restant est bien le déploiement (§2.4).
 
-### 2.4 Le déploiement ne part pas
+**Sécurité appairée** : `fn-job-dispatcher` n'avait **aucune** garde d'auth —
+n'importe quel appelant atteignant l'URL pouvait déclencher un balayage sur
+*tous* les utilisateurs (service_role). Ajouter un réveil non authentifié aurait
+transformé un trou latent en trou actif. Le dispatcher est désormais
+**fail-closed** : header `x-aurora-internal` (la convention déjà utilisée par
+`fn-canvas` et `_shared/fn-agent-bootstrap.ts:409`), comparaison en temps
+constant, 401 sinon — y compris quand `INTERNAL_FN_SECRET` est absent
+(« autoriser parce que non configuré » est exactement ce qui vide une garde de
+son sens).
+
+### 2.4 Le déploiement ne part pas — **LE blocage restant, prouvé**
 
 `.github/workflows/release.yml:164` — le job `deploy` est `if: false` (gate
 OQ-03). Les 5 EF live ont été déployées **à la main** entre le 2026-09-30 et le
 2026-10-07. Les 3 manquantes (`fn-canvas` 2026-10-06, `fn-integrations`
 2026-10-03, `fn-job-dispatcher` 2026-09-23) sont postérieures ou jamais
 redéployées.
+
+**Preuve la plus directe** (2026-10-24) : le réveil `pg_net` appelle
+`/functions/v1/fn-job-dispatcher` et reçoit
+`{"code":"NOT_FOUND","message":"Requested function was not found"}` (HTTP 404).
+La fonction n'est pas déployée. Tant qu'elle ne l'est pas, **les 34 jobs
+restent `pending`**, quel que soit le reste.
 
 **Correction d'une erreur de ma part :** j'ai d'abord écrit que ces 3 EF ne
 pouvaient pas se déployer parce qu'elles importent `packages/*`. C'est faux en
@@ -141,26 +170,35 @@ mais ce n'est pas le diagnostic.
 | T1b | `scripts/check-ef-bundles.mjs` + câblage CI | détecte 3 défauts, accepte 2 cas sains |
 | T1b | `config.toml` : slugs corrigés + `entrypoint` | 7 sections ↔ 7 dossiers |
 | T1b | `release.yml` : bundle avant deploy | `if: false` conservé (OQ-03) |
+| T1c | **`skill_recompute` câblé** : `buildProgressHandlers()` + balayage + persistance | `progress` 20/20, 17 jobs routables |
+| T1c | **Réveil réel** : `0028` — `pg_net` installé, cron `pg_notify` → `net.http_post` | live : `net._http_response` id 1 |
+| T1c | **Garde d'auth fail-closed** du dispatcher (`x-aurora-internal`, 401) | `isAuthorized()` + temps constant |
+| T1c | **Garde-fou de routage** : tout `JobKind` a un handler (ou un motif) | `tests/jobs/routing-coverage.test.ts`, 5/5, contrôles négatifs |
 
-**Gate complet :** TYPECHECK 0 · LINT 0 · TEST 0 (675 node + 48 vitest) ·
-BUILD 0 · EF-IMPORTS 0 · EF-BUNDLES 0 · BOUNDARIES 0 · RLS-STATIC 0 ·
+**Gate complet :** TYPECHECK 0 · LINT 0 · TEST 0 (676 node) · BUILD 0 ·
+EF-IMPORTS 0 · EF-BUNDLES 0 · ROUTING 0 · BOUNDARIES 0 · RLS-STATIC 0 ·
 VIEW-JOINS 0 · SPINE 0.
 
 ---
 
-## 4. Nouveaux défauts trouvés cette session (non corrigés)
+## 4. Nouveaux défauts trouvés cette session
 
-| # | Défaut | Impact | Preuve |
-|---|---|---|---|
-| N1 | `PROGRESS_JOB_HANDLERS` vide alors que `buildSkillRecomputeHandler` existe et est testé | 17 jobs `skill_recompute` jamais routés | `progress/src/jobs.ts:114` |
-| N2 | Le cron `skill_recompute` envoie `payload={}`, le handler exige `skillId` | échoueraient même routés | `cron.job` + `jobs.ts:57` |
-| N3 | `pg_net` non installé ; le cron fait `pg_notify` sans consommateur possible | **aucun réveil** | `pg_extension`, `cron.job` |
-| N4 | `fn-canvas` absente alors qu'elle n'importe aucun package | déployer ≠ suffisant | `list_edge_functions` |
-| N5 | 3 fonctions live-only, `SECURITY DEFINER` exécutables par `anon` | reset base = perte ; surface d'attaque | advisors (WARN ×3) |
-| N6 | Protection mots de passe compromis désactivée | sécurité auth | advisors (WARN) |
-| N7 | `vector` dans `public` ; 2 fonctions `search_path` mutable ; `keep_alive` RLS sans politique | hygiène | advisors (WARN/INFO) |
+| # | Défaut | Statut |
+|---|---|---|
+| N1 | `PROGRESS_JOB_HANDLERS` vide alors que `buildSkillRecomputeHandler` existe et est testé | **CORRIGÉ** (4eae07c) |
+| N2 | Le cron `skill_recompute` envoie `payload={}`, le handler exige `skillId` | **CORRIGÉ** (4eae07c) — balayage |
+| N3 | `pg_net` non installé ; le cron fait `pg_notify` sans consommateur possible | **CORRIGÉ** (0028) — prouvé live |
+| N4 | `fn-canvas` absente alors qu'elle n'importe aucun package | **OUVERT** — le déploiement, pas le bundling |
+| N5 | Le handler `skill_recompute` ne persistait rien (résultat jeté) | **CORRIGÉ** (4eae07c) — port `saveSkillState` |
+| N6 | `fn-job-dispatcher` n'avait **aucune** garde d'auth | **CORRIGÉ** (0028) — fail-closed |
+| N7 | Le dispatcher n'est pas déployé (404 prouvé) | **OUVERT — le seul blocage restant** |
+| N8 | 3 fonctions live-only, `SECURITY DEFINER` exécutables par `anon` | reset base = perte ; surface d'attaque | advisors (WARN ×3) |
+| N9 | Protection mots de passe compromis désactivée | sécurité auth | advisors (WARN) |
+| N10 | `vector` dans `public` ; 2 fonctions `search_path` mutable ; `keep_alive` RLS sans politique | hygiène | advisors (WARN/INFO) |
 
-N1–N4 bloquent T1. N5–N7 sont de l'hygiène à traiter en tranche 4.
+N1–N3, N5, N6 sont corrigés et vérifiés. N4 et N7 sont le **même** blocage —
+le déploiement des EF — et c'est le seul qui empêche les 34 jobs de drainer.
+N8–N10 sont de l'hygiène à traiter en tranche 4.
 
 ---
 
@@ -171,16 +209,23 @@ N1–N4 bloquent T1. N5–N7 sont de l'hygiène à traiter en tranche 4.
 
 ### Tranche 1 — Rendre la chaîne de jobs réelle *(T1, le blocage n°1)*
 
-| Lot | Contenu | Preuve de fin |
+| Lot | Contenu | Statut |
 |---|---|---|
-| 1.1 | Câbler `skill_recompute` : fabrique `RecomputeContext` REST (miroir de `buildLearningHandlers`) + l'ajouter à `PROGRESS_JOB_HANDLERS` | handler routé ; test d'intégration |
-| 1.2 | Trancher N2 : payload par skill due **ou** handler « all for user » | décision écrite + implémentée |
-| 1.3 | Trancher N3 et implémenter le réveil (`pg_net` + `net.http_post`, **ou** cron GH Actions) | un dispatch réel produit `job_logs > 0` |
-| 1.4 | Déployer les 8 EF (bundle d'abord) | `list_edge_functions` → 8, ACTIVE |
-| 1.5 | Purger/requeue les 34 jobs morts et **prouver** le traitement | `job_queue pending → 0` ; `job_logs` renseigné |
+| 1.1 | Câbler `skill_recompute` : `buildProgressHandlers()` (miroir de `buildLearningHandlers`) + table non vide | **FAIT** (4eae07c) |
+| 1.2 | Trancher N2 : balayage côté handler (`listSkillIds`) + persistance (`saveSkillState`) | **FAIT** (4eae07c) |
+| 1.3 | Trancher N3 et implémenter le réveil (`pg_net` + `net.http_post`) + garde d'auth fail-closed | **FAIT** (0028), prouvé live |
+| 1.4 | Déployer les 8 EF (bundle d'abord) | **BLOQUÉ** — gate OQ-03 (`if: false`). 404 prouvé. |
+| 1.5 | Purger/requeue les 34 jobs morts et **prouver** le traitement | **BLOQUÉ par 1.4** |
 
 **Porte T1 :** un job produit par cron est consommé de bout en bout, et
 `job_logs` n'est plus vide. **Débloque :** B.1, B.3, E.1, F, H, I.4, K.
+
+**État au 2026-10-24 :** 1.1–1.3 sont faits, testés et vérifiés live. La porte
+T1 reste **fermée** sur un unique point, le déploiement (1.4), qui est une
+décision d'opérateur (OQ-03) et non un travail de code. Le réveil est prouvé
+fonctionnel : il reçoit un 404 qui *nomme* le blocage. Dès que
+`supabase functions deploy fn-job-dispatcher` tourne, les 34 jobs drainent —
+c'est le seul geste restant.
 
 ### Tranche 2 — Aligner base ↔ dépôt *(la cause racine de la dérive)*
 
@@ -236,19 +281,25 @@ sous-estimer.
 
 ---
 
-## 7. Décisions restantes (bloquantes pour la tranche 1)
+## 7. Décisions restantes
 
-| # | Question | Options |
+| # | Question | Statut |
 |---|---|---|
-| **T1-N3** | Le réveil des jobs ? | (a) installer `pg_net` + `net.http_post` depuis `pg_cron` · (b) cron GitHub Actions qui POST le dispatcher · (c) service externe |
-| **T1-N2** | `skill_recompute` ? | (a) payload `{skillId}` par skill due (le cron change) · (b) handler « recompute all for user » (le handler change) |
-| **T2-OQ03** | Réactiver le job `deploy` ? | (a) oui, avec les secrets · (b) déploiement manuel vérifié documenté |
+| **T1-N3** | Le réveil des jobs ? | **TRANCHÉ (0028)** : (a) `pg_net` + `net.http_post` depuis `pg_cron`. Installé et prouvé live (404 = la fonction n'existe pas, pas le réveil). |
+| **T1-N2** | `skill_recompute` ? | **TRANCHÉ** : (b) le handler balaie tous les skills de l'utilisateur (`listSkillIds`), avec `payload.skillId` conservé comme filtre optionnel pour la voie événementielle. 0014 documente l'intention comme « Re-derives skill_states from evidence » → c'est un balayage, et le cron n'a aucun moyen de connaître les skills dus. |
+| **T2-OQ03** | Réactiver le job `deploy` ? | **OUVERT — le seul blocage restant.** Le réveil reçoit un 404 prouvé. (a) oui, avec les secrets · (b) déploiement manuel vérifié documenté |
 | **D2** | Coquille web ? | (a) créer `apps/web-app` maintenant · (b) rendre `apps/mobile` responsive d'abord |
 
-**Recommandation :** T1-N3 (a) — `pg_net` est déjà disponible (0.20.4), c'est le
-chemin le plus court et il rend le réveil *observable* (`net._http_response`) ·
-T1-N2 (a) — le cron sait quels skills sont dus, le handler n'a pas à deviner ·
-T2-OQ03 (a) · D2 (a).
+**Recommandation :** T1-N3 (a) — fait · T1-N2 (b) — fait, avec la nuance que
+le handler ne « devine » rien : il lit `progress_evidences` pour savoir quels
+skills existent, ce que le cron ne peut pas faire · T2-OQ03 (a) · D2 (a).
+
+**Note sur T1-N2 :** la recommandation initiale était (a) « le cron sait quels
+skills sont dus ». C'est inexact — le cron (0014) insère une ligne par
+utilisateur avec `'{}'::jsonb`, il ne consulte aucune table de skills. La
+connaissance vit dans `progress_evidences`, que seul le handler peut lire sans
+dupliquer la logique du module dans le SQL du cron. (b) est donc le bon choix,
+et le payload vide n'est plus une erreur.
 
 ---
 

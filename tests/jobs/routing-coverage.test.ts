@@ -117,3 +117,50 @@ test('routing: PROGRESS_JOB_HANDLERS is not an empty array (skill_recompute was 
       'jobs would be skipped silently, exactly as they were for 16 days.',
   );
 });
+
+test('routing: the dispatcher is fail-closed (a wake-up without the secret must 401)', () => {
+  const src = readFileSync(DISPATCHER, 'utf8');
+  // The guard exists, reads the internal secret, and denies by default.
+  assert.match(src, /INTERNAL_FN_SECRET/, 'the dispatcher does not read INTERNAL_FN_SECRET');
+  assert.match(
+    src,
+    /function isAuthorized\(/,
+    'no isAuthorized() guard: anything reaching the URL could force a dispatch sweep',
+  );
+  assert.match(src, /if \(!INTERNAL_FN_SECRET\) return false;/,
+    'isAuthorized() must fail closed when the secret is unconfigured — "allow because ' +
+      'unconfigured" turns an auth guard into a formality.');
+  assert.match(src, /constantTimeEqual/, 'the secret compare must be constant-time');
+  assert.match(src, /401/, 'an unauthorized call must answer 401');
+});
+
+test('routing: the wake-up cron does not rely on pg_notify (an EF cannot LISTEN)', () => {
+  const sql = readFileSync(
+    join(ROOT, 'supabase', 'migrations', '0028_job_dispatch_wakeup.sql'),
+    'utf8',
+  );
+  assert.match(sql, /net\.http_post/, 'the wake-up must POST over pg_net');
+  assert.match(sql, /wake_job_dispatcher/, 'the wake-up function is missing');
+  assert.match(
+    sql,
+    /CREATE EXTENSION IF NOT EXISTS pg_net/,
+    'pg_net must be created (it was available 0.20.4 but NOT installed)',
+  );
+  assert.match(
+    sql,
+    /cron\.unschedule\('aurora_event_dispatch'\)/,
+    'the inert pg_notify cron must be unscheduled, not left beside the working one',
+  );
+
+  // Assert on the SCHEDULED BODY, not the file: the header comment legitimately
+  // quotes the old pg_notify line to document what was wrong.
+  const scheduled = sql.match(/cron\.schedule\(\s*'aurora_event_dispatch'[\s\S]*?\$cmd\$([\s\S]*?)\$cmd\$/);
+  assert.ok(scheduled, 'the aurora_event_dispatch cron.schedule(...) call was not found');
+  assert.doesNotMatch(
+    scheduled[1],
+    /pg_notify/,
+    'the wake-up cron body must not still be a pg_notify no-op — an Edge Function ' +
+      'has no Postgres session and cannot LISTEN.',
+  );
+  assert.match(scheduled[1], /wake_job_dispatcher\(\)/, 'the cron body must call the wake-up');
+});

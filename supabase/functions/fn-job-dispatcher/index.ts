@@ -771,8 +771,50 @@ async function report(
   }).catch(() => {});
 }
 
+// ——— Auth guard (migration 0028) ————————————————————————————————————————
+//
+// Before 0028 this function had NO auth check: anything reaching the URL
+// could force a dispatch sweep. That was latent (the function was never
+// deployed) but it stops being latent the moment a wake-up calls it. The
+// wake-up and the guard ship together.
+//
+// The internal channel is the established one (`fn-canvas`,
+// `_shared/fn-agent-bootstrap.ts:409`): the `x-aurora-internal` header
+// carrying `INTERNAL_FN_SECRET`. Absent secret = the internal path is simply
+// unavailable and the function fails closed with 401 — never "allow because
+// unconfigured", which is how an auth guard becomes a formality.
+const INTERNAL_FN_SECRET = Deno.env.get("INTERNAL_FN_SECRET") ?? "";
+const INTERNAL_SECRET_HEADER = "x-aurora-internal";
+
+/** Constant-time compare (timing-attack safe — same helper shape as fn-canvas). */
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= (a.charCodeAt(i) & 0xff) ^ (b.charCodeAt(i) & 0xff);
+  }
+  return diff === 0;
+}
+
+/**
+ * The caller may act when it presents the internal secret. The secret is
+ * env-only (AD-3): never in the repo, never on the device.
+ */
+function isAuthorized(req: Request): boolean {
+  if (!INTERNAL_FN_SECRET) return false;
+  const presented = req.headers.get(INTERNAL_SECRET_HEADER) ?? "";
+  if (!presented) return false;
+  return constantTimeEqual(presented, INTERNAL_FN_SECRET);
+}
+
 Deno.serve(async (req) => {
   try {
+    if (!isAuthorized(req)) {
+      return new Response(
+        JSON.stringify(err("job/unauthorized", "missing or invalid internal secret")),
+        { status: 401, headers: { "Content-Type": "application/json" } },
+      );
+    }
     const body = await req.json().catch(() => ({}));
     const limit = (body as { limit?: number }).limit ?? 10;
     const now = new Date().toISOString();
