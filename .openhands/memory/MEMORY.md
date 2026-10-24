@@ -89,8 +89,13 @@ Docs SSoT: `docs/` (agent, mobile, design-system, integration). Repo conventions
 - **No responsive system**: `packages/ui/tailwind.config.ts` defines NO `screens` breakpoints.
 - **OWNER RATIFIED 2026-10-24**: OQ-1 **Ionic = MOBILE ONLY** (web+desktop = React +
   shadcn/ReUI, no `ion-*`) · OQ-2 **Electron confirmed, Tauri rejected** · OQ-3 scope =
-  **the 44 screens PLUS the new-feature screens** (Design Space Pro etc.) · OQ-4 (1024 px
-  threshold) still a proposal. Because the Ionic choice contradicts reference **D-06**
+  **the 44 screens PLUS the new-feature screens** (Design Space Pro etc.) · OQ-4/OQ-6
+  **DECIDED by the agent on owner delegation ("fais ce qui est judicieux")**: responsive =
+  **5 breakpoints (Tailwind defaults: base/sm/md/lg/xl/2xl) × 8 screen gabarits**
+  (dashboard, list+detail, calendar, editor, flow, guided-session, form, special) × 7
+  contracts C1–C7 from reference §4.3; `lg`=1024px = the structural 1→2 panel threshold;
+  8 layout tokens (`aurora.layout.*`). OQ-10 **ratified**: create `apps/web-app` (React);
+  `apps/mobile` (Ionic) kept. Lot plan W0–W10 in `web-shell-and-responsive.md` §6. Because the Ionic choice contradicts reference **D-06**
   (§8.7.1/§8.7.3: "Ionic React = the Web responsive business app"), the reference itself
   (§10.2 item 6) demands a **motivating ADR** — written in `adr-018` §7.
 - **DESIGN SPACE PRO IS ENTIRELY MISSING from the repo** though it is a FIRST-VERSION module
