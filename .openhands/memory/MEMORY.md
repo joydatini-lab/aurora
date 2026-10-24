@@ -3,128 +3,148 @@
 Detail, evidence and per-lot narratives live in the daily logs (`.openhands/memory/YYYY-MM-DD.md`).
 
 ## Commands / environment
-- Toolchain: node 24, pnpm 10.28, TS 5.9. Use `corepack pnpm ...`. Default (isolated) install
-  layout is correct — do NOT add `.npmrc` hoisting.
+- Toolchain: node 24, pnpm 10.28, TS 5.9. Use `corepack pnpm ...`. Isolated install layout is
+  correct — do NOT add `.npmrc` hoisting.
 - Gates: `pnpm -r typecheck` · `pnpm -r lint` · `pnpm -r test` · `pnpm -r build` ·
   `sh scripts/check-boundaries.sh` · `sh scripts/check-rls.sh` ·
   `node --experimental-strip-types scripts/check-view-joins.ts` ·
-  `node --experimental-strip-types tests/spine/spine.test.ts`.
-- `pnpm -F @aurora/mobile build:web` needs `NODE_OPTIONS=--max-old-space-size=8192` (default OOMs).
-- **BASELINE (2026-10-24, `b2d7040`) = GREEN.** typecheck 0 · lint 0 (0 err/0 warn) · test
-  **661/661** · build 0 · boundaries G1–G4 OK · RLS OK (28 files) · view-joins OK (88 .sql).
+  `node --experimental-strip-types tests/spine/spine.test.ts` ·
+  `node scripts/check-ef-imports.mjs` · `node scripts/check-ef-bundles.mjs`.
+- **BASELINE = GREEN** (`b2d7040`; re-verified `7221f20`): typecheck 0 · lint 0 · test 0
+  (675 node + 48 vitest) · build 0 · boundaries G1–G4 · RLS (28 files) · view-joins (88 .sql) ·
+  spine · EF-imports (70 symbols) · EF-bundles (8/8).
 - **`pnpm -r <script>` stops at the FIRST failing package** — a green package hides all following
   ones. Never read `pnpm -r` output as "all green"; iterate per package.
-- CI has NEVER run on GitHub (`actions/runs` → `total_count: 0`). Its wave-0 `continue-on-error`
-  guards are keyed on `!exists('packages/domain/package.json')`, which now EXISTS, so every gate
-  step is already BLOCKING.
-- Pushing: a tokenless https remote prompts for a username and HANGS. Fix:
+- **A green local gate can be FALSE**: `rm -rf packages/*/dist apps/*/dist` first (gitignored
+  stale `dist/` makes typecheck pass locally and fail in clean CI — TS6305/TS6059/TS6307).
+- Pushing: a tokenless https remote prompts and HANGS. Fix:
   `git remote set-url origin "https://${GITHUB_TOKEN}@github.com/joydatini-lab/aurora.git"`.
   (`gh` is unauthenticated; use curl against api.github.com.)
+- The repo is a FORK (`joydatini-lab/aurora` ← `joynagassi-cyber/aurora`): `push` events do NOT
+  trigger workflows. `ci-base` runs everywhere; `ci-gate` is `main`-only → needs a PR.
+  `sync-health` fails BY DESIGN without CF/R2 secrets.
+- Nested `pnpm run` can't find `pnpm`; `corepack enable` FAILS (EACCES). Shim:
+  `printf '#!/bin/sh\nexec corepack pnpm "$@"\n' > /tmp/bin/pnpm; chmod +x /tmp/bin/pnpm;
+  export PATH=/tmp/bin:$PATH`.
+- Editing CRLF files (tsconfig.base.json + 11 tsconfigs) with Python `open(w)` rewrites to LF →
+  200-line diff. Edit in binary; check `git diff --stat -w`.
+- Long markdown heredocs with code fences can FAIL SILENTLY — use file_editor.
 
 ## Architecture facts (load-bearing)
 - **`agent_runs` (0008) is the ONLY conversation store** — no conversations/messages tables.
-  Server-owned, per-user RLS; device reads it via a publishable Supabase client (AD-7), never
-  writes. Not a PowerSync stream; the device polls (3 s while running, terminal stops the poll).
+  Server-owned, per-user RLS; device reads via a publishable client (AD-7), never writes. Not a
+  PowerSync stream; the device POLLS (3 s while running, terminal stops the poll).
 - Device NEVER sees a provider stream (F-09): the kernel runs server-side
   (fn-agent-run → job → kernel → polled `agent_runs`).
 - `packages/agent` = server kernel (device sees only AgentRunState). `packages/ui` = pure design
-  system (AD-6: must NOT import @aurora/data or @aurora/platform).
-- `packages/ui` vendors @assistant-ui/react + ReUI (re-exported from `src/index.ts`); `cn` resolves
-  via the `cn@0.4.0` npm package (`src/lib/utils.ts` re-exports it).
+  system (AD-6: must NOT import @aurora/data or @aurora/platform). `packages/ui` vendors
+  @assistant-ui/react + ReUI; `cn` resolves via the `cn@0.4.0` npm package.
 - Route table is a documented SSoT (`docs/mobile/navigation-and-page-composition.md`) — ratify new
   routes there. `/agent` = chat surface; `/agent/conversations` = run list.
+- `packages/ui` = ~272 component files, ~190 export lines. `assistant-ui/elements/` 138 files
+  NEVER wired into any app (brick reserve, D-018.2). No responsive system:
+  `packages/ui/tailwind.config.ts` has NO `screens`.
+- Reference §7.2 forbids new root entities before audit → a logo/poster/document = an existing
+  **`Artifact`**. §4.3 responsive CONTRACTS are requirements, not proposals.
+
+## The dispatcher chain is broken in 4 independent ways (2026-10-24)
+Only #1 is fixed. **A green gate says NOTHING about the job chain.**
+1. **Boot** — FIXED (`c8367fa`): 2 imports of non-existent symbols meant the EF never loaded.
+2. **Routing** — OPEN: `PROGRESS_JOB_HANDLERS` is `[]` (`packages/progress/src/jobs.ts:114`)
+   while `buildSkillRecomputeHandler` EXISTS (l.47) and is tested
+   (`progress/test/progress.test.ts:265`). Never called — the missing piece is a factory
+   injecting `RecomputeContext`, like `buildLearningHandlers` does for Learning. The dispatcher
+   `skip`s unrouted jobs silently (`fn-job-dispatcher/index.ts:632`).
+3. **Payload** — OPEN, subtler: cron `aurora_skill_recompute` inserts `payload='{}'::jsonb`
+   (`cron.job`) but the handler needs a non-empty `skillId` (`progress/src/jobs.ts:57-58`).
+   Wiring it alone flips pending → failed with `progress/missing_skill_id`. Design defect.
+4. **Wake-up** — OPEN, NOT fixable by deploying: cron job 3 runs
+   `pg_notify('aurora_job_dispatcher')`, which an HTTP EF cannot `LISTEN` to, and `pg_net` is
+   AVAILABLE (0.20.4) but NOT INSTALLED. A perfect deploy would never be invoked.
+- Live: 34 `pending` jobs (17 `fsrs-tick` + 17 `skill_recompute`), oldest 2026-10-08, ONE
+  `user_id`; `job_logs` = 0 rows. Cron: 4 jobs (fsrs 02:00, skill 03:00, event_dispatch */5,
+  keep_alive 00:00).
+
+## EF deploy facts (verified against the CLI source, 2026-10-24)
+- The CI `deploy` job is `if: false` (`.github/workflows/release.yml:164`, OQ-03). Last manual
+  deploys 2026-09-30..2026-10-07. **That — not workspace imports — is why `fn-canvas`,
+  `fn-integrations`, `fn-job-dispatcher` are missing.** `fn-canvas` imports ZERO workspace
+  packages and is still absent: never claim the import boundary as cause.
+- The modern CLI's import-walk boundary extends to the **nearest git root** and documents that
+  monorepo files outside the workdir "can still deploy"
+  (`apps/cli/src/shared/functions/deploy.ts:2244`). Bundling is hardening, not a proven fix.
+- Deploy entrypoint default = `functions/<slug>/index.ts`
+  (`packages/config/src/functions-manifest.ts:30`), overridable via
+  `[functions.<slug>] entrypoint = ...` in `supabase/config.toml`, resolved RELATIVE to
+  `supabase/` (`deploy.ts:2148`). Paths outside the workdir are refused.
+- The CLI only accepts slugs matching `/^[a-zA-Z0-9_-]+$/` AND having an `index.ts`
+  (`functions-manifest.ts:85-90`) → a dir without `index.ts` is ignored (`_shared/` is safe).
+- **config.toml trap**: keys must match the DIRECTORY name. 5 pre-existing blocks used underscores
+  (`fn_job_dispatcher`) vs hyphen dirs (`fn-job-dispatcher`) → never matched, silently dead.
+  Fixed in `7221f20`. `scripts/build-ef.mjs` bundles each EF to `dist/index.ts` (workspace pkgs
+  inlined; `node:`/`npm:`/`jsr:` external, bare npm → `npm:name@version` because `packages/agent`
+  pulls the Vercel `ai` SDK → `@vercel/oidc`, which CJS `require("fs")`).
 
 ## Gate integrity (learned the hard way)
-- ALWAYS run the RECURSIVE gate before claiming it green: `pnpm -F <pkg> typecheck` passed while
-  `pnpm -r typecheck` was RED. Same for lint.
-- Nested `pnpm run` scripts can't find `pnpm`; `corepack enable` FAILS (EACCES). Shim:
-  `printf '#!/bin/sh\nexec corepack pnpm "$@"\n' > /tmp/bin/pnpm; chmod +x /tmp/bin/pnpm;
-  export PATH=/tmp/bin:$PATH`.
+- ALWAYS run the RECURSIVE gate before claiming green; same for lint.
+- **A `react-hooks/*` error can mean the PLUGIN is missing, not bad code.** ESLint reports
+  *"Definition for rule … was not found"* for every `eslint-disable` of an unresolvable rule.
+  `eslint --print-config <file>` is authoritative.
+- **Vendored != Aurora**: `packages/ui/src/components/{reui,assistant-ui,examples}/**` is
+  registry-installed third-party code (treat like node_modules). `components/ui/**` IS Aurora.
 - **Phantom empty-state defect**: a page hard-coding `state={{ status: 'empty' }}` with 0 data
-  calls. Find via `grep -rn "state={{ status: 'empty' }}" apps/mobile/src/pages/`. `UxStates` does
-  NOT render `children` in the `empty` branch (the body vanishes from the DOM).
+  calls. `grep -rn "state={{ status: 'empty' }}" apps/mobile/src/pages/`. `UxStates` does NOT
+  render `children` in the `empty` branch (the body vanishes from the DOM).
+- `check-view-joins.ts` needs `node --experimental-strip-types` (`pnpm exec tsx` fails). G2
+  false-positived on `sk-[A-Za-z0-9]{8,}`; threshold now `{20,}`. `code_files()` scans
+  `git ls-files` only.
 
 ## Testing gotchas
-- jsdom lacks `window.matchMedia`: any test rendering `AgentThinkingLoader` (or a parent) must mock
-  it (see `packages/ui/test/chat-panel.test.tsx` `mockMatchMedia`).
+- jsdom lacks `window.matchMedia`: any test rendering `AgentThinkingLoader` (or a parent) must
+  mock it (see `packages/ui/test/chat-panel.test.tsx`).
 - `packages/ui` tests use a local `test/render.ts` (React 18 `act` + createRoot), not RTL.
 
 ## LibreChat — DISPROVEN (do not resurrect)
 - The "LibreChat integration" story (branch `integration/librechat`, `docs/integration/`,
-  ADR-INT-001, M1→M5.2, SHA e8f3be08…) was **FALSE**: the branch is a **404** and
-  `docs/integration/` does not exist. Owner decision: **LibreChat abandoned**, LobeHub = design
-  reference only. Refutation: `docs/plans/2026-10-23-repriorisation.md`.
+  ADR-INT-001, M1→M5.2, SHA e8f3be08…) was **FALSE**: branch 404, `docs/integration/` absent,
+  and all 15 cited commits (`eab561a`, `fe45e04`, …) do not exist. Owner decision: **LibreChat
+  abandoned**, LobeHub = design reference only. Refutation:
+  `docs/plans/2026-10-23-repriorisation.md`.
 
-## Phase 0 rebaselining (branch `rebaseline/2026-10-23`)
-- Owner decisions: **web-first → desktop → mobile** (adr-extract §23 "mobile-only" SUPERSEDED);
-  **LibreChat abandoned**; **LobeHub = design reference only**; `packages/ui` KEPT; Ionic kept.
-- **AD-13 in the spine = "Contract Packs gate parallel work"** — NOT mobile-only. The "Phase 1
-  mobile-only" text lives in `adr-extract.md` §23 (l.649). Never conflate them.
-- **OWNER RATIFIED**: Ionic = MOBILE ONLY (web+desktop = React + shadcn/ReUI, no `ion-*`) ·
-  Electron confirmed, Tauri rejected · scope = the 44 screens PLUS new-feature screens (Design
-  Space Pro etc.) · responsive = 5 Tailwind breakpoints × 8 gabarits × 7 contracts C1–C7,
-  `lg`=1024px the structural 1→2 panel threshold · create `apps/web-app` (React), keep
-  `apps/mobile`. The Ionic choice contradicts reference **D-06**, so the reference itself (§10.2
-  item 6) demands a motivating ADR — written in `adr-018` §7.
-- **DESIGN SPACE PRO IS ENTIRELY MISSING** though it is a first-version module (D-03, §6, §10.4):
-  no package, catalog row, screen, SQL table or route. The biggest vision↔repo gap. Scope:
-  `docs/frontend/design-space-scope.md` (→ 44 + ~13 ≈ 57 screens).
+## Owner decisions and scope (Phase 0, 2026-10-24)
+- **D1 = FULL perimeter A–M** → Design Space Pro (L) is IN v1, not a conditional Phase 1B.
+  Plan: `docs/plans/2026-10-24-plan-directeur-v1.md` (6 gated tranches).
+- **Web-first → desktop → mobile** (`adr-018`; `adr-extract` §23 "mobile-only" SUPERSEDED).
+  Ionic = MOBILE ONLY (web/desktop = React + shadcn/ReUI, no `ion-*`); create `apps/web-app`,
+  keep `apps/mobile`. Electron confirmed, Tauri rejected.
+- `docs/architecture/scope-register-v1.md` — families A–M with per-line evidence. Key:
+  `OWNER_MODULE_BY_ENTITY` (`packages/data/src/commands.ts:180`) names knowledge/artifact/identity
+  as owners and **none has a package** (10+2+1 tables exist). Tranches 3.1/3.2 create them.
 - **Licences (verified at source)**: LobeHub = "LobeHub Community License" (Apache-2.0 **+ cond.
   1b**: a commercial licence is REQUIRED to distribute a derivative) despite `package.json` saying
   `MIT` — the LICENSE file prevails. LibreChat = MIT. => NEVER copy LobeHub code/assets.
-- `packages/ui` = ~272 component files; `src/index.ts` has 190 export LINES (175 `export … from`,
-  956 named exports). `assistant-ui/elements/` 138 files **never wired into any app** (brick
-  reserve). **No responsive system**: `packages/ui/tailwind.config.ts` has NO `screens`.
-- Reference §7.2 forbids new root entities before audit → a logo/poster/document = an existing
-  **`Artifact`**; `Project`/`Goal`/`GoalProject` already exist. §4.3 responsive CONTRACTS are
-  requirements, not proposals.
-- Deliverables: `docs/ci/gate.md` · `adr-018-direction-plateforme-web-first.md` ·
-  `docs/frontend/{ui-brick-inventory,web-shell-and-responsive,spec-template-v1}.md` · plans
-  `2026-10-23-repriorisation.md`, `2026-10-24-phase0-rebaseline.md`.
-
-## CI gate: the trap that hid 100+ "errors" (2026-10-24, b2d7040)
-- **A `react-hooks/*` error can mean the PLUGIN is missing, not that the code is bad.** ESLint
-  reports *"Definition for rule 'react-hooks/x' was not found"* for every
-  `eslint-disable-next-line react-hooks/...` directive whose rule is unresolvable. 26 of ~31
-  "violations" were this. `eslint --print-config <file>` is the authoritative check: it lists the
-  actually-loaded plugins/rules.
-- **`packages/ui` was in its own AD-10 ban block** (the engines are *restricted TO* ui), so the
-  barrel `src/index.ts` failed for re-exporting `./motion`. Read an AD literally before encoding
-  it in lint globs.
-- **Vendored != Aurora**: `packages/ui/src/components/{reui,assistant-ui,examples}/**` is
-  registry-installed third-party code (ReUI MCP, assistant-ui registry). Treat like `node_modules`
-  (ignore block). `components/ui/**` IS Aurora (shadcn base + local) and stays linted.
-- **CRLF trap**: editing a CRLF file with Python `open(w)` silently rewrites it to LF, turning a
-  1-line fix into a 200-line diff. Check `git diff --stat -w`; restore with
-  `b.replace(b'\r\n',b'\n').replace(b'\n',b'\r\n')`.
-- `check-view-joins.ts` needs `node --experimental-strip-types`; `pnpm exec tsx` fails (tsx is not
-  a workspace dep). `check-boundaries.sh G2` false-positived on `sk-[A-Za-z0-9]{8,}` (skill IDs,
-  skeleton CSS); threshold is now `{20,}`. `code_files()` scans only `git ls-files`.
-- Root causes + full evidence: `.openhands/memory/2026-10-24.md`.
-
-## v1 scope register (2026-10-24)
-- `docs/architecture/scope-register-v1.md` — owner ratified families A–L in v1
-  (M = roadmap). Key finding: `OWNER_MODULE_BY_ENTITY` (packages/data/src/commands.ts:180)
-  names knowledge/artifact/identity as owners and **none has a package** (10+2+1
-  tables exist). Workstreams: T1 dispatcher → T2 packages/knowledge →
-  T3 packages/artifact → T4 Design Space Pro.
-- Eisenhower HAS a screen (`/tasks` view "Quadrants", pages/tasks/index.tsx:62).
-  OCR is only a JobKind (domain/jobs.ts:13), no provider. Knowledge = 10 tables.
-- Long markdown heredocs with code fences can FAIL SILENTLY — use file_editor.
+- Owner docs (repo ROOT, `07d70a6`): `Aurora-Reference-Produit-Fonctionnelle-v1.1.md` (1622 l, THE
+  master reference) + `LOGO.md`/`AFFICHE.md`/`VIDEO.md`/`deep-research-report.md`. They SUPERSEDE
+  the LibreChat brief. D-01…D-08 (§13.1): prior modules KEPT; Design Space Pro = 1st creative
+  extension; Next.js for the public site only (`apps/marketing`); TanStack per-responsibility.
 
 ## Live DB / RLS verification (2026-10-24)
-- The gate is STATIC (reads migrations). `scripts/rls-live-check.sh` applies all 28
-  on supabase/postgres (Docker, no credentials) + runs `tests/rls-penetration.sql`
-  with 2 auth users AND a negative control (disable RLS on `tasks` → test MUST fail).
-  Verified: 58 tables, 41 seeded, 0 penetration.
-- Found by applying for real: 0019 had 19 column values in DOUBLE quotes (+1
-  unescaped `'`); 0025 had an unescaped `'` in a COMMENT; `rls-penetration.sql` had
-  a frozen 49-table list + assumed `id` everywhere (never ran). All fixed.
-- supabase/postgres: use **supabase_admin** (superuser); `postgres` can't create
-  `vector`. `cron.job` needs supabase_admin and survives schema drops → test on a
-  FRESH container. `auth.users` uses `confirmed_at` (no `email_confirmed_at`).
-- Never propagate a claim a doc makes about another doc: finalisation-v1.md G8
-  misquotes AI_RULES.md ("20 migrations" vs the real 24 in the file, 28 on disk).
+- The gate is STATIC (reads migrations). `scripts/rls-live-check.sh` applies all 28 on
+  supabase/postgres (Docker, no credentials) + runs `tests/rls-penetration.sql` with 2 auth users
+  AND a negative control (disable RLS on `tasks` → test MUST fail). Verified: 58 tables, 41
+  seeded, 0 penetration.
+- Found by applying for real: 0019 had 19 column values in DOUBLE quotes (+1 unescaped `'`); 0025
+  an unescaped `'` in a COMMENT; `rls-penetration.sql` a frozen 49-table list assuming `id`
+  everywhere. All fixed.
+- supabase/postgres: use **supabase_admin** (superuser); `postgres` can't create `vector`.
+  `cron.job` needs supabase_admin and survives schema drops → test on a FRESH container.
+  `auth.users` uses `confirmed_at` (no `email_confirmed_at`).
+- Never propagate a claim a doc makes about another doc: `finalisation-v1.md` G8 misquotes
+  AI_RULES.md ("20 migrations" vs the real 28 on disk).
+- Open security advisors (WARN): 3 live-only `SECURITY DEFINER` functions executable by `anon`
+  (`auto_confirm_new_user`, `auto_confirm_email_identity`, `rls_auto_enable`); leaked-password
+  protection disabled; `vector` in `public`; 2 functions with mutable `search_path`;
+  `keep_alive` RLS without policy (INFO).
 
 ## Sandbox facts (this environment)
 - FS is EPHEMERAL (`/tmp` and the Playwright cache can vanish mid-session — re-run
@@ -134,46 +154,12 @@ Detail, evidence and per-lot narratives live in the daily logs (`.openhands/memo
   `page.evaluate(() => document.querySelector(...).click())`. For persisted `ui-state` defaults use
   a FRESH `browser.newContext()` (localStorage leaks otherwise).
 - `build:web` gz budget is 3/3 green with a FRESH `dist/` (rm -rf first); a stale dist fails.
+  `build:web` also needs `NODE_OPTIONS=--max-old-space-size=8192`.
 - Dev blank-page bug FIXED (`e57453e`): `process is not defined` from a MODULE-LOAD side effect in
   `packages/discovery/src/jobs.ts`. Lesson: on a Node-global throw in a browser bundle, grep every
   imported package's module-load side effects, not just app code.
-
-## agent-server file upload (422 "path must be inside the conversation workspace")
-- Scoped `POST /api/conversations/{cid}/file/upload` rejects any path outside the conversation
-  workspace root; unscoped `POST /api/file/upload` does not. A 422 means the CLIENT sent a
-  relative/out-of-workspace path — **not an Aurora bug**. Session key from `/proc/<pid>/environ`
-  (`SESSION_API_KEY`, never echo). Detail: `.openhands/memory/2026-10-24.md`.
 - `.agents_tmp/PLAN.md` at the workspace root belongs to a *planning conversation* (another
   conversation shares `/workspace/project`). Leave it alone; don't commit it.
-
-## Owner documents (uploaded 2026-10-24, commit 07d70a6 on main)
-5 files at repo ROOT: `Aurora-Reference-Produit-Fonctionnelle-v1.1.md` (1622 l, THE master product
-reference), `LOGO.md`, `AFFICHE.md`, `VIDEO.md`, `deep-research-report.md`. They SUPERSEDE the
-LibreChat brief. Decisions D-01…D-08 (§13.1): all prior modules KEPT; **Design Space Pro** = 1st
-creative extension; **Web responsive → Desktop → Mobile**; Next.js for the public site only
-(`apps/marketing`); TanStack per-responsibility.
-
-## CI / gate (lecon la plus chere de la Phase 0)
-- **Un gate vert en local peut etre FAUX.** `pnpm -r typecheck` etait vert avec 18
-  `dist/` (gitignores) laisses par un `pnpm -r build` anterieur ; le CI part propre
-  et voyait TS6305/TS6059/TS6307 pour le MEME commit. TOUJOURS `rm -rf packages/*/dist
-  apps/*/dist` avant de conclure. Corrige en `b61445b`.
-- `tsconfig.base.json` est en **CRLF** (comme 11 autres tsconfig) : editer en binaire,
-  sinon le diff devient le fichier entier. Piege deja rencontre.
-- `pnpm -r <script>` s'arrete au PREMIER package en echec : un « vert » sur cette base
-  masque tout ce qui suit. Diagnostiquer package par package.
-- **Le depot est un FORK** (`joydatini-lab/aurora` <- `joynagassi-cyber/aurora`). Les
-  evenements `push` n'y declenchent PAS le workflow (0 run sur 2 pushes, branche
-  pourtant matchee). `workflow_dispatch` a ete ajoute ; `gh`/API dispatch renvoie 204
-  et cree bien un run. `GET actions/permissions` -> 403 (integration).
-- `ci-base` (10 steps) tourne partout ; `ci-gate` (18 steps) est `main`-only
-  (`if: github.ref == 'refs/heads/main' || pull_request`) -> il faut une PR pour
-  l'exercer.
-- `sync-health` echoue **par conception** sans secrets (CF/R2) : l'en-tete du workflow
-  le documente. Ne pas le lire comme une regression.
-- Workflows : chromatic.yml, ci.yml, release-apk.yml, release.yml,
-  storybook-deploy.yml, sync-health.yml.
-- Pieges de lint deja purges (b2d7040) : `eslint-plugin-react-hooks` n'etait PAS
-  installe (les ~31 erreurs `react-hooks/*` etaient l'artefact « Definition for rule
-  ... was not found », pas des violations) ; `eslint-plugin-storybook` declare
-  seulement dans packages/ui ; G2 `sk-` resserre a `sk-[A-Za-z0-9_-]{20,}`.
+- agent-server: scoped `POST /api/conversations/{cid}/file/upload` rejects paths outside the
+  conversation workspace (422) — a CLIENT error, not an Aurora bug. Unscoped
+  `POST /api/file/upload` does not.
