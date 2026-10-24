@@ -12,24 +12,15 @@ Docs SSoT: `docs/` (agent, mobile, design-system, integration). Repo conventions
   `sh scripts/check-rls.sh` · `node --experimental-strip-types scripts/check-view-joins.ts` ·
   `node --experimental-strip-types tests/spine/spine.test.ts` · `pnpm -r test` · `pnpm -r lint`.
 - `pnpm -F @aurora/mobile build:web` needs `NODE_OPTIONS=--max-old-space-size=8192` (4096 OOMs).
-- **MEASURED BASELINE (2026-10-24, main@07d70a6) = RED.** Full detail in `docs/ci/gate.md`.
-  * `pnpm -r lint` **fails to even load**: root `eslint.config.js` l.2 imports
-    `eslint-plugin-storybook`, declared ONLY in `packages/ui/package.json` -> ERR_MODULE_NOT_FOUND
-    for EVERY package (ui, mobile, domain…). So no package is actually linted. (An earlier memory
-    said "71 pre-existing errors in packages/ui" — WRONG/stale.)
-  * `pnpm -r typecheck`: ~95 TS errors in 7 pkgs (discovery 33, integrations 30, workflows 14,
-    ascent 13, platform 6, data 2, mobile 1). Cause: `tsconfig.base.json` `lib:["ES2022"]` without
-    `dom`, and no global `@types/node` -> `fetch`/`process`/`console`/`structuredClone`/`node:*`
-    unresolved. 15 pkgs pass (they don't use those globals) — the defect is LATENT, not uniform.
-  * `pnpm -r test`: 2 failures ONLY — `platform` + `focus`, both `Cannot find package
-    '@capacitor/core'` (declared in platform's package.json but not linked). ~700 tests pass.
-  * `check-boundaries.sh` G2 **FALSE POSITIVE**: matches CSS class `sk-progress` (skeletons.tsx)
-    and skill id `sk-capacite-portante` as if Stripe keys `sk_live_`. Script bug, not a leak.
-  * GREEN: install (lockfile unchanged), check-rls (28 migrations), check-view-joins (88 .sql),
-    spine test.
+- **BASELINE (2026-10-24, `b2d7040`) = GREEN.** typecheck 0 · lint 0 (0 err/0 warn) · test
+  **661/661** · build 0 · build:web 0 · boundaries G1–G4 OK · RLS OK (28 files) · view-joins OK
+  (88 .sql) · spine OK. The RED baseline it replaced (lint config unloadable, ~95 typecheck
+  errors, 2 `@capacitor/core` test failures, G2 false positive) is fixed — see the CI-gate
+  section at the end of this file for the root causes, which are worth remembering.
 - **CI has NEVER run on GitHub**: `GET /repos/joydatini-lab/aurora/actions/runs` -> `total_count: 0`.
-  `ci.yml` still carries wave-0 `continue-on-error` guards while all 19 packages exist -> CI is
-  silently inert. Removing them is required, but only AFTER the gate is actually green.
+  `ci.yml` still carries wave-0 `continue-on-error` guards, but they are keyed on
+  `!exists('packages/domain/package.json')` — that package EXISTS, so every gate step is already
+  BLOCKING. Removing the guards is cosmetic; the gate must actually be green first.
 - **`pnpm -r <script>` stops at the FIRST failing package** — a green package hides all following
   ones. Never trust `pnpm -r` output as "all green"; iterate per package.
 
@@ -145,3 +136,31 @@ Plans: `docs/plans/2026-10-23-repriorisation.md`, `docs/plans/2026-10-24-phase0-
 `git push` with a tokenless https remote prompts for a username and HANGS. Fix:
 `git remote set-url origin "https://${GITHUB_TOKEN}@github.com/joydatini-lab/aurora.git"` then
 push. (gh CLI is unauthenticated; use curl against api.github.com.)
+
+## CI gate: the trap that hid 100+ "errors" (2026-10-24, commit b2d7040)
+- **`eslint-plugin-react-hooks` was never installed**, yet ~31 `react-hooks/*` "errors" appeared.
+  They were NOT violations: ESLint reports *"Definition for rule 'react-hooks/x' was not found"*
+  for every `eslint-disable-next-line react-hooks/...` directive whose rule is unresolvable.
+  Lesson: an unresolvable-rule error means the PLUGIN is missing, not that the code is bad.
+  `eslint --print-config <file>` is the authoritative check (`plugins` list / rules present).
+- **`packages/ui` was in its own AD-10 ban block** (the engines are *restricted TO* ui), so the
+  barrel `src/index.ts` failed for re-exporting `./motion`. Read AD text literally before
+  encoding it in lint globs.
+- **Vendored vs Aurora**: `packages/ui/src/components/{reui,assistant-ui,examples}/**` are
+  registry-installed third-party code (ReUI via MCP, assistant-ui registry, ReUI examples).
+  Treat them like `node_modules` (ignore block), NOT like Aurora sources. `components/ui/**`
+  IS Aurora (shadcn base + local components) and stays linted.
+- **CRLF trap**: editing CRLF files with Python `open(w)` silently rewrites them to LF, turning a
+  1-line fix into a 200-line diff. 4 files affected (eslint.config.js, 2 stories, tsconfig.base).
+  Check with `git diff --stat -w`; restore via `b.replace(b'\r\n',b'\n').replace(b'\n',b'\r\n')`.
+- **`build:web` OOMs** with the default Node heap (17050 modules, SIGABRT / exit 134 at chunk
+  render). Not a code bug: re-run with `NODE_OPTIONS=--max-old-space-size=8192`.
+- **`check-boundaries.sh G2` false-positived** on `sk-[A-Za-z0-9]{8,}`, matching skill IDs
+  (`sk-capacite-portante`) + skeleton CSS (`sk-progress`) — 20 hits, 0 real secret. Threshold is
+  now `{20,}`. `code_files()` only scans `git ls-files`, so untracked probe files never trigger it.
+- **`check-view-joins.ts` must run via `node --experimental-strip-types`** (as CI does); `pnpm exec
+  tsx` fails ("Command tsx not found" — tsx is not a workspace dep).
+- Gate baseline after b2d7040: typecheck 0 · lint 0 (0 err/0 warn) · test **661/661** · build 0 ·
+  boundaries G1–G4 OK · RLS OK (28 files) · view-joins OK (88 sql) · spine OK.
+- CI `continue-on-error` is tied to `!exists('packages/domain/package.json')` — since that EXISTS,
+  **every gate step is now blocking**. Don't assume a red gate is "just wave 0 noise".
