@@ -161,15 +161,16 @@ définie, et ce registre est le premier livrable de la porte de sortie à voir l
 
 | Élément | Constat |
 |---|---|
-| `AI_RULES.md` §3 | dit « 20 migrations » → réel **28** |
+| `AI_RULES.md` §3 | dit « **24** migrations (`0001…0023`) + **6** EF » → réel **28** migrations + **8** EF |
 | `finalisation-v1.md` P0-3 | prétend le tag `v0.1.0` « existe déjà » → `git tag -l` **vide** |
 | `adr-extract.md` §23 | « Phase 1 strictement mobile-only » → **contredit** par `D-018.1` |
 | `AI_RULES.md` §7 | « no Electron » → **contredit** (desktop = Phase 2) |
-| `docs/design-system/overview.md` | 44 écrans vs 54 (`_inventory.md`) → `OQ-1` ratifiée = 54 |
+| `docs/design-system/overview.md` | 44 écrans (05 §4) vs **54** (`screens/_inventory.md` §1 = 44 candidats + 10 variantes) → `OQ-1` ratifiée = 54 |
 | `engineering-core/registry/solvers` | 3 packages vides (`export {}`) — dette d'architecture |
 | `packages/ui/components/assistant-ui` | 172 fichiers dormants, exportés, jamais câblés (`D-018.2` = réserve) |
 | Drift `powersync-schema.ts` | client déclare `title`, PG écrit `name` (habits/routines) — mappers dual-read |
 | `fn-dev-auth` | EF **DEV-only** présente dans l'arbre (à supprimer, P6-6) |
+| **Chaîne de citation erronée** | `docs/plans/finalisation-v1.md` G8 écrit « `AI_RULES.md` §3 **dit 20 migrations** » — or `AI_RULES.md` §3 dit **24** (`0001…0023`) et le réel est **28**. Une doc cite donc une autre doc **inexactement**. Tout constat repris d'un document tiers doit être **re-vérifié à la source** avant d'être propagé. |
 
 ---
 
