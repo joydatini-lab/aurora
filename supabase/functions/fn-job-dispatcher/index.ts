@@ -18,11 +18,18 @@
 import { ok, err, ulid } from "../_shared/envelope.ts";
 import type { UserContext } from "../../../packages/domain/src/index.ts";
 import { PRODUCTIVITY_JOB_HANDLERS } from "../../../packages/productivity/src/jobs.ts";
+import { PROGRESS_JOB_HANDLERS } from "../../../packages/progress/src/jobs.ts";
+// The `fsrs-tick` and `course_import` handlers are LEARNING's, not Progress's.
+// The dispatcher used to import `PROGRESS_FSRS_TICK_HANDLER` and
+// `PROGRESS_COURSE_IMPORT_HANDLER` from packages/progress/src/jobs.ts and
+// neither symbol existed anywhere in the repo, so this EF could not boot, was
+// never deployed, and 34 cron jobs sat pending from 2026-10-08. The pure
+// algorithms were already written (learning/fsrs.ts, learning/course-import.ts);
+// only this I/O glue was missing.
 import {
-  PROGRESS_JOB_HANDLERS,
-  PROGRESS_FSRS_TICK_HANDLER,
-  PROGRESS_COURSE_IMPORT_HANDLER,
-} from "../../../packages/progress/src/jobs.ts";
+  buildFsrsTickHandler,
+  buildCourseImportHandler,
+} from "../../../packages/learning/src/jobs.ts";
 // G9 (wave 3, feature-agentique 2026-10-06) : le handler `research` du
 // module Discovery (packages/discovery/src/jobs.ts) est importé ICI —
 // l'ancienne référence `DISCOVERY_JOB_HANDLERS` pointait vers
@@ -208,6 +215,119 @@ function buildDiscoveryHandlers() {
   ];
 }
 
+/**
+ * LOT T1 — the Learning handlers, wired with the deployment-time seams.
+ *
+ * Same pattern as `buildDiscoveryHandlers`: the module file exports pure
+ * handler factories; the dispatcher injects the REST I/O so the module stays
+ * secret-free (AD-3) and the EF holds the env.
+ *
+ * - `fsrs-tick`: reads the due `flashcards` rows, advances each schedule with
+ *   the pure `fsrsNext` (already written in packages/learning/src/fsrs.ts), and
+ *   PATCHes the row back. Idempotent (AD-8): a card not yet due is never read,
+ *   so re-running the tick changes nothing.
+ * - `course_import`: advances the `course_imports` row (OCR then KB ingestion).
+ *   The OCR provider is a NEEDS_DECISION, so `extract` is a seam: absent env →
+ *   the import degrades to `needs_manual`, never a broken job (AD-1).
+ *
+ * Absent SUPABASE_URL / SERVICE_ROLE_KEY → both handlers are the documented
+ * no-op (the dispatcher still reports `ok`, nothing is lost — AD-1/AD-8).
+ */
+function buildLearningHandlers(): RegisteredHandler[] {
+  const configured = Boolean(SUPABASE_URL && SERVICE_ROLE_KEY);
+  const headers = restHeaders();
+  const rest = `${SUPABASE_URL}/rest/v1`;
+
+  const fsrsTick = buildFsrsTickHandler({
+    getDueCards: async (userId, now, limit) => {
+      if (!configured) return [];
+      const qs =
+        `select=id,due,stability,difficulty&user_id=eq.${encodeURIComponent(userId)}` +
+        `&due=lte.${encodeURIComponent(new Date(now).toISOString())}` +
+        `&order=due.asc&limit=${limit}`;
+      const res = await fetch(`${rest}/flashcards?${qs}`, { headers }).catch(() => null);
+      if (!res || !res.ok) return [];
+      const rows = (await res.json()) as Array<Record<string, unknown>>;
+      return rows.map((r) => ({
+        id: String(r.id),
+        due: Date.parse(String(r.due ?? 0)) || 0,
+        stability: r.stability === null || r.stability === undefined ? null : Number(r.stability),
+        difficulty: r.difficulty === null || r.difficulty === undefined ? null : Number(r.difficulty),
+        lapses: Number(r.lapses ?? 0),
+      }));
+    },
+    saveSchedule: async (userId, schedules) => {
+      if (!configured) return;
+      // One PATCH per card: PostgREST has no bulk-update-by-id with distinct
+      // values, and the tick is bounded (<= limit cards). Awaited in sequence
+      // so a failure is attributable to a single card.
+      for (const s of schedules) {
+        await fetch(
+          `${rest}/flashcards?id=eq.${encodeURIComponent(s.id)}&user_id=eq.${encodeURIComponent(userId)}`,
+          {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({
+              due: new Date(s.due).toISOString(),
+              stability: s.stability,
+              difficulty: s.difficulty,
+              last_reviewed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }),
+          },
+        ).catch(() => null);
+      }
+    },
+    now: () => Date.now(),
+  });
+
+  const courseImport = buildCourseImportHandler({
+    getImport: async (importId, userId) => {
+      if (!configured) return null;
+      const qs =
+        `select=id,user_id,course_id,source,r2_key,status,job_id` +
+        `&id=eq.${encodeURIComponent(importId)}&user_id=eq.${encodeURIComponent(userId)}&limit=1`;
+      const res = await fetch(`${rest}/course_imports?${qs}`, { headers }).catch(() => null);
+      if (!res || !res.ok) return null;
+      const rows = (await res.json()) as Array<Record<string, unknown>>;
+      const r = rows[0];
+      if (!r) return null;
+      return {
+        id: String(r.id),
+        userId: String(r.user_id),
+        courseId: r.course_id === null || r.course_id === undefined ? null : String(r.course_id),
+        source: String(r.source ?? "other"),
+        r2Key: r.r2_key === null || r.r2_key === undefined ? null : String(r.r2_key),
+        status: String(r.status ?? "pending"),
+        jobId: r.job_id === null || r.job_id === undefined ? null : String(r.job_id),
+      };
+    },
+    // OCR is a NEEDS_DECISION (no provider named in the perimeter). The seam
+    // returns empty text, which makes the handler degrade to `needs_manual`
+    // rather than invent an extraction (AD-1: never a fake result).
+    extract: async () => ({ text: "", pageCount: 0 }),
+    ingestKnowledge: async () => [],
+    setStatus: async (importId, userId, status, jobId) => {
+      if (!configured) return;
+      await fetch(
+        `${rest}/course_imports?id=eq.${encodeURIComponent(importId)}&user_id=eq.${encodeURIComponent(userId)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({
+            status,
+            job_id: jobId,
+            updated_at: new Date().toISOString(),
+          }),
+        },
+      ).catch(() => null);
+    },
+    now: () => new Date().toISOString(),
+  });
+
+  return [fsrsTick, courseImport];
+}
+
 /** The full global switch, wired at import time (chevauchement rule:
  *  this file is the ONLY place the wiring lives; module packages
  *  provide their handler tables). Unroutable jobs stay pending
@@ -219,8 +339,8 @@ function wireGlobalJobSwitch(): void {
     ...PRODUCTIVITY_JOB_HANDLERS,
     ...buildDiscoveryHandlers(),
     ...PROGRESS_JOB_HANDLERS,
-    PROGRESS_FSRS_TICK_HANDLER,
-    PROGRESS_COURSE_IMPORT_HANDLER,
+    // Learning's two kinds, wired with the deployment-time seams below.
+    ...buildLearningHandlers(),
     ...SCIENTIFIC_JOB_HANDLERS,
     ...INTEGRATIONS_JOB_HANDLERS,
     // agent_run (wave 3, AD-8): handler body lives in packages/agent

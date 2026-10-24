@@ -37,6 +37,14 @@ export interface FsrsParams {
   learningSteps: [number, number];
 }
 
+/**
+ * FSRS decay exponent (w[20] in py-fsrs; `FSRS_DEFAULT_DECAY`).
+ * Source: open-spaced-repetition/py-fsrs `fsrs/scheduler.py:31`
+ * (`FSRS_DEFAULT_DECAY = 0.1542`). The interval and retrievability curves
+ * both derive from it.
+ */
+export const FSRS_DECAY = 0.1542;
+
 /** The canonical FSRS v5 parameters (01 S4.2 / 03 S4.2). */
 export const FSRS_PARAMS: FsrsParams = {
   w: [0.21, 1.29, 2.33, 6.62, 0.9, 1.95, 0.11, 0.2, 1.5, 0.05, 0.16, 1.01, 1.04, 0.8, 1.27, 1.55, 0.12, 1.98, 0.02],
@@ -82,9 +90,15 @@ export function fsrsNext(input: FsrsInput, params: FsrsParams = FSRS_PARAMS): Fs
   }
 
   const { stability, difficulty } = input.state;
+  // Official FSRS retrievability: R(t,S) = (1 + FACTOR * t / S) ** DECAY
+  // (py-fsrs `get_card_retrievability`). The previous form
+  // `(1 - t/S) ** 0.8` went negative past the stability horizon and then
+  // clamped to 0, so an overdue card looked permanently forgotten.
+  const decay = -FSRS_DECAY;
+  const factor = Math.pow(0.9, 1 / decay) - 1;
   const retrievability = Math.max(
     0,
-    Math.min(1, Math.pow(1 - input.elapsedDays / stability, 0.8)),
+    Math.min(1, Math.pow(1 + (factor * input.elapsedDays) / stability, decay)),
   );
   const recalled = input.rating >= 2;
   const nextLapses = input.state.lapses + (recalled ? 0 : 1);
@@ -148,14 +162,29 @@ function failureUpdate(
   return [Math.min(stability, 10), difficulty];
 }
 
+/**
+ * Interval in days for a target retention — FSRS v5 / v6.
+ *
+ * Reference: py-fsrs `Scheduler._next_interval` (the canonical implementation
+ * of the algorithm):
+ *
+ *   DECAY  = -w[20]
+ *   FACTOR = 0.9 ** (1 / DECAY) - 1
+ *   I(r,S) = (S / FACTOR) * (r ** (1 / DECAY) - 1)
+ *
+ * The previous code here divided by a NEGATIVE decay exponent, so the result
+ * was negative for every positive stability and the `Math.max(…, 1/1440)`
+ * floor turned it into one minute. Every review of every card therefore
+ * rescheduled to "1 minute from now" — spaced repetition did not work at all,
+ * and the existing tests never asserted an interval, so nothing caught it.
+ * The unit test for the tick handler is what exposed it.
+ */
 function nextStabilityToDays(stability: number, retention: number): number {
-  // T = S * ln(R) — invert the decay for the target retention.
-  return Math.max(stability * -Math.log(retention) / w_decay(), 1 / 1440);
-}
-
-function w_decay(): number {
-  // FSRS v5 decay exponent (frozen constant).
-  return -0.5;
+  const decay = -FSRS_DECAY;
+  const factor = Math.pow(0.9, 1 / decay) - 1;
+  const days = (stability / factor) * (Math.pow(retention, 1 / decay) - 1);
+  // Floor at one minute: FSRS never schedules in the past (1/1440 day).
+  return Math.max(days, 1 / 1440);
 }
 
 function clamp(v: number, lo: number, hi: number): number {
