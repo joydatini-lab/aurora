@@ -45,13 +45,24 @@ lot ajoute de la surface au lieu de réduire l'écart.
 | `docs/frontend/design-space-scope.md` | ✅ (247 l.) |
 | `docs/frontend/feature-registry.md` · `page-contracts.md` | ✅ (18 · 26 lignes de tableau) |
 | `docs/ci/gate.md` | ✅ (mesuré + vérifié CI) |
-| **`docs/architecture/status-register.md`** | ❌ **ABSENT** (travaux §10.2 items 1–3) |
-| **`docs/architecture/navigation-mapping.md`** | ❌ **ABSENT** (item 10) |
-| **`docs/architecture/design-space-integration.md`** | ❌ **ABSENT** (item 11) |
+| `docs/architecture/status-register.md` | ✅ **LIVRÉ** (`bfaa298`, §10.2 items 1–3) |
+| `docs/architecture/navigation-mapping.md` | ✅ **LIVRÉ** (`bab32df`, item 10) |
+| `docs/architecture/design-space-integration.md` | ✅ **LIVRÉ** (item 11) |
 | **`docs/adr/ADR-INT-002-web-first.md`** | ❌ **ABSENT** (remplacé par `adr-018`, non renommé) |
-| **POC PowerSync Web bout-en-bout** | ❌ **NON EXÉCUTÉ** (item 8) |
-| **POC outils Design Space** | ❌ **NON EXÉCUTÉ** (item 9) |
+| **POC PowerSync Web bout-en-bout** | ❌ **NON EXÉCUTÉ** (item 8) — *partiellement désamorcé* : voir note |
+| **POC outils Design Space** | ❌ **NON EXÉCUTÉ** (item 9) — dépend d'OQ-8 |
 | **Migration de données** | ❌ **NON DÉFINIE** (item 12) |
+
+> **Note (2026-10-24) — la preuve d'exécution existe désormais pour la base.**
+> L'item 8 exigeait un « POC PowerSync Web bout-en-bout ». Le blocage réel est
+> **externe** (relay non provisionné + credentials absents), mais la moitié
+> **serveur** de la chaîne est maintenant **vérifiée par exécution** :
+> `sh scripts/rls-live-check.sh` applique les **28 migrations** sur un vrai
+> Postgres et prouve l'isolation RLS de deux utilisateurs sur **58 tables**
+> (0 pénétration, contrôle négatif compris). Cette exécution a trouvé **3 défauts
+> réels** que le gate statique ne pouvait pas voir (`0019`, `0025`,
+> `tests/rls-penetration.sql`) — commit `38dce26`, détail `docs/ci/gate.md` §5.1.
+> Le round-trip **device** (PowerSync → SQLite) reste, lui, bloqué sur le relay.
 
 **Lecture :** la Phase 0 a produit **les décisions et la doctrine** (ADR, doctrine
 responsive, inventaire de briques, périmètre Design Space) mais **aucune preuve
