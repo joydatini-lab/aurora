@@ -87,9 +87,22 @@ Docs SSoT: `docs/` (agent, mobile, design-system, integration). Repo conventions
   story**; `assistant-ui/elements/` 138 **never wired into any app** (brick reserve only).
 - **Screens**: 51 `.md` − 7 transverse = **44 screens** (matches ratified "44 docs / 54 slugs").
 - **No responsive system**: `packages/ui/tailwind.config.ts` defines NO `screens` breakpoints.
-- Open blockers: OQ-1 (Ionic shell scope — recommend mobile-only: `packages/ui` is Radix/shadcn
-  and Ionic+Radix conflict), OQ-4 (1024 px two-panel threshold), OQ-2 (Electron vs Tauri),
-  OQ-3 (first web delivery scope).
+- **OWNER RATIFIED 2026-10-24**: OQ-1 **Ionic = MOBILE ONLY** (web+desktop = React +
+  shadcn/ReUI, no `ion-*`) · OQ-2 **Electron confirmed, Tauri rejected** · OQ-3 scope =
+  **the 44 screens PLUS the new-feature screens** (Design Space Pro etc.) · OQ-4 (1024 px
+  threshold) still a proposal. Because the Ionic choice contradicts reference **D-06**
+  (§8.7.1/§8.7.3: "Ionic React = the Web responsive business app"), the reference itself
+  (§10.2 item 6) demands a **motivating ADR** — written in `adr-018` §7.
+- **DESIGN SPACE PRO IS ENTIRELY MISSING from the repo** though it is a FIRST-VERSION module
+  (reference D-03, §6, Phase 1B §10.4): no package, no catalog row, no screen, no SQL table,
+  no route. Classified **MISSING**; it is the biggest vision↔repo gap. Scope doc:
+  `docs/frontend/design-space-scope.md` (~13 screens proposed → **44 + 13 ≈ 57**).
+- Reference §7.2 forbids new root entities before audit → a logo/poster/document = an existing
+  **`Artifact`** (`entities-artifact.ts` l.10); `Project`/`Goal`/`GoalProject` already exist.
+- Reference §4.2 proposes **9 web nav entries** (incl. **"Créer"** → Design Space Pro);
+  §4.3 imposes responsive CONTRACTS (collapsible panels, keyboard, resume after refresh,
+  non-blocking long jobs) — requirements, not proposals.
+- Per-lot detail: `.openhands/memory/2026-10-24.md`.
 
 ## Sandbox facts (this environment)
 - FS is EPHEMERAL (`/tmp` and the Playwright cache can vanish mid-session — re-run
