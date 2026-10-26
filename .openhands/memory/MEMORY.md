@@ -117,9 +117,25 @@ Only #1 is fixed. **A green gate says NOTHING about the job chain.**
 - **Web-first → desktop → mobile** (`adr-018`; `adr-extract` §23 "mobile-only" SUPERSEDED).
   Ionic = MOBILE ONLY (web/desktop = React + shadcn/ReUI, no `ion-*`); create `apps/web-app`,
   keep `apps/mobile`. Electron confirmed, Tauri rejected.
-- `docs/architecture/scope-register-v1.md` — families A–M with per-line evidence. Key:
-  `OWNER_MODULE_BY_ENTITY` (`packages/data/src/commands.ts:180`) names knowledge/artifact/identity
-  as owners and **none has a package** (10+2+1 tables exist). Tranches 3.1/3.2 create them.
+- `docs/architecture/scope-register-v1.md` — families A–M with per-line evidence.
+- **Owner modules (T3 DONE, `5496393`)**: `OWNER_MODULE_BY_ENTITY` named knowledge/artifact/identity
+  as owners and NONE had a package. Created all THREE (`packages/{knowledge,artifact,identity}`),
+  0 new tables — the plan listed only 2, but its own gate ("no module absent") was unreachable
+  without `identity`. Guard: `packages/data/test/owner-module-coverage.test.ts` (every declared
+  owner has a package; any `*_OWNED_TABLES` inventory must equal the routing table).
+- **A declared owner with no implementation is invisible to the whole gate**: check-rls reads
+  migrations (tables exist → green), the PowerSync wiring test reads sync-config (streams declared
+  → green), single-writer.test checks the TABLE rejects a wrong module — never that the declared
+  module EXISTS. Read side was wired (relay views + streams); writes were a missing seam.
+- **`artifact_files` is NOT routed**: absent from OWNER_MODULE_BY_ENTITY, `sync-config.yaml` AND
+  `v_artifact_scope` — a local command aimed at it can't be validated/synced/relayed. Exported as
+  `ARTIFACT_UNROUTED_TABLES` (a gap, not a capability). Same shape for `learning`/`progress`/
+  `discovery`/`integrations`: declared owners that build NO local command at all.
+- **SSoT ↔ DB divergences (pin, don't patch — AD-15 owner decisions)**: artifacts.kind SSoT has
+  csv/text/code the live CHECK rejects; notes has no tags/sourceRefIds; semantic_nodes has no
+  evidenceRefIds; source_refs column is `source_document_id` (SSoT says `sourceId`);
+  artifact_files.filename is NOT NULL but absent from the SSoT type; user_context has only a
+  `coaching_prefs` jsonb (no displayName/coachCadence/quietHours columns).
 - **Licences (verified at source)**: LobeHub = "LobeHub Community License" (Apache-2.0 **+ cond.
   1b**: a commercial licence is REQUIRED to distribute a derivative) despite `package.json` saying
   `MIT` — the LICENSE file prevails. LibreChat = MIT. => NEVER copy LobeHub code/assets.
