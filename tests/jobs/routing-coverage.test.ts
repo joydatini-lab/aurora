@@ -195,3 +195,61 @@ test('routing: the wake-up cron does not rely on pg_notify (an EF cannot LISTEN)
   );
   assert.match(scheduled[1], /wake_job_dispatcher\(\)/, 'the cron body must call the wake-up');
 });
+
+test('routing: the release deploy step really deploys (it used to be `echo` only)', () => {
+  // The plan said the last blocker was "flip `if: false`". It was not: the EF
+  // step was four `echo` statements with the real commands commented out, so
+  // flipping the flag would have produced a GREEN job and deployed NOTHING —
+  // the same silent no-op class as the `pg_notify` wake-up cron. This asserts
+  // the step is real, so it cannot silently regress to a dry-run.
+  const yml = readFileSync(join(ROOT, '.github', 'workflows', 'release.yml'), 'utf8');
+
+  const step = yml.match(
+    /- name: "Deploy Edge Functions[\s\S]*?(?=\n {6}- name:)/,
+  );
+  assert.ok(step, 'the "Deploy Edge Functions" step was not found in release.yml');
+  const body = step[0];
+
+  assert.match(body, /node scripts\/build-ef\.mjs/, 'the bundle step must actually run');
+  assert.match(body, /functions deploy/, 'the deploy command must be present');
+  assert.match(
+    body,
+    /for fn in fn-agent-run[\s\S]*fn-job-dispatcher[\s\S]*fn-skills; do/,
+    'the deploy loop must cover the 7 functions including fn-job-dispatcher',
+  );
+  assert.doesNotMatch(
+    body,
+    /^\s*echo "EF bundle \+ deploy \(DRY-RUN/m,
+    'the step must not be an echo-only dry-run',
+  );
+
+  // `supabase link` takes a project REF, never a URL, and has no
+  // `--access-token` flag (the token comes from SUPABASE_ACCESS_TOKEN).
+  assert.doesNotMatch(
+    body,
+    /supabase link \$\{?SUPABASE_URL_DEV\}? /,
+    'supabase link must not be given the project URL',
+  );
+  assert.match(body, /--project-ref/, 'supabase link must receive --project-ref');
+  assert.doesNotMatch(body, /--access-token/, 'supabase link has no --access-token flag');
+
+  // The dispatcher is fail-closed on INTERNAL_FN_SECRET (migration 0028).
+  // Deploying without it = a permanent 401 on the wake-up.
+  assert.match(
+    body,
+    /INTERNAL_FN_SECRET/,
+    'the deploy must pre-flight INTERNAL_FN_SECRET (the wake-up 401s without it)',
+  );
+
+  // The OQ-03 gate must remain CLOSED — this commit removes the technical
+  // obstacles, it does not ratify the decision.
+  const deployAt = yml.indexOf('\n  deploy:');
+  assert.ok(deployAt > -1, 'the deploy job was not found in release.yml');
+  // `deploy` is the last job in the file, so the slice runs to the end.
+  const deployJob = yml.slice(deployAt);
+  assert.match(
+    deployJob,
+    /if: false/,
+    'the OQ-03 gate must stay closed (ratification is an owner decision)',
+  );
+});
