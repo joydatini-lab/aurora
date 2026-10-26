@@ -20,6 +20,11 @@ on:
   push:
     tags:
       - 'v*'
+  # Manual trigger: needed to deploy the Edge Functions WITHOUT cutting a
+  # release tag. The deploy job below is still gated by OQ-03, so this does
+  # not bypass the gate — it removes the tag as a hard prerequisite for
+  # running the deploy steps once the gate is lifted.
+  workflow_dispatch:
 
 # Concurrency : 1 release build par tag (un nouveau push sur la
 # meme ref remplace l'ancien).
@@ -165,6 +170,9 @@ jobs:
     env:
       # Read from the GitHub Secrets registry (AD-3, never in the repo).
       SUPABASE_URL_DEV: ${{ secrets.SUPABASE_URL_DEV }}
+      # Optional: the project ref for `supabase link`. Derived from
+      # SUPABASE_URL_DEV when absent.
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
       CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
       CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
       R2_BUCKET_PROD: ${{ secrets.R2_BUCKET_PROD }}
@@ -191,13 +199,17 @@ jobs:
 
       # ----------------------------------------------------------------
       # Lot déploiement (plan 2026-10-14, Phase 7) : le deploy EF +
-      # PowerSync + R2 (actuellement DRY-RUN — le job parent est
-      # `if: false` tant que OQ-03 n'est pas ratifié).
+      # PowerSync + R2 + staging/prod steps below stay DRY-RUN until OQ-03.
+      # ----------------------------------------------------------------
+      # EF bundle + deploy. The commands below are REAL (they were `echo`
+      # until 2026-10-24: flipping `if: false` would have deployed nothing
+      # while reporting success — the same silent no-op class as the
+      # `pg_notify` wake-up cron in migration 0014).
       # ----------------------------------------------------------------
       - name: "Deploy Edge Functions (supabase functions deploy × 7)"
         # Les 7 EF (fn-agent-run, fn-canvas, fn-import-course,
         # fn-integrations, fn-job-dispatcher, fn-notifications,
-        # fn-skills) — jamais fn-dev-auth (DEV-only, P6-6). Le
+        # fn-skills) — jamais fn-dev-auth (DEV-only, P6-6).
         # SUPABASE_ACCESS_TOKEN (le GitHub secret) auth le link.
         # Les secrets EF (SERVICE_ROLE_KEY, INTERNAL_FN_SECRET, les
         # provider keys) sont posés dans le dashboard Supabase (le
@@ -206,23 +218,45 @@ jobs:
         # IMPORTANT — bundle BEFORE deploy. build-ef.mjs writes
         # supabase/functions/<name>/dist/index.ts with the workspace packages
         # inlined, so the upload is self-contained and cannot fail on an
-        # import-resolution boundary. Set entrypoint = "dist/index.ts" in
-        # supabase/config.toml for each function (the CLI default is
-        # functions/<slug>/index.ts — see packages/config/src/functions-manifest.ts).
+        # import-resolution boundary. config.toml sets
+        # entrypoint = "functions/<slug>/dist/index.ts" for each function
+        # (relative to supabase/config.toml; the CLI default is
+        # functions/<slug>/index.ts, which is NOT bundled).
+        # `verify_jwt` is declared per function in config.toml. The CLI
+        # default is `true`, which would make the platform reject every
+        # internal caller (the dispatcher, pg_cron) before its own guard runs.
         run: |
-          echo "EF bundle + deploy (DRY-RUN, OQ-03 gate):"
-          echo "  node scripts/build-ef.mjs     # inline workspace pkgs -> dist/index.ts"
-          echo "  supabase link ${SUPABASE_URL_DEV} (SUPABASE_ACCESS_TOKEN)"
-          echo "  supabase functions deploy fn-agent-run fn-canvas"
-          echo "    fn-import-course fn-integrations fn-job-dispatcher"
-          echo "    fn-notifications fn-skills   # × 7, jamais fn-dev-auth"
-          # Le réel (quand OQ-03 est ratifié) :
-          #   node scripts/build-ef.mjs
-          #   supabase link ${SUPABASE_URL_DEV} --access-token ${SUPABASE_ACCESS_TOKEN}
-          #   for fn in fn-agent-run fn-canvas fn-import-course fn-integrations \
-          #             fn-job-dispatcher fn-notifications fn-skills; do
-          #     supabase functions deploy "$fn"
-          #   done
+          set -euo pipefail
+          node scripts/build-ef.mjs
+
+          # `supabase link` takes a project REF, not a URL. Derive it from
+          # the URL we already have, unless an explicit ref secret is set.
+          PROJECT_REF="${SUPABASE_PROJECT_REF:-$(printf '%s' "$SUPABASE_URL_DEV" | sed -E 's#^https?://([^.]+)\..*$#\1#')}"
+          if [ -z "$PROJECT_REF" ] || [ "$PROJECT_REF" = "$SUPABASE_URL_DEV" ]; then
+            echo "Could not derive a project ref from SUPABASE_URL_DEV; set SUPABASE_PROJECT_REF." >&2
+            exit 1
+          fi
+
+          npx --yes supabase@latest link --project-ref "$PROJECT_REF"
+
+          # The dispatcher is fail-closed on INTERNAL_FN_SECRET (migration
+          # 0028). Deploying without it yields a permanent 401 on the
+          # wake-up — the failure would look like a broken wake-up rather
+          # than a missing secret. Fail loudly instead.
+          if ! npx --yes supabase@latest secrets list | grep -q 'INTERNAL_FN_SECRET'; then
+            echo "INTERNAL_FN_SECRET is not set on the project. The dispatcher's wake-up would 401 forever." >&2
+            echo "Set it first: supabase secrets set INTERNAL_FN_SECRET=\"\$(openssl rand -hex 32)\"" >&2
+            echo "and mirror the SAME value into vault (migration 0028 APPLICATION STATUS)." >&2
+            exit 1
+          fi
+
+          for fn in fn-agent-run fn-canvas fn-import-course fn-integrations \
+                    fn-job-dispatcher fn-notifications fn-skills; do
+            npx --yes supabase@latest functions deploy "$fn"
+          done
+
+          # Post-deploy assertion: the deploy must be observable.
+          npx --yes supabase@latest functions list
 
       - name: "Deploy PowerSync sync-config (powersync deploy, le SSoT des 11 streams)"
         # Le sync-config.yaml (11 streams, le SSoT du plan Phase 2) est
