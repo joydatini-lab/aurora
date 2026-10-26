@@ -182,6 +182,20 @@ Only #1 is fixed. **A green gate says NOTHING about the job chain.**
   (`fresh|stale|forgotten`) while the domain type is a 0..1 number — map both ways.
 - `skill_states` is EMPTY and `progress_evidences` has 0 rows live, so the deployed fix is a
   verifiable no-op today (safe to enable).
+- **The release `deploy` job was a THIRD silent no-op** (fixed `d869c9f`): 4 `echo` + the real
+  commands commented out, so flipping `if: false` would have run GREEN and deployed NOTHING.
+  Two more defects in that path: `supabase link` was given a URL (`--project-ref` is required, and
+  there is NO `--access-token` flag — the token comes from `SUPABASE_ACCESS_TOKEN`), and the CLI
+  was never installed (`npx --yes supabase@latest` now). The step now pre-flights
+  `INTERNAL_FN_SECRET` and fails loudly, because 0028 is fail-closed and a deploy without it gives
+  a permanent 401 that looks like a broken wake-up. `workflow_dispatch` added to release.yml so
+  the EF deploy no longer needs a `v*` tag. Guard test (7th in routing-coverage) verified by
+  NEGATIVE TEST.
+- **The job queue GROWS, it does not stall**: 34 rows on 10-24, 38 on 10-25 (the daily crons
+  insert 1 job/user/day, unbounded). Cost of the blockage increases daily.
+- `flashcards` has NO `lapses` column, but `getDueCards` does not select it either, so
+  `Number(r.lapses ?? 0)` is a correct defensive 0 — NOT a bug (checked after the `learning.
+  flashcards` schema guess proved wrong: the table is `public.flashcards`).
 
 ## Sandbox facts (this environment)
 - FS is EPHEMERAL (`/tmp` and the Playwright cache can vanish mid-session — re-run

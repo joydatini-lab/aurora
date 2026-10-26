@@ -216,18 +216,41 @@ N9–N12 sont de l'hygiène à traiter en tranche 4.
 | 1.1 | Câbler `skill_recompute` : `buildProgressHandlers()` (miroir de `buildLearningHandlers`) + table non vide | **FAIT** (4eae07c) |
 | 1.2 | Trancher N2 : balayage côté handler (`listSkillIds`) + persistance (`saveSkillState`) | **FAIT** (4eae07c) |
 | 1.3 | Trancher N3 et implémenter le réveil (`pg_net` + `net.http_post`) + garde d'auth fail-closed | **FAIT** (0028), prouvé live |
-| 1.4 | Déployer les 8 EF (bundle d'abord) | **BLOQUÉ** — gate OQ-03 (`if: false`). 404 prouvé. |
-| 1.5 | Purger/requeue les 34 jobs morts et **prouver** le traitement | **BLOQUÉ par 1.4** |
+| 1.4 | Déployer les 8 EF (bundle d'abord) | **DÉBLOQUÉ CÔTÉ CODE** (d869c9f) — reste le gate OQ-03 |
+| 1.4b | **Le job `deploy` ne déployait RIEN** : 4 `echo`, `link` sur une URL (faux), CLI jamais installé → le « flip `if: false` » aurait produit un job VERT et 5 EF inchangées (même classe de no-op silencieux que le cron `pg_notify`) | **CORRIGÉ** (d869c9f) + garde-fou testé (78e3098) |
+| 1.5 | Purger/requeue les jobs morts et **prouver** le traitement | **BLOQUÉ par 1.4** |
 
 **Porte T1 :** un job produit par cron est consommé de bout en bout, et
 `job_logs` n'est plus vide. **Débloque :** B.1, B.3, E.1, F, H, I.4, K.
 
-**État au 2026-10-24 :** 1.1–1.3 sont faits, testés et vérifiés live. La porte
-T1 reste **fermée** sur un unique point, le déploiement (1.4), qui est une
-décision d'opérateur (OQ-03) et non un travail de code. Le réveil est prouvé
-fonctionnel : il reçoit un 404 qui *nomme* le blocage. Dès que
-`supabase functions deploy fn-job-dispatcher` tourne, les 34 jobs drainent —
-c'est le seul geste restant.
+**État au 2026-10-24 :** 1.1–1.3 et 1.4b sont faits, testés et vérifiés live.
+La porte T1 reste **fermée** sur un unique point, le déploiement (1.4), qui est
+une décision d'opérateur (OQ-03) et non un travail de code. Le réveil est
+prouvé fonctionnel : il reçoit un 404 qui *nomme* le blocage.
+
+**Le blocage 1.4 est désormais un seul flag.** Avant d869c9f, lever le gate
+n'aurait rien déployé ; désormais le job fait `build-ef.mjs` → `link
+--project-ref` → les 7 `functions deploy` → `functions list` (assertion
+d'observabilité), avec un pré-vol qui **échoue** si `INTERNAL_FN_SECRET` n'est
+pas posé — sans lui, la garde fail-closed de 0028 renverrait 401 pour toujours.
+
+**Ce qui reste à faire, dans l'ordre :**
+1. poser `INTERNAL_FN_SECRET` (`supabase secrets set`) **et** le miroir vault
+   de 0028 avec la **même** valeur ;
+2. poser les secrets du registry (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_URL_DEV`,
+   `SUPABASE_PROJECT_REF` optionnel) ;
+3. lever `if: false` (ligne ~164) — la ratification OQ-03 ;
+4. lancer le workflow (`workflow_dispatch` désormais possible **sans** couper
+   de tag) ;
+5. vérifier `job_logs` non vide et la file vidée.
+
+**La file croît, elle ne stagne pas :** 34 lignes le 2026-10-24, **38** le
+lendemain (les crons quotidiens `aurora_fsrs_tick` 02:00 et
+`aurora_skill_recompute` 03:00 insèrent 1 job/utilisateur/jour, sans borne).
+Le coût du blocage augmente donc chaque jour. Toutes les tables de données
+lues par les handlers sont **vides** (`flashcards` 0, `progress_evidences` 0,
+`skill_states` 0) : activer le correctif est un **no-op vérifié et sans
+risque** pour les 4 utilisateurs réels.
 
 ### Tranche 2 — Aligner base ↔ dépôt *(la cause racine de la dérive)*
 
