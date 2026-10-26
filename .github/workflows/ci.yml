@@ -211,6 +211,14 @@ jobs:
         if: ${{ hashFiles('tests/jobs/routing-coverage.test.ts') != '' }}
         run: node --experimental-strip-types --no-warnings tests/jobs/routing-coverage.test.ts
 
+      - name: "Live-only DB objects are versioned (no un-versioned catalog)"
+        # The live database carried 3 functions the repo never versioned; a
+        # `db reset` would have erased them in silence and broken every signup.
+        # The static RLS scan reads migrations, so it cannot miss what is
+        # ABSENT — this compares the invariant instead.
+        if: ${{ hashFiles('tests/db/live-only-functions.test.ts') != '' }}
+        run: node --experimental-strip-types --no-warnings tests/db/live-only-functions.test.ts
+
       - name: Boundary greps (G1-G4)
         run: sh scripts/check-boundaries.sh
 
