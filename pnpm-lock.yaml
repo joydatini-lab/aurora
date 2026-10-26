@@ -249,6 +249,12 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
 
+  packages/artifact:
+    dependencies:
+      '@aurora/domain':
+        specifier: workspace:*
+        version: link:../domain
+
   packages/ascent:
     dependencies:
       '@aurora/domain':
@@ -329,7 +335,19 @@ importers:
         specifier: workspace:*
         version: link:../domain
 
+  packages/identity:
+    dependencies:
+      '@aurora/domain':
+        specifier: workspace:*
+        version: link:../domain
+
   packages/integrations:
+    dependencies:
+      '@aurora/domain':
+        specifier: workspace:*
+        version: link:../domain
+
+  packages/knowledge:
     dependencies:
       '@aurora/domain':
         specifier: workspace:*
