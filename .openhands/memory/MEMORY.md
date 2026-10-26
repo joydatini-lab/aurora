@@ -223,6 +223,45 @@ Only #1 is fixed. **A green gate says NOTHING about the job chain.**
   `Number(r.lapses ?? 0)` is a correct defensive 0 — NOT a bug (checked after the `learning.
   flashcards` schema guess proved wrong: the table is `public.flashcards`).
 
+## PowerSync client-schema drift (T4/A.7, `e47e2a7`)
+- The PowerSync **client** schema (`packages/data/src/powersync-schema.ts`, consumed by
+  `powersync-client.ts`) was derived from NOTHING: 28 of 31 mirror tables declared phantom
+  columns and omitted real ones; `focus_profiles` + `discovery_vault` were absent entirely.
+  PowerSync's rule: undeclared tables/columns are "stored internally, but not accessible".
+- **Why no test caught it**: mobile tests seed `InMemoryLocalStore` with rows shaped like the
+  CLIENT schema; the relay delivers rows shaped like the DATABASE. `powersync-roundtrip.test.ts`
+  would have caught it but SKIPS without a reachable relay. Lesson: a mirrored store needs a test
+  that crosses the two shapes, or the drift is invisible by construction.
+- Rule now enforced: `tests/db/client-schema-drift.test.ts` (synced tables declared, no phantom
+  column, no omitted column) + the 4 table lists (`sync-config.yaml`, `powersync/schema.json`,
+  `powersync.ts` mirrorTables, client schema) must agree. Regeneration is idempotent.
+- `user_context.features` was **live-only** (read by `user-context-client.ts:58` + `main.tsx:131`,
+  in NO migration) → migration `0031`, idempotent. Third instance of the live-only class; check
+  new columns against BOTH migrations and the live catalog.
+- `powersync.ts` is **CRLF**; editing it with a plain Python `write` rewrites all 221 lines.
+  Write bytes, keep `\r\n`, or `git checkout --` and re-edit.
+
+## Design Space Pro (tranche 5 — STARTED 2026-10-26, `8046ba4`)
+- SSoT = `Aurora-Reference-Produit-Fonctionnelle-v1.1.md` §6 (spec) + §10.4 (order) +
+  `docs/frontend/design-space-scope.md` (audit + 13 proposed screens + D0-D10 sequence).
+- **§7.2 forbids a new root entity before auditing**: audit found a logo/affiche/document
+  IS an `Artifact`, and the Brand DNA is a representation ATTACHED to the brand `Project`.
+  So D2 shipped a CONTRACT (`packages/domain/src/entities-design.ts`), no table, no
+  migration, no new root. AD-9 (9 events, closed) untouched: `ArtifactGenerated` covers it.
+- The load-bearing invariant (§6.2): 4 epistemic states `provided|generated|accepted|unknown`.
+  `validateBrandDna` rejects a market assertion (audience/marketContext/differentiation/
+  positioning) that is `generated`/`accepted` without a `SourceRef`; `accepted` empty;
+  `unknown` with a value. `unknown` stays LEGITIMATE — forcing a value causes the very
+  invention the rule prevents. Same discipline as the phantom-empty-state class (AD-7).
+- `packages/domain` had NO test runner; it now has one (register hook + `test` script,
+  zero-dep, copied from packages/data / packages/ascent). Its `index.ts` re-exports
+  siblings extensionlessly → the `.ts`-retry resolve hook is REQUIRED or Node ESM fails
+  with ERR_MODULE_NOT_FOUND on `./envelopes`.
+- Non-vacuity proof pattern that works here: empty `MARKET_ASSERTION_FIELDS` → 4 red;
+  restore → 16/16 green.
+- Open: OQ-8 (`design-engines` package — create when the LOGO engine starts), OQ-12
+  (Fabric.js for the editor), OQ-6 (~13 screens), OQ-11 (sequence).
+
 ## Sandbox facts (this environment)
 - FS is EPHEMERAL (`/tmp` and the Playwright cache can vanish mid-session — re-run
   `npx playwright install chromium`; prefer `git checkout -- <file>` over /tmp backups).
