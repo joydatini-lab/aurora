@@ -110,7 +110,16 @@ jobs:
     # Sur main (et son push, son PR vers main) le gate complet doit PASS.
     # Sur les autres refs on ne le declenche pas : ce sont les PR qui
     # fusionnent sur main qui le declenchent (jobs on: pull_request).
-    if: ${{ github.ref == 'refs/heads/main' || github.event_name == 'pull_request' }}
+    #
+    # CORRIGE 2026-10-26 : le depot est un FORK, ou NI `push` NI `pull_request`
+    # ne declenchent le CI (mesure : 0 run sur un push de 14 commits, 0 run sur
+    # la PR #1). La condition precedente rendait donc `ci-gate` -- 20+ checks,
+    # dont les gardes de drift et de routage -- STRUCTURELLEMENT inatteignable :
+    # seul `workflow_dispatch` cree un run, et il etait exclu. Le gate complet
+    # n'avait jamais tourne. `workflow_dispatch` est desormais autorise, ce qui
+    # rend le gate lancable a la demande sur n'importe quelle ref. Sûr : aucun
+    # step de `ci-gate` ne consomme de secret (verifie).
+    if: ${{ github.ref == 'refs/heads/main' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     needs: [ci-base]
     steps:
