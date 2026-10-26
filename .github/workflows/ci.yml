@@ -219,6 +219,20 @@ jobs:
         if: ${{ hashFiles('tests/db/live-only-functions.test.ts') != '' }}
         run: node --experimental-strip-types --no-warnings tests/db/live-only-functions.test.ts
 
+      - name: "Client schema matches the migrations (PowerSync mirror drift)"
+        # live-only-functions compares FUNCTIONS; this compares COLUMNS. The
+        # client PowerSync schema is the runtime declaration of which synced
+        # tables/columns exist. Measured 2026-10-26: 28 of 31 mirrored tables
+        # declared columns that do not exist (habits.title vs the real
+        # habits.name) and omitted columns that do, and 2 synced tables
+        # (focus_profiles, discovery_vault) were absent entirely. PowerSync
+        # stores undeclared columns but never exposes them, so the app read
+        # `undefined` in silence. No test saw it: mobile tests seed an
+        # InMemoryLocalStore shaped like the CLIENT schema, while the relay
+        # delivers rows shaped like the DATABASE.
+        if: ${{ hashFiles('tests/db/client-schema-drift.test.ts') != '' }}
+        run: node --experimental-strip-types --no-warnings tests/db/client-schema-drift.test.ts
+
       - name: Boundary greps (G1-G4)
         run: sh scripts/check-boundaries.sh
 

@@ -363,6 +363,47 @@ N6 (mots de passe compromis) · N7 (`vector` schema, `search_path`,
 `keep_alive`) · A.7 `name`/`title` (AD-15) · A.9 bilan périodique · C.3 OCR ·
 H prévisualisation · B.6 valider Mirror · round-trip PowerSync (`BLOCKED` relay).
 
+#### A.7 + dérive du schéma client PowerSync — TRAITÉ (2026-10-26)
+
+Le constat de départ (« `name`/`title` dans `habits`/`routines` ») était la
+pointe d'un défaut de classe : **le schéma client PowerSync n'était dérivé de
+rien**. Mesuré contre les migrations ET la base live :
+
+- `packages/data/src/powersync-schema.ts` (le schéma **runtime**, consommé par
+  `powersync-client.ts`) : **28 des 31** tables miroir déclaraient des colonnes
+  inexistantes et en omettaient d'autres. `habits` déclarait
+  `title`/`description`/`active` là où la table a `name`/`target`/`status`/`streak`.
+- **2 tables synchronisées étaient absentes du schéma client** : `focus_profiles`
+  et `discovery_vault` — le relais les livrait, aucun code ne pouvait les lire.
+- Les **4 listes de tables divergeaient** : `sync-config.yaml` 33,
+  `powersync/schema.json` 33, `powersync.ts` 31, `powersync-schema.ts` 31.
+
+La règle officielle PowerSync rend le défaut fonctionnel, pas cosmétique :
+« If tables/collections not described by the client-side schema are synced, it
+is stored internally, but not accessible. Same applies for columns/fields not
+described by the client-side schema. »
+(https://docs.powersync.com/maintenance-ops/implementing-schema-changes)
+
+**Pourquoi aucun test ne le voyait** : les tests mobile alimentent un
+`InMemoryLocalStore` avec des lignes de forme **schéma client**, alors que le
+relais livre des lignes de forme **base**. Les deux ne se croisaient nulle part ;
+le seul test qui les aurait croisées (`powersync-roundtrip.test.ts`) **saute**
+sans relais joignable.
+
+**Corrigé** : schéma client régénéré depuis les migrations (33 tables, 0 écart),
+les 4 listes alignées, `mapHabit`/`mapRoutine` lisent `name` en premier, seeds de
+test remis en forme base, et **nouveau garde-fou** `tests/db/client-schema-drift.test.ts`
+(3 invariants) branché dans la CI à côté de `live-only-functions`.
+
+**Découvert et versionné au passage** : `user_context.features` était
+**live-only** — lue par `user-context-client.ts:58` et `main.tsx:131`, absente de
+toutes les migrations. Un `db reset` l'aurait effacée en silence. Migration
+`0031_version_user_context_features.sql` (idempotente, no-op en prod).
+
+Reste ouvert : `routines.anchor`/`steps` sont maintenant lisibles mais
+`RoutineRow` ne les expose pas (décision de modélisation, pas de miroir) ;
+round-trip PowerSync toujours `BLOCKED` faute de relais.
+
 ### Tranche 5 — Design Space Pro (L, 11 capacités)
 
 Dépend de T3.2 (Artifact) et du Canvas. Ordre §10.4 : brief → Brand DNA →

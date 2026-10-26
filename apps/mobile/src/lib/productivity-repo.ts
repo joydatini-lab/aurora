@@ -195,7 +195,12 @@ function mapHabit(row: RawRow): HabitRow {
   );
   return {
     id: str(row.id) ?? '',
-    title: str(row.title) ?? '',
+    // `habits` has NO `title` column — it is `name` (0002). Reading
+    // `row.title` first always yielded '', so every habit rendered with an
+    // empty title while the real value sat unread in the mirror (PowerSync:
+    // "stored internally, but not accessible" for undeclared columns).
+    // `title` is kept as a fallback only for a hypothetical renamed mirror.
+    title: str(row.name ?? row.title) ?? '',
     cadence,
     weekdays,
     recurrenceRule,
@@ -214,7 +219,10 @@ export interface RoutineRow {
 function mapRoutine(row: RawRow): RoutineRow {
   return {
     id: str(row.id) ?? '',
-    title: str(row.title) ?? '',
+    // `routines` has `name`, NOT `title`/`description` (0002). The table also
+    // has `anchor` and `steps`, but the RoutineRow surface below predates them
+    // and is not extended here — that is a modelling decision, not a mirror fix.
+    title: str(row.name ?? row.title) ?? '',
     description: optStr(row.description),
     createdAt: str(row.created_at) ?? '',
     updatedAt: str(row.updated_at) ?? '',
