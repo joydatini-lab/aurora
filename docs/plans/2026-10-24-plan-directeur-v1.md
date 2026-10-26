@@ -254,15 +254,46 @@ risque** pour les 4 utilisateurs réels.
 
 ### Tranche 2 — Aligner base ↔ dépôt *(la cause racine de la dérive)*
 
-| Lot | Contenu |
-|---|---|
-| 2.1 | Versionner les 3 fonctions live-only (N5) dans une migration |
-| 2.2 | Trancher le sort de `auto_confirm_*` : intentionnel (décision owner 10-07) mais à révoquer ou passer en `INVOKER` |
-| 2.3 | Migration 28 non tracée → réconcilier `schema_migrations` |
-| 2.4 | Réactiver le job `deploy` (OQ-03) ou le remplacer par un déploiement vérifié |
+| Lot | Contenu | Statut |
+|---|---|---|
+| 2.1 | Versionner les fonctions live-only (N5) | **FAIT** (0029) — **2 sur 3**, pas 3 : `rls_auto_enable` n'est **pas** du code Aurora (cf. ci-dessous) |
+| 2.2 | Trancher le sort de `auto_confirm_*` | **TRANCHÉ (0029)** : `EXECUTE` révoqué pour `PUBLIC`/`anon`/`authenticated`. Un trigger n'a pas besoin du droit `EXECUTE` pour se déclencher, donc révoquer ne coûte rien et retire 2 fonctions privilégiées de la portée anonyme. Advisors : `anon_security_definer` 3 → 1 |
+| 2.3 | Migration 28 non tracée → réconcilier `schema_migrations` | **DÉJÀ RÉSOLU** — 0028 est tracée live (`20261024175347`). Le constat ne tenait plus |
+| 2.4 | Réactiver le job `deploy` (OQ-03) ou le remplacer par un déploiement vérifié | **DÉBLOQUÉ CÔTÉ CODE** (d869c9f) — reste OQ-03 |
+| 2.5 | `search_path` figé sur les 3 fonctions signalées (dont **une de ma propre dette** : `wake_job_dispatcher`, 0028) | **FAIT** (0030) — advisor `function_search_path_mutable` 3 → 0 |
+| 2.6 | Garde-fou : objets live non versionnés + `search_path` | **FAIT** (`tests/db/live-only-functions.test.ts`, 4 tests, câblé au CI, prouvé par test négatif) |
 
 **Porte T2 :** `git` et la base racontent la même histoire ; un reset serait
-rejouable.
+rejouable. **Atteinte pour les objets :** les 2 fonctions Aurora + leurs
+triggers sont versionnés et rejouables, et un test refuse toute régression.
+
+**La correction de fond sur 2.1 :** le plan disait « versionner les 3 ».
+C'était faux pour `rls_auto_enable` + son event trigger `ensure_rls` : ce n'est
+pas du code Aurora, c'est la **recette officielle Supabase** « Auto-enable RLS
+for new tables », reproduite verbatim, et qui cohabite avec les event triggers
+de la plateforme (`pgrst_ddl_watch`, `issue_pg_cron_access`,
+`grant_pg_net_access`…). La versionner la figerait et entrerait en conflit avec
+la plateforme à chaque évolution. Elle reste hors migration, et un test
+**épingle** cette exclusion pour qu'un futur lecteur ne « termine pas le
+travail » par erreur.
+
+**Vérification live (et non déduite) :**
+- 0029 et 0030 appliquées par le MCP, tracées (`20261026000029`,
+  `20261026000030`) ;
+- **test comportemental** du trigger versionné : un utilisateur sonde inséré
+  dans une transaction sort `email_confirmed_at` ET `phone_confirmed_at` non
+  nuls → `ROLLBACK`, aucune trace (4 utilisateurs avant, 4 après). Un trigger
+  seulement *présent* ne prouve rien ;
+- ACL vérifiée sur les 2 fonctions : `anon`/`authenticated` retirés ;
+- URL de `wake_job_dispatcher` relue du catalogue après remplacement :
+  `/functions/v1/fn-job-dispatcher` intacte.
+
+**Reste ouvert en T2 :** `extension_in_public` (`vector` **et** `pg_net`).
+`pg_net` est celui que 0028 a installé, mais ses objets vivent déjà dans `net`
+— seul le schéma *d'extension* est `public`. Le déplacer toucherait le réveil
+qui vient d'être construit, donc c'est du ressort N7 (tranche 4), pas d'un lot
+d'alignement. Le patron correct à copier est celui de `pg_cron` : extension
+dans `pg_catalog`, objets dans `cron` — et il n'est **pas** flaggé.
 
 ### Tranche 3 — Les propriétaires de tables manquants
 

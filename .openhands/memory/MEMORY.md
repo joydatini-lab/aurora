@@ -138,13 +138,23 @@ Only #1 is fixed. **A green gate says NOTHING about the job chain.**
   everywhere. All fixed.
 - supabase/postgres: use **supabase_admin** (superuser); `postgres` can't create `vector`.
   `cron.job` needs supabase_admin and survives schema drops → test on a FRESH container.
-  `auth.users` uses `confirmed_at` (no `email_confirmed_at`).
+  `auth.users` in the DOCKER image uses `confirmed_at` (no `email_confirmed_at`); the HOSTED
+  project has `confirmed_at` AND `email_confirmed_at` (verified live 10-25). Do not port an
+  auth-schema assumption between the two — they are different schemas.
 - Never propagate a claim a doc makes about another doc: `finalisation-v1.md` G8 misquotes
   AI_RULES.md ("20 migrations" vs the real 28 on disk).
-- Open security advisors (WARN): 3 live-only `SECURITY DEFINER` functions executable by `anon`
-  (`auto_confirm_new_user`, `auto_confirm_email_identity`, `rls_auto_enable`); leaked-password
-  protection disabled; `vector` in `public`; 2 functions with mutable `search_path`;
-  `keep_alive` RLS without policy (INFO).
+- Security advisors, as of 10-25 (WARN): `rls_auto_enable` still anon-executable (platform
+  recipe, not ours); leaked-password protection disabled; `vector` + `pg_net` in `public`
+  (`pg_cron` is NOT flagged: its extension lives in `pg_catalog`, objects in `cron` — that is
+  the correct pattern to copy); `keep_alive` RLS without policy (INFO).
+  CLEARED by 0029/0030: the 2 auto-confirm functions are no longer anon-executable, and
+  `function_search_path_mutable` went 3 → 0.
+- `auto_confirm_new_user` / `auto_confirm_email_identity` are AURORA code (owner decision 10-07:
+  no email confirmation, no paid domain) and were versioned in 0029. `rls_auto_enable` +
+  `ensure_rls` are NOT: they are the official Supabase recipe reproduced VERBATIM, sitting beside
+  the platform's own event triggers. Versioning them would freeze platform infrastructure —
+  the plan's "version the 3" was wrong for that one. Guard test pins the distinction
+  (`tests/db/live-only-functions.test.ts`, 4 tests, in CI).
 
 ## Job chain — the 16-day stall (root cause, 2026-10-24)
 - The stall had **TWO independent causes**, both needed fixing:
