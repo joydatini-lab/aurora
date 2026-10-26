@@ -221,6 +221,43 @@ disponible avant le test réel de sa chaîne d'export ».
 
 ---
 
+## 8bis. Journal d'exécution
+
+### Lot D2.1 — Contrat Brand DNA (2026-10-26, commit à suivre)
+
+**Livré :** `packages/domain/src/entities-design.ts` (AD-15 SSoT) — le contrat du
+Brand DNA : les 6 blocs de §6.2, le vocabulaire épistémique à 4 états
+(`provided` / `generated` / `accepted` / `unknown`), la provenance versionnée, et
+trois fonctions pures : `validateBrandDna`, `diffBrandDna`, `lockedFields`.
+16 tests : `packages/domain/test/brand-dna.test.ts`.
+
+**Ce qui est prouvé, et comment :**
+
+| Invariant | Source | Test | Non-vacuité |
+|---|---|---|---|
+| Une assertion de marché générée **sans source** est refusée | §6.2 | `market-assertion-without-source` | vider `MARKET_ASSERTION_FIELDS` → **4 échecs** |
+| `accepted` ne peut pas être vide (rien n'a été décidé) | §6.2 | `accepted-without-value` | idem |
+| `unknown` ne peut pas porter de valeur (le statut ment) | §6.2 | `unknown-with-value` | idem |
+| `unknown` est une réponse **légitime**, pas une erreur | §6.2 | DNA entièrement `unknown` → 0 violation | — |
+| Un changement de bloc est rapporté au champ près | §6.8 | `diffBrandDna` | — |
+| Un champ **verrouillé** modifié est signalé, pas masqué | §6.7 | `diff reports a changed LOCKED field` | — |
+
+**Décision de conception (audit §7.2 respecté) :** **aucune** entité racine
+nouvelle, **aucune** table, **aucune** migration. Le Brand DNA est un contrat
+rattaché au `Project` de marque ; un logo / affiche / document reste un
+`Artifact`. Le vocabulaire d'événements (AD-9, fermé à 9) n'est pas touché :
+`ArtifactGenerated` suffit.
+
+**Reste ouvert :** OQ-7 (Brand DNA = entité dédiée ? — **tranché ici : non, il est
+rattaché au projet**), OQ-8 (`design-engines` : à créer quand le premier moteur
+LOGO entre en implémentation), OQ-6 (les ~13 écrans), OQ-11 (séquence), OQ-12
+(Fabric.js).
+
+**Ce que ce lot ne fait pas :** aucune persistance, aucune route, aucun écran.
+C'est délibéré : le contrat précède la table, et la table n'existe que quand un
+consommateur réel l'exige.
+
+
 ## 9. Séquence de construction proposée (référence §10.4)
 
 | Lot | Contenu | Dépend de |

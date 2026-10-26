@@ -225,5 +225,11 @@ environnement Supabase live.
 2. **`apps/mobile`** devient-il `apps/web-app`, ou un 4ᵉ app est-il créé ?
 3. **Next.js** : site public seulement (`apps/marketing`), ou aussi l'app métier ?
 4. **Design Space Pro** : premier lot après la Phase 0, ou après la couverture du socle (Phase 1 P1) ?
-5. Le **brief maître LibreChat** est-il formellement abandonné (au profit de la référence v1.1) ?
+5. **TRANCHÉ (owner, 2026-10-26) — ABANDONNÉ.** Le brief maître LibreChat est
+   formellement abandonné au profit de la référence v1.1. Décision consignée
+   dans `adr-018` §D-018.4. Aucun code, aucun sous-module, aucune branche
+   `integration/librechat` n'a jamais existé (vérifié : `git log --all
+   --diff-filter=A -- 'docs/integration/*'` = vide ; `git ls-remote --heads
+   origin` = aucune branche librechat). Toute mention de « LibreChat » dans le
+   dépôt est un document qui **constate sa réfutation** — à ne pas rouvrir.
 6. **Périmètre de cette session** : exécuter Phase 0 en entier, ou P0-A + P0-B seulement ?
