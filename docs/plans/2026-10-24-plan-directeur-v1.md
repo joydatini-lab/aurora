@@ -194,9 +194,13 @@ VIEW-JOINS 0 · SPINE 0.
 | N7 | Le dispatcher n'est pas déployé (404 prouvé) | **OUVERT — le seul blocage restant** |
 | N8 | **`config.toml` ne déclare `verify_jwt` pour AUCUNE EF** → un redéploiement via le CLI applique le défaut `true` et casse silencieusement toutes les EF internes (le réveil serait rejeté par la plateforme *avant* d'atteindre la garde) | **CORRIGÉ** — les 7 EF déclarées explicitement, garde-fou de test |
 | N9 | `fn-dev-auth` (porte dérobée dev : `list-users`, reset mot de passe, `CORS *`, `verify_jwt=false`) est **toujours déployée live** alors que son propre en-tête dit « SUPPRIMER AVANT v1.0 » | **OUVERT** — à supprimer avant le tag |
-| N10 | 3 fonctions live-only, `SECURITY DEFINER` exécutables par `anon` | reset base = perte ; surface d'attaque | advisors (WARN ×3) |
-| N11 | Protection mots de passe compromis désactivée | sécurité auth | advisors (WARN) |
-| N12 | `vector` dans `public` ; 2 fonctions `search_path` mutable ; `keep_alive` RLS sans politique | hygiène | advisors (WARN/INFO) |
+| N10 | 3 fonctions live-only, `SECURITY DEFINER` exécutables par `anon` | reset base = perte ; surface d'attaque | **PARTIELLEMENT CORRIGÉ (T2)** : les 2 fonctions Aurora sont versionnées (0029) et leur `EXECUTE` révoqué pour `anon`/`authenticated` → advisor 3 → 1. `rls_auto_enable` reste : ce n'est pas notre code (recette plateforme) |
+| N11 | Protection mots de passe compromis désactivée | sécurité auth | **OUVERT** (T4/N6) — pas touché : dépend d'un réglage du projet hébergé, pas du dépôt |
+| N12 | `vector` dans `public` ; 2 fonctions `search_path` mutable ; `keep_alive` RLS sans politique | hygiène | advisors (WARN/INFO) — **`search_path` CORRIGÉ (T2/0030)** : advisor `function_search_path_mutable` 3 → 0. Restent `extension_in_public` (`vector` + `pg_net`, T4/N7) et `keep_alive` (INFO) |
+| N13 | **3 modules propriétaires déclarés sans package** : `knowledge` (7 tables), `artifact` (1), `identity` (1) — la lecture était câblée, aucune écriture n'était possible | **CORRIGÉ (T3, 5496393)** — 3 packages, 0 table neuve ; garde-fou `owner-module-coverage.test.ts` |
+| N14 | **6 divergences SSoT ↔ base** : kinds d'`artifacts` rejetés par le CHECK, colonnes déclarées absentes (`notes.tags`, `semantic_nodes.evidenceRefIds`, `user_context.displayName`…), `source_refs.sourceId` vs `source_document_id`, `artifact_files.filename` NOT NULL hors SSoT | **CONSTATÉ ET ÉPINGLÉ (T3)** — décisions AD-15, pas de correctif unilatéral |
+| N15 | `artifact_files` : table réelle **non routée, non synchronisée, non relayée** (absente de `OWNER_MODULE_BY_ENTITY`, du sync-config et de `v_artifact_scope`) | **CONSTATÉ (T3)** — épinglé dans `ARTIFACT_UNROUTED_TABLES` |
+| N16 | `learning`, `progress`, `discovery`, `integrations` : propriétaires déclarés qui ne construisent **aucune** commande locale (les `*UpdateCommand` existent mais personne ne les produit) | **CONSTATÉ (T3)** — épinglé dans le garde-fou de couverture |
 
 N1–N3, N5, N6, N8 sont corrigés et vérifiés. N4 et N7 sont le **même** blocage —
 le déploiement des EF — et c'est le seul qui empêche les 34 jobs de drainer.
@@ -297,13 +301,61 @@ dans `pg_catalog`, objets dans `cron` — et il n'est **pas** flaggé.
 
 ### Tranche 3 — Les propriétaires de tables manquants
 
-| Lot | Contenu | Débloque |
+| Lot | Contenu | Statut |
 |---|---|---|
-| 3.1 | `packages/knowledge` — propriétaire des 10 tables existantes, **0 table neuve** | C.1, C.2 |
-| 3.2 | `packages/artifact` — propriétaire des 2 tables existantes | H, puis L |
+| 3.1 | `packages/knowledge` — propriétaire des **7** tables existantes, **0 table neuve** | **FAIT** (5496393) |
+| 3.2 | `packages/artifact` — propriétaire de la table existante `artifacts` | **FAIT** (5496393) |
+| 3.3 | `packages/identity` — propriétaire de `user_context` | **FAIT** (5496393) — **lot absent du plan** |
 
 **Porte T3 :** chaque table a un module propriétaire ; `OWNER_MODULE_BY_ENTITY`
-(`packages/data/src/commands.ts:180`) ne nomme plus de module absent.
+ne nomme plus de module absent. **Atteinte** — et il a fallu **3 lots, pas 2** :
+`identity` était un troisième propriétaire sans package (voir ci-dessous).
+
+**Deux corrections au plan, mesurées et non déduites.**
+
+*1. Le lot 3.3 manquait.* Le plan ne listait que `knowledge` et `artifact`. Or
+`OWNER_MODULE_BY_ENTITY` nomme **`identity`** propriétaire de `user_context`, et
+la porte T3 exige qu'aucun module ne soit absent : elle était **inatteignable
+avec les deux lots listés**. Le trou était d'autant plus visible que le kernel
+d'agent émet déjà la commande — `settingsTheme` (`packages/agent/src/tools.ts:930`)
+retourne `{ command: 'identity.set_theme' }` et `UserContextUpdateCommand`
+(`op: 'userContext.update'`) est déclaré dans `packages/data/src/commands.ts:146`
+— vers un module qui n'existait pas.
+
+*2. `artifact_files` n'est pas « une table existante propriété d'Artifact ».*
+Le plan comptait « les 2 tables existantes ». Vérifié : la chaîne `artifact_files`
+n'apparaît **ni** dans `OWNER_MODULE_BY_ENTITY` (donc `commandEntity()` ne peut
+pas la produire), **ni** dans `powersync/sync-config.yaml` (le flux `artifact`
+fait `FROM artifacts`), **ni** dans `v_artifact_scope` (0015 lit `artifacts`).
+Une commande locale visant cette table ne serait ni validable, ni synchronisée,
+ni relayée. Le module la déclare donc dans `ARTIFACT_UNROUTED_TABLES` et
+**épingle l'écart** au lieu de revendiquer une capacité.
+
+**Divergences SSoT ↔ base : 6 trouvées, épinglées, non corrigées.** Chacune est
+une décision de propriétaire AD-15, pas un correctif unilatéral. Les tests les
+figent pour qu'elles restent visibles :
+
+| # | Divergence | Preuve |
+|---|---|---|
+| D-1 | `Artifact.kind` (SSoT) autorise `csv`/`text`/`code` ; le CHECK live les **rejette** (10 kinds en base, 13 dans le SSoT) | `artifacts_kind_check` lu en base |
+| D-2 | `Note` (SSoT) déclare `tags` + `sourceRefIds` ; `notes` n'a **aucune** de ces colonnes | 0004 |
+| D-3 | `SemanticNode` (SSoT) déclare `evidenceRefIds` ; pas de colonne | 0004 |
+| D-4 | `SourceRef` (SSoT) dit `sourceId` ; la colonne est `source_document_id` | 0004 |
+| D-5 | `ArtifactFile` (SSoT) ne déclare pas `filename` ; la colonne est `NOT NULL` | 0007 |
+| D-6/7 | `UserContext` (SSoT) déclare `displayName`/`coachCadence`/`quietHours` comme champs ; la table n'a qu'un `coaching_prefs` jsonb | 0001 |
+
+**Garde-fou transversal (`packages/data/test/owner-module-coverage.test.ts`).**
+Le défaut de la tranche 3 était **invisible** pour la porte existante :
+`check-rls.sh` lit les migrations (les tables existent → vert), le test de câblage
+PowerSync lit le sync-config (les flux sont déclarés → vert), et
+`single-writer.test.ts` vérifie que la table refuse un mauvais module — jamais que
+le module déclaré **existe**. Le nouveau test ferme cette classe : chaque
+propriétaire déclaré doit avoir un package, et tout inventaire `*_OWNED_TABLES`
+doit correspondre exactement à la table de routage. Il **épingle aussi** ce qui
+reste ouvert au lieu de le maquiller : `learning`, `progress`, `discovery` et
+`integrations` ne construisent **aucune** commande locale (leurs entrées de
+routage sont aspirationales), et `productivity` a un chemin d'écriture mais pas
+d'inventaire lisible.
 
 ### Tranche 4 — Hygiène et ponctuelles
 
