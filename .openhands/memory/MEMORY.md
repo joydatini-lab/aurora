@@ -37,54 +37,48 @@ Detail and per-lot narratives live in the daily logs (`.openhands/memory/YYYY-MM
 - **Reference §7.2 forbids creating a new root entity before auditing**: a logo/poster/document
   IS an existing `Artifact`; the Brand DNA attaches to the brand `Project`. No new table.
 
-## The decision framework (the owner's mandate: "stop asking me")
-- Precedent to extend: `docs/ui-libraries.md` **§8 "Agent Decision Framework (autonomous, no
-  user input)"** — it existed for components, not for design OQs.
+## The decision framework (owner's mandate: "stop asking me")
+- Precedent to extend: `docs/ui-libraries.md` **§8 "Agent Decision Framework (autonomous, no user
+  input)"** — existed for components, not design OQs.
 - Three SSoT artefacts: `docs/frontend/derivation-protocol.md` (precedence P0–P7 + 5 verdicts;
-  `ESCALADE` requires irreversible **AND** no evidence) · `docs/frontend/design-space-oq-rulings.md`
+  `ESCALADE` needs irreversible **AND** no evidence) · `docs/frontend/design-space-oq-rulings.md`
   (OQ-6…OQ-12 ruled, 0 escalations) · `docs/frontend/implementation-index.md` (**the single view**:
-  facts, ratified decisions, lot queue L0–L9, 7 traps G1–G7). Five planning docs coexisted, two
-  contradicted each other.
+  facts, decisions, lot queue L0–L9, traps G1–G8). Five planning docs coexisted; two contradicted.
 - Screen-spec convention: `docs/design-system/screens/*.md` = 14 sections + §15–§19
-  (`docs/frontend/spec-template-v1.md`). **44 screens, ONE** (`taches-liste`) had §15–§19. New
-  pilot: `brand-dna.md`. 374 OQs consolidated in `screens/_open-questions.md`.
+  (`docs/frontend/spec-template-v1.md`). **44 screens, ONE** (`taches-liste`) had §15–§19. Pilot:
+  `brand-dna.md`. 374 OQs in `screens/_open-questions.md`.
+- Detail: `defects-guards-framework.md`.
 
-## Verified defects (NOT fixed — owner calls, AD-15)
-- **D3 — FIXED 2026-10-27 (`fb608c1`, migration `0032_fix_phantom_columns.sql`)**: the three
-  phantom columns (`tasks.tags`, `tasks.recurrence_rule`, `projects.view_mode`) are versioned.
-  D2 also fixed (artifacts_kind_check widened 10 -> 13). `KNOWN_DEFECTS` is now EMPTY.
-  Lesson that generalises: a phantom column is SILENT because
-  `EngineLocalStoreBridge.upsert` is a **Map** keyed by column name — an unknown key is
-  accepted, the screen renders, only the upstream PATCH fails (queued write, not a crash).
-  A migration alone would create a NEW drift: also update `powersync-schema.ts` AND
-  `sqlite-schema.ts` (3 declarations), verified by `client-schema-drift.test.ts`.
-- **D1**: `Project.title` vs `projects.name` is a **DELIBERATE rename** translated by the writer
-  (`goals-projects.ts:184`). Same for `Task.title`→`tasks.subject` (`tasks.ts:81`),
-  `Project.deadline`→`end_date`, `Task.timeSpentSec`→`actual_minutes`. NOT bugs.
-- **D2**: `Artifact.kind` (domain, 13 values incl. csv/text/code) vs the SQL CHECK (10 values) —
-  writing one is rejected by Postgres at runtime.
+## Verified defects (owner calls, AD-15) — detail in `defects-guards-framework.md`
+- **D3 FIXED** (`fb608c1`, migration `0032`): the 3 phantom columns (`tasks.tags`,
+  `tasks.recurrence_rule`, `projects.view_mode`) are versioned; D2 also fixed (`artifacts_kind_check`
+  10→13). `KNOWN_DEFECTS` is EMPTY. Generalisable lesson: a phantom column is SILENT because
+  `EngineLocalStoreBridge.upsert` is a **Map** keyed by column name — an unknown key is accepted,
+  the screen renders, only the upstream PATCH fails. A migration alone creates a NEW drift: also
+  update `powersync-schema.ts` AND `sqlite-schema.ts` (3 declarations), per `client-schema-drift.test.ts`.
+- **D1 is NOT a bug**: `Project.title` vs `projects.name`, `Task.title`→`tasks.subject`,
+  `Project.deadline`→`end_date`, `Task.timeSpentSec`→`actual_minutes` are DELIBERATE renames
+  translated by the writers (`goals-projects.ts:184`, `tasks.ts:81`).
 
-## Guards to know
-- `tests/db/domain-schema-drift.test.ts` (wired into `ci.yml`): **calls the real writers** and
-  checks every patch key against the migrations. It fills the hole between
-  `client-schema-drift.test.ts` (client↔migrations, SQL both sides) and `owner-module-coverage`
-  (reads table names, never columns) — **nothing** compared `packages/domain` to the migrations.
-  Its `KNOWN_DEFECTS` list is **tripwired**: fixing a defect makes the test FAIL, forcing the
-  entry's removal, so the list cannot outlive the problem.
-- **Lesson: a non-vacuity test caught a first regex version that extracted nothing from
-  `createArtifact`. Calling the code beats parsing its source.**
-- **Phantom empty-state defect**: a page hard-coding `state={{ status: 'empty' }}` with 0 data
-  calls. `grep -rn "state={{ status: 'empty' }}" apps/mobile/src/pages/`. `UxStates` does NOT
-  render `children` in the `empty` branch (the body vanishes from the DOM).
+## Guards to know — detail in `defects-guards-framework.md`
+- `tests/db/domain-schema-drift.test.ts` (in `ci.yml`): **calls the real writers** and checks every
+  patch key against the migrations. Fills the gap between `client-schema-drift.test.ts`
+  (client↔migrations) and `owner-module-coverage` (table names only) — **nothing** compared
+  `packages/domain` to the migrations. Its `KNOWN_DEFECTS` list is **tripwired**: fixing a defect
+  makes the test FAIL, forcing the entry's removal.
+- **Calling the code beats parsing its source** (a non-vacuity test caught a regex that extracted
+  nothing from `createArtifact`).
+- **Phantom empty-state**: a page hard-coding `state={{ status: 'empty' }}` with 0 data calls.
+  `grep -rn "state={{ status: 'empty' }}" apps/mobile/src/pages/`. `UxStates` does NOT render
+  `children` in the `empty` branch (the body vanishes from the DOM).
 - **Vendored != Aurora**: `packages/ui/src/components/{reui,assistant-ui,examples}/**` is
   registry-installed third-party code (treat like node_modules). `components/ui/**` IS Aurora.
-- **A `react-hooks/*` error can mean the PLUGIN is missing**, not bad code. `eslint
-  --print-config <file>` is authoritative.
+- A `react-hooks/*` error can mean the PLUGIN is missing → `eslint --print-config <file>` is
+  authoritative.
 - `check-view-joins.ts` needs `node --experimental-strip-types` (`pnpm exec tsx` fails). G2
-  false-positived on `sk-[A-Za-z0-9]{8,}`; threshold now `{20,}`. `code_files()` scans
-  `git ls-files` only.
-- jsdom lacks `window.matchMedia`: any test rendering `AgentThinkingLoader` must mock it.
-  `packages/ui` tests use a local `test/render.ts` (React 18 `act` + createRoot), not RTL.
+  false-positived on `sk-[A-Za-z0-9]{8,}`; threshold now `{20,}`. `code_files()` scans `git ls-files`.
+- jsdom lacks `window.matchMedia`: mock it in any test rendering `AgentThinkingLoader`. `packages/ui`
+  tests use a local `test/render.ts` (React 18 `act` + createRoot), not RTL.
 
 ## Owner decisions and scope
 - **v1 perimeter = families A–M**, Design Space Pro included. Reference docs live at the repo
@@ -107,38 +101,56 @@ Detail and per-lot narratives live in the daily logs (`.openhands/memory/YYYY-MM
   reference only. Refutation: `docs/plans/2026-10-23-repriorisation.md`.
 
 ## Live DB / RLS verification
-- The static gate reads migrations; `scripts/rls-live-check.sh` applies all migrations on
+- The static gate reads migrations; `scripts/rls-live-check.sh` applies all of them on
   supabase/postgres (Docker) + runs `tests/rls-penetration.sql` with 2 auth users AND a negative
-  control (disable RLS → the test MUST fail). Found real defects by applying for real.
+  control (disable RLS → the test MUST fail). It has found real defects.
 - Use **supabase_admin** (superuser); `postgres` can't create `vector`. `cron.job` needs
   supabase_admin and survives schema drops → test on a FRESH container.
 - **The docker `auth.users` differs from the hosted one** (`confirmed_at` vs also
-  `email_confirmed_at`). Do not port an auth-schema assumption between the two.
+  `email_confirmed_at`). Don't port an auth-schema assumption between the two.
 - Never propagate a claim one doc makes about another. `shttp_*` (Supabase MCP) gives the LIVE
   truth — query it before asserting any schema status (traps G1/G6).
-- Supabase advisors (WARN): `rls_auto_enable` anon-executable (platform recipe, not ours);
-  leaked-password protection off; `vector` + `pg_net` in `public`. CLEARED by 0029/0030: the 2
-  auto-confirm functions are no longer anon-executable, `function_search_path_mutable` 3 → 0.
+- Advisors (WARN): `rls_auto_enable` anon-executable (platform recipe); leaked-password protection
+  off; `vector`+`pg_net` in `public`. CLEARED by 0029/0030 (auto-confirm functions no longer
+  anon-executable; `function_search_path_mutable` 3 → 0).
 
 ## Sandbox facts
-- **Docker IS available** (verified 2026-10-27): the daemon is simply NOT RUNNING.
-  Start it with `sudo dockerd > /tmp/dockerd.log 2>&1 &`, then use **`sudo docker`** —
-  the socket is root-owned and the `openhands` user is only in `sudo`. This makes
-  `scripts/rls-live-check.sh` usable (a real Postgres proof). Corrected note: it was
-  recorded as "unavailable", which cost a real verification.
-- **`rls-live-check.sh` fails at 0029 on that image (PRE-EXISTING, not your change)**:
-  the image has no `auth.identities`, and its `auth.users` lacks `email_confirmed_at`,
-  so `auto_confirm_new_user` raises on insert. To prove a MIGRATION on real Postgres,
-  apply them in a loop tolerating failures, then `ALTER TABLE auth.users DISABLE
+- **Docker IS available, daemon just NOT RUNNING**: `sudo dockerd > /tmp/dockerd.log 2>&1 &`, then
+  use **`sudo docker`** (socket is root-owned; `openhands` is only in `sudo`). Unlocks
+  `scripts/rls-live-check.sh` (a real Postgres proof). Earlier "unavailable" note was WRONG.
+- **`rls-live-check.sh` fails at 0029 on that image (PRE-EXISTING)**: no `auth.identities`, and its
+  `auth.users` lacks `email_confirmed_at` → `auto_confirm_new_user` raises on insert. To prove a
+  migration for real: apply in a loop tolerating failures, then `ALTER TABLE auth.users DISABLE
   TRIGGER USER` for the fixture insert.
-- No `SUPABASE_ACCESS_TOKEN`/`.env.local`. `deno` absent → EF tests cannot run locally.
-- `vault.create_secret(...)` IS permitted via MCP; `alter database ... set app.settings.*` is
-  REFUSED (`42501`).
-- **verify_jwt trap**: the CLI default is TRUE; `supabase functions deploy` silently flips the
-  platform JWT check ON for callers holding no user JWT. Declare it explicitly per function.
-  `fn-dev-auth` is a dev backdoor still deployed (`verify_jwt=false`, `CORS '*'`) — delete before
-  the tag.
-- `.agents_tmp/PLAN.md` at the workspace root belongs to a *planning conversation* sharing
-  `/workspace/project`. Leave it alone; don't commit it.
-- agent-server: scoped `POST /api/conversations/{cid}/file/upload` rejects paths outside the
-  conversation workspace (422) — a CLIENT error, not an Aurora bug.
+- No `SUPABASE_ACCESS_TOKEN`/`.env.local`; `deno` absent → EF tests can't run locally.
+  `vault.create_secret(...)` IS allowed via MCP; `alter database ... set app.settings.*` REFUSED (42501).
+- **verify_jwt trap**: CLI default is TRUE; `supabase functions deploy` silently flips the platform
+  JWT check ON for callers holding no user JWT. Declare it per function. `fn-dev-auth` is a dev
+  backdoor still deployed (`verify_jwt=false`, `CORS '*'`) — delete before the tag.
+- `.agents_tmp/PLAN.md` belongs to a *planning conversation* sharing `/workspace/project`: leave it.
+- agent-server `POST /api/conversations/{cid}/file/upload` rejects paths outside the conversation
+  workspace (422) — a CLIENT error, not an Aurora bug.
+
+## Token/CSS traps (L3, `b92c722`; detail in the 2026-10-27 log)
+- `<AuroraThemeProvider>` writes shadcn ALIASES in FULL values (`--background: #fff`); but
+  `packages/ui/tailwind.config.ts` maps HSL TRIPLETS (`hsl(var(--aurora-bg-h))`) that only
+  `styles/aurora.css` defines, and Vite does NOT load that file. An app config using
+  `presets: [auroraPreset]` = every color transparent. Apps must use the `apps/mobile/
+  tailwind.config.js` shape (`colors: { background: 'var(--background)' }`).
+- **`resolveThemeCSSVars` emitted DOTTED names** (`--aurora-accent.primary`) while everything
+  reads DASHED (`--aurora-accent-primary`): `aurora.css`, mobile CSS, and `toShadcnVars` itself.
+  So `--primary`/`--accent` were never defined → active nav invisible. FIXED + guard
+  `packages/ui/test/theme-css-vars-naming.test.ts`. `apps/mobile` masked it via `styles/
+  tokens.css` `:root` fallbacks (loaded in `main.tsx`); `apps/web-app` has none, so it exposed it.
+  LESSON: a CSS var name is an interface between two files; a mismatch throws NOTHING, the value
+  is just empty. Measure `getComputedStyle(el).getPropertyValue('--x')` live, never infer from code.
+- `apps/web-app` still lacks `:root` fallbacks (L3 left this open) — fine while the shell is the
+  only screen; add them before any pre-hydration render.
+- Test infra: `apps/web-app/test/aurora-alias-hook.mjs` lets `node:test` load `.tsx` (esbuild
+  `transformSync`), `.json`, `.css` under `--experimental-strip-types`. esbuild lives in the pnpm
+  store (`node_modules/.pnpm/esbuild@*/…/lib/main.js`) — point at the FILE. Register hooks so OURS
+  is last (Node runs the LAST-registered first).
+- `apps/mobile build:web` aborts (exit 134) at the V8 default heap (~4GB) → needs
+  `NODE_OPTIONS=--max-old-space-size=8192`. Environmental.
+- `@aurora/ui` barrel is heavy (assistant-ui, antv, xyflow, katex): importing it just for
+  `AURORA_ICONS` yields a ~9.4MB bundle. Real finding; a scoped `@aurora/ui/icons` would help.

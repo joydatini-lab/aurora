@@ -67,24 +67,42 @@ que si le précédent est vert.
 | **L2** | **Contrat Brand DNA** | ✅ **fait** (`8046ba4`) | 16 tests verts, 0 table neuve | — |
 | **L2b** | **Garde de dérive domaine↔schéma** | ✅ **fait** — `tests/db/domain-schema-drift.test.ts`, câblé au CI | 8/8 verts, non-vacuité prouvée par mutation | — |
 | **L3** | **Coquille `apps/web-app`** | ✅ **fait** (`b92c722`) — app React, tokens `packages/ui`, 9 sections §4.2 + Agent, 3 paliers responsive | 17 tests web-app + 4 ui, live 3 paliers, `build` vert | — |
-| **L4** | **Socle branché sur la coquille** | 5 écrans primaires (`home`, `taches-liste`, `cours-liste`, `progress-dashboard`, `agent-chat`) dans `web-app` | S1–S11 de `spec-template-v1.md` §4 | L3 |
-| **L5** | **Design Space — projet + brief** (D1) | `design-space`, `design-brief` sur `Project` existant | parcours brief → Brand DNA | L3 |
-| **L6** | **Design Space — moteur LOGO** (D3) | `packages/design-engines` **créé ici** + moteur SVG + `logo-studio` | SVG canonique, calques, diff avant/après | L5, OQ-8 |
-| **L7** | **Design Space — charte + affiche** (D4–D5) | `charte`, `affiche-studio`, adaptateur Fabric.js | JSON de calques éditable, export SVG | L6 |
-| **L8** | **Design Space — validateur + documents + export** (D7–D9) | `design-validator`, `document-studio`, `design-exports` | validateur déterministe, source ≠ distribution | L7 |
-| **L9** | **Design Space — versions + impact** (D10) | `design-versions`, `brand-impact` | retour arrière, propagation **proposée** jamais silencieuse | L8 |
+| **L4** | **Specs de module V0** | ✅ **fait** — `docs/features/specs/productivity.tasks.md` + `agent.kernel.md` (gabarit §M1–§M6) | §M2/§M6 adossées à des commandes exécutées | L3 |
+| **L5** | **Parcours vertical** | capture → tâche → kernel → PowerSync → PG/RLS → agent → UI, données réelles | 1 test E2E, RLS **positif** | L4 |
+| **L6** | **5 écrans primaires** | `home`, `taches-liste`, `cours-liste`, `progress-dashboard`, `agent-chat` dans `web-app` | §15–§19 par écran | L5 |
+| **L7** | **Couverture P1** | les modules `IMPLEMENTED` accessibles sur web | 1 spec de module par module | L6 |
+| **L8** | **Desktop** | Electron enveloppe `web-app` (pas un 3ᵉ front) | packaging + sécurité | L7 |
+| **L9** | **Design Space — projet + brief** (D1) | `design-space`, `design-brief` sur `Project` existant | parcours brief → Brand DNA | L7 |
+| **L10** | **Design Space — moteur LOGO** (D3) | `packages/design-engines` **créé ici** + moteur SVG + `logo-studio` | SVG canonique, calques, diff avant/après | L9, OQ-8 |
+| **L11** | **Design Space — charte + affiche** (D4–D5) | `charte`, `affiche-studio`, adaptateur Fabric.js | JSON de calques éditable, export SVG | L10 |
+| **L12** | **Design Space — validateur + documents + export** (D7–D9) | `design-validator`, `document-studio`, `design-exports` | validateur déterministe, source ≠ distribution | L11 |
+| **L13** | **Design Space — versions + impact** (D10) | `design-versions`, `brand-impact` | retour arrière, propagation **proposée** jamais silencieuse | L12 |
 
-**Pourquoi L3 avant L4/L5** : `apps/web-app` est le chemin critique — il sert le
+> **Renumérotation (2026-10-27)** : `docs/plans/2026-10-27-redefinition-priorites-et-specs-mvp.md`
+> a inséré **L4 = specs de module V0** et **L5 = parcours vertical** avant les
+> écrans, et déplacé Design Space de L5 à **L9–L13**. Motif : on ne bâtit pas une
+> 4ᵉ surface sur un socle dont le chemin vertical n'est pas prouvé
+> (`status-register.md` §6 C1 : Design Space = « aucun package, aucune table,
+> aucune route, aucun écran »).
+
+**Pourquoi L3 avant L4** : `apps/web-app` est le chemin critique — il sert le
 socle **et** Design Space. Bâtir L4 dans la coquille Ionic qu'on démontera est le
 coût déjà identifié (`web-shell-and-responsive.md`).
 
-**Pourquoi L5 avant L6** : corrigé par dérivation (OQ-11) — le « projet Design
-Space » n'est pas un objet neuf (c'est un `Project`), donc le seul objet neuf est
-le Brand DNA, déjà livré (L2).
+**Pourquoi L5 (parcours vertical) avant les écrans** : il traverse **chaque
+invariant** du dépôt (AD-2, AD-3, AD-7, AD-9, AD-15, F-09, RLS). Si une seule
+couche est fausse, il échoue — c'est ce qu'on veut, et c'est la preuve que le
+socle se branche avant d'élargir.
+
+**Pourquoi L9 (Design Space) avant L10** : corrigé par dérivation (OQ-11) — le
+« projet Design Space » n'est pas un objet neuf (c'est un `Project`), donc le seul
+objet neuf est le Brand DNA, déjà livré (L2).
 
 ---
 
 ## 4. Couverture des specs (l'état réel, sans complaisance)
+
+### 4.1 Specs d'écran (cadre v1, §15–§19)
 
 | Périmètre | Écrans | Spec au cadre v1 | Reste |
 |---|---|---|---|
@@ -92,11 +110,31 @@ le Brand DNA, déjà livré (L2).
 | Écrans Design Space | **13** | **0** | **13** à écrire (format 14 sections + §15–§19) |
 | **Total** | **57** | **1** | **56** |
 
-**Règle** : un écran sans spec au cadre v1 est `NOT_READY`
-(`spec-template-v1.md` §3) et **ne peut pas entrer dans un lot**. C'est ce qui
-rend la file exécutable sans question : la spec *est* la réponse.
+> `brand-dna.md` porte aussi §15–§19 mais **n'est pas un écran** : c'est le
+> contrat de la famille L2. Il ne compte pas dans la colonne « écrans ».
 
-**Ordre de rédaction des specs** (celui de `spec-template-v1.md` §7, étendu) :
+### 4.2 Specs de module (gabarit §M1–§M6 — lot L4)
+
+Le cadre par écran ne dit pas, pour un **module**, ce qui est disponible et sous
+quelles conditions. Le gabarit **§M1–§M6**
+(`docs/plans/2026-10-27-redefinition-priorites-et-specs-mvp.md` §3.3) le fait :
+capacités · données · chemin agent · surface · offline · preuve.
+
+| Vague | Modules | Écrites | Reste |
+|---|---|---|---|
+| **V0** | `productivity.tasks`, `agent.kernel` | ✅ **2** (`docs/features/specs/`) | **0** |
+| V1 | écrans des 5 onglets primaires | — | 5 specs d'écran |
+| V2 | Productivity restant (10) | — | 10 |
+| V3 | Learning + Knowledge (8) | — | 8 |
+| V4 | Discovery + Progress + Artifact (9) | — | 9 |
+| V5 | Design Space (13 écrans) | — | 13 |
+| V6 | Transverses (5) | — | 5 |
+
+**Règle** : un module sans spec §M1–§M6 est `NOT_READY` pour un lot. Une spec
+dont **§M6 n'est pas vérifiable par une commande exécutée** reste `NOT_READY` —
+c'est ce qui distingue une spec d'une intention.
+
+**Ordre de rédaction des specs d'écran** (`spec-template-v1.md` §7, étendu) :
 1. les **5 écrans primaires** (vague 1) — ce sont les points d'entrée ;
 2. les **13 écrans Design Space** — ils sont neufs, donc sans dette de rétrofit ;
 3. les **39 écrans restants**, vague par vague.
