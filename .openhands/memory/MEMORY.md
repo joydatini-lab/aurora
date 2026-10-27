@@ -50,11 +50,14 @@ Detail and per-lot narratives live in the daily logs (`.openhands/memory/YYYY-MM
   pilot: `brand-dna.md`. 374 OQs consolidated in `screens/_open-questions.md`.
 
 ## Verified defects (NOT fixed — owner calls, AD-15)
-- **D3 (grave, silent)**: `createTask` patches `tasks.tags` + `tasks.recurrence_rule`;
-  `createProject`/`updateProject` patch `projects.view_mode`. **No such columns** — not in the
-  live DB, `powersync-schema.ts`, or the generated SQLite DDL. Silent because
-  `EngineLocalStoreBridge.upsert` is a **Map** keyed by column name: an unknown key is accepted,
-  the screen renders, only the upstream PATCH fails (queued-write failure, not a crash).
+- **D3 — FIXED 2026-10-27 (`fb608c1`, migration `0032_fix_phantom_columns.sql`)**: the three
+  phantom columns (`tasks.tags`, `tasks.recurrence_rule`, `projects.view_mode`) are versioned.
+  D2 also fixed (artifacts_kind_check widened 10 -> 13). `KNOWN_DEFECTS` is now EMPTY.
+  Lesson that generalises: a phantom column is SILENT because
+  `EngineLocalStoreBridge.upsert` is a **Map** keyed by column name — an unknown key is
+  accepted, the screen renders, only the upstream PATCH fails (queued write, not a crash).
+  A migration alone would create a NEW drift: also update `powersync-schema.ts` AND
+  `sqlite-schema.ts` (3 declarations), verified by `client-schema-drift.test.ts`.
 - **D1**: `Project.title` vs `projects.name` is a **DELIBERATE rename** translated by the writer
   (`goals-projects.ts:184`). Same for `Task.title`→`tasks.subject` (`tasks.ts:81`),
   `Project.deadline`→`end_date`, `Task.timeSpentSec`→`actual_minutes`. NOT bugs.
@@ -118,8 +121,17 @@ Detail and per-lot narratives live in the daily logs (`.openhands/memory/YYYY-MM
   auto-confirm functions are no longer anon-executable, `function_search_path_mutable` 3 → 0.
 
 ## Sandbox facts
-- **Docker unavailable** → cannot deploy an EF or run `rls-live-check.sh` here. No
-  `SUPABASE_ACCESS_TOKEN`/`.env.local`. `deno` absent → EF tests cannot run locally.
+- **Docker IS available** (verified 2026-10-27): the daemon is simply NOT RUNNING.
+  Start it with `sudo dockerd > /tmp/dockerd.log 2>&1 &`, then use **`sudo docker`** —
+  the socket is root-owned and the `openhands` user is only in `sudo`. This makes
+  `scripts/rls-live-check.sh` usable (a real Postgres proof). Corrected note: it was
+  recorded as "unavailable", which cost a real verification.
+- **`rls-live-check.sh` fails at 0029 on that image (PRE-EXISTING, not your change)**:
+  the image has no `auth.identities`, and its `auth.users` lacks `email_confirmed_at`,
+  so `auto_confirm_new_user` raises on insert. To prove a MIGRATION on real Postgres,
+  apply them in a loop tolerating failures, then `ALTER TABLE auth.users DISABLE
+  TRIGGER USER` for the fixture insert.
+- No `SUPABASE_ACCESS_TOKEN`/`.env.local`. `deno` absent → EF tests cannot run locally.
 - `vault.create_secret(...)` IS permitted via MCP; `alter database ... set app.settings.*` is
   REFUSED (`42501`).
 - **verify_jwt trap**: the CLI default is TRUE; `supabase functions deploy` silently flips the
