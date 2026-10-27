@@ -31,7 +31,7 @@
 | Lecture du vault par le chat-agent (READ-ONLY, AD-7) | ✅ | `vault-read.ts` + capacité `discovery.vault.read` (`capability.ts:827`) |
 | **Hors v1** : insertion effective des `discovery_items` | ❌ | aucun writer serveur — `grep -n "discovery_items" fn-job-dispatcher/index.ts` → **aucun résultat** (DD-1) |
 | **Hors v1** : appel vendor OneSignal | ❌ (par conception) | AD-1 : le module ne fait que **retourner** le payload (`veille-pipeline.ts:21-24`) |
-| **Hors v1** : gaps (détection) — rows owned by Progress | ⚠️ détection seule | `detectGap` — `packages/discovery/src/gaps.ts:73` ; l'écriture est Progress (F-03) |
+| **Hors v1** : gaps (détection) — propriété contradictoire (DD-5) | ⚠️ détection seule | `detectGap` — `packages/discovery/src/gaps.ts:73` ; aucun writer réel |
 
 **Vocabulaire fermé** : 5 classes d'item (`discovery.ts:48`) ; statut SQL
 `new/investigating/resolved/stale` (`0006_discovery.sql:16`).
@@ -80,8 +80,8 @@ justification service_role documentée (`0025:68-70`). Le module ne pose
 `DiscoveryItem` ; Discovery est le seul writer de `discovery_items`
 (`discovery.ts:86-87`). Le vault est écrit **uniquement** par le handler
 `research` (`jobs.ts:246-285`, commentaire `0025:47`). Le module **n'écrit
-pas** `gaps` (owned Progress, `powersync/sync-config.yaml:81-83`) — il ne fait
-que **détecter** (`gaps.ts:73`).
+pas** `gaps` — il ne fait que **détecter** (`gaps.ts:73`) ; mais le propriétaire
+de `gaps` est **contradictoire** (DD-5).
 
 ### Synchronisation
 
@@ -99,6 +99,7 @@ exposée par le flux **progress** (`sync-config.yaml:89`), pas par Discovery
 | **DD-2** | **`summary` (SSoT) ≠ `factual_summary` (colonne).** `DiscoveryItem.summary` (`packages/domain/src/entities-discovery.ts:23`) est écrit par `buildDiscoveryItem` (`discovery.ts:111`) alors que la table porte `factual_summary` (`0006:11`, miroir `powersync-schema.ts:435`). Aucun mapping `summary → factual_summary` n'existe dans `packages/discovery/src/` (`grep -rn "factual_summary" packages/discovery/src/` → **aucun résultat**). |
 | **DD-3** | **Vocabulaire `kind` divergent.** Le module produit `FACT/TREND/ANALYSIS/SCENARIO/UNCERTAINTY` (`discovery.ts:48`) mais le CHECK SQL n'accepte que `scientific/professional/innovation/trend/uncertain` (`0006:14`). Les valeurs `FACT`, `ANALYSIS`, `SCENARIO` **violent** la contrainte ; `TREND`/`UNCERTAINTY` ne matchent que par casse (`trend` vs `TREND`). |
 | **DD-4** | **Champs `DiscoveryItem` sans colonne.** `recommendedActions`, `semanticNodeIds`, `relatedGoalIds`, `relatedCourseIds`, `relatedSkillIds`, `confirmsOrContradicts`, `domainRef`, `openQuestions` (`discovery.ts:112-125`) n'ont **aucune colonne** dans `0006` (vérifié : `grep -rn "recommended_actions\|semantic_node_ids" supabase/migrations/0006_discovery.sql` → **aucun résultat**). La fiche produite ne peut pas être persistée telle quelle. |
+| **DD-5** | **Propriété de `gaps` contradictoire.** La migration `0005:87` dit « Rows owned by PROGRESS » et `sync-config.yaml:82` dit « owned par le module Progress » ; mais `OWNER_MODULE_BY_ENTITY` (`packages/data/src/commands.ts:205`) et `validate.ts:68` disent `'Discovery'`. Aucun writer réel. La présente spec suit le **commentaire** (Progress) ; le **routeur** dit Discovery — les deux SSoT se contredisent. |
 
 Même famille que les drifts `tasks.tags` (corrigés par `0032`) : la valeur est
 **produite en test** puis **perdue/rejetée** au déploiement. `discovery_items`
@@ -238,5 +239,6 @@ prouvée → `NOT_READY`.
 | **DV-2** | Aligner `summary` (SSoT) et `factual_summary` (colonne) (DD-2) ? | **ouverte** — AD-15 ; migration interdite ici |
 | **DV-3** | Aligner le vocabulaire `kind` module ↔ CHECK SQL (DD-3) ? | **ouverte** — AD-15 |
 | **DV-4** | Où persister les champs sans colonne (`recommendedActions`, `semanticNodeIds`, …) (DD-4) — jsonb, ou colonnes additives ? | **ouverte** — AD-15 |
-| **DV-5** | Les écrans `discovery-feed`/`discovery-sheet` sont-ils ratifiés (OQ-41/OQ-42 = GAP) ? | **ouverte** — `_inventory.md:118-119` |
-| **DV-6** | Le kind `notification` (push fin de run) est-il routé par le dispatcher vers `fn-notifications` ? | **ouverte** — vérifier `INTEGRATIONS_JOB_HANDLERS` |
+| **DV-5** | `gaps` appartient-il à Progress (`0005:87`) ou à Discovery (`commands.ts:205`) ? Le commentaire du code et la table de routage se contredisent. | **ouverte** — AD-15 |
+| **DV-6** | Les écrans `discovery-feed`/`discovery-sheet` sont-ils ratifiés (OQ-41/OQ-42 = GAP) ? | **ouverte** — `_inventory.md:118-119` |
+| **DV-7** | Le kind `notification` (push fin de run) est-il routé par le dispatcher vers `fn-notifications` ? | **ouverte** — vérifier `INTEGRATIONS_JOB_HANDLERS` |
