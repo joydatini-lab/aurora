@@ -106,10 +106,16 @@ objet neuf est le Brand DNA, déjà livré (L2).
 
 | Périmètre | Écrans | Spec au cadre v1 | Reste |
 |---|---|---|---|
-| Écrans existants | **44** | **1** (`taches-liste`) | **43** à compléter (§15–§19) |
+| Écrans existants | **44** | **6** (`taches-liste` + les 5 primaires de WS-3.1) | **38** à compléter (§15–§19) |
 | Écrans Design Space | **13** | **0** | **13** à écrire (format 14 sections + §15–§19) |
-| **Total** | **57** | **1** | **56** |
+| **Total** | **57** | **6** | **51** |
 
+> Les **5 écrans primaires** spécifiés le 2026-10-27 (vague **WS-3.1**) : `home`,
+> `taches-detail`, `cours-liste`, `progress-dashboard`, `agent-chat` — chacun avec
+> §15–§19. Mesure : `for f in *.md; do grep -cE "^## §(15|16|17|18|19) " $f; done`
+> → 6 fichiers à 5/5 (dont `taches-liste`, déjà au cadre). Aucune spec d'écran ne
+> redéfinit un contrat de donnée (vérifié : 0 `CREATE/ALTER TABLE` dans les 5).
+>
 > `brand-dna.md` porte aussi §15–§19 mais **n'est pas un écran** : c'est le
 > contrat de la famille L2. Il ne compte pas dans la colonne « écrans ».
 
