@@ -235,3 +235,148 @@ Module : Productivité · Route : `/tasks/:id` (S-24) · Statut : **additif** ·
 | **OQ-6** | **Sémantique du compteur « en cours »** : le §4(b) cite §6.1 l.197 (`en-cours` = opération **running avec résultats partiels**, progress mesurable) pour le compteur sous-tâches, mais le SSoT ne fige ni le **libellé exact** ni la sémantique : 1/3 = « sous-tâche courante » (étape active d'une routine séquentielle) ou « 1 sur 3 **en cours** » (plusieurs `doing` simultanément) ? Pas de SSoT pour le libellé/la sémantique. | §6.1 l.197 ; WDS 05.5 OQ-2 close A (liste plate) ; 05 §3.6.12 (`RoutineStep` séquentielle, pas de sémantique multi-doing figée) | **À trancher** (libellé exact + sémantique du compteur « x/y en cours », standup Phase 4) |
 
 > **Règle de discipline** : toute règle de ce document cite sa SSoT (doc § ou fichier : ligne). Quand une règle **n'a pas** de SSoT (ex. le texte du 404, le libellé du CTA, le seuil du Menu, le libellé du compteur « en cours ») → elle est **OQ** (ici §14), **jamais** une spec muette, **jamais** un « à décider » masqué dans le corps. Les 6 OQ ci-dessus sont **le** SSoT manquante de cet écran (à trancher au standup Phase 4, WDS 05.5 §8).
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Liste + détail** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `taches-*` dans la ligne « Liste + détail »).
+
+L'écran réel est `TaskDetailPage` (`apps/mobile/src/pages/tasks/index.tsx` l. 515-563),
+rendu **en overlay** au-dessus du tab `/tasks` (`router.tsx` l. 93 : `/tasks/:id` est
+un enfant du `Shell`, `detail-over-tab`). Le shell web (`apps/web-app`) **ne rend pas
+encore** cet écran : la section `organiser` (`navigation.ts` l. 109-116) porte
+`readiness: 'shell'`.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne ; le détail est un **overlay** au-dessus de la liste | tab bar basse | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + le détail reste un **overlay** | rail d'icônes | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : liste à gauche, détail à droite (l'overlay §6 devient un panneau) | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle `web-shell-and-responsive.md` §2.3 n°2** : « Le détail est un overlay (`O`)
+sous `lg`, un panneau à `lg`+ — **même composant, conteneur différent**. » Le CTA
+« Retour à la liste » (`tasks/index.tsx` l. 160-162, `navigate(-1)`) devient, à `lg`+,
+la fermeture du panneau — la cible de retour est **le contexte** (le board/liste),
+jamais un « départ » (invariant §1).
+
+> **OQ-17** — le seuil exact de bascule overlay → panneau (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` : « Tasks \| /tasks… ») |
+| R2 | Ligne de catalogue | ✅ | `productivity.tasks` (`master-feature-catalog.md` L19 : « tasks/subtasks (statuses…) ; offline-capable ; core ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Task` + `TaskStatus` (`entities-productivity.ts` l. 8/10) ; `SubTask` (l. 33) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4(a) |
+| R6 | États §6.1 couverts | ✅ | §4(b) (N/A justifiés) + §4(c) statuts |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 92 ; catalog L19) |
+| R8 | Événements déclarés | ⚠️ | le détail **lit** ; la seule mutation = `toggleSubTask` (`productivity.tasks.md` §M1, `tasks.ts:193`) → `completeTask` émet `TaskCompleted` (`events.ts` l. 23). Le **consommateur** reste à documenter (cf. §12 taches-liste) |
+| R9 | Permissions déclarées | ✅ | aucune (le détail ne demande rien) |
+| R10 | Entrée de nav déclarée | ✅ | `/tasks/:id` = détail over tab (`router.tsx` l. 93 ; `navigation-and-page-composition.md` §1) |
+| R11 | Tokens identifiés | ✅ | §3 ; CSS `[data-task-detail]`/`[data-task-meta]`/`.task-status-chip` (`data.css` l. 369/375/381) |
+| R12 | Contrat de données | ⚠️ **partiel** | la **tête** (titre/statut/échéance/description) lit `useTask(id)` (`query/hooks.ts` l. 44-51, miroir `tasks`, AD-7) ; mais **les sous-tâches, la mini-matrice et le CTA focus décrits §2/§3 ne sont PAS rendus** par le code (voir R13) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-2** (`MiniMatrix` absent de `packages/ui`) + **OQ-3** (message 404) + **OQ-4** (position du CTA focus) restent ouvertes ; de plus le **CTA focus** (§2/§3, AD-14) et la **liste de sous-tâches** (§2/§3) sont **absents du code** (`tasks/index.tsx` l. 515-563 ne rend ni `SubTask` ni `Button` focus) |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R13** (le code
+est une **coquille** : la tête est réelle, les 3 zones du §2 — sous-tâches, mini-matrice,
+CTA focus — ne sont pas rendues ; AD-14 exige **un** CTA d'action unique, ici **zéro**)
+et **R12** (le contrat des sous-tâches existe — `toggleSubTask`, `SubTask` — mais n'est
+pas consommé par l'écran).
+
+**Demande de contrat (plan §4)** — pour la mini-matrice :
+
+```
+WS:        WS-3.1 (specs d'écran)
+Chemin:    docs/features/specs/productivity.eisenhower.md  ·  packages/domain/src/**
+Besoin:    le contrat de `quadrantOf(task, now)` (fonction pure, quadrant Q1–Q4) que la
+           mini-matrice (§3) consomme ; et la décision de composant (`MiniMatrix` dans
+           packages/ui vs `Card flat` + 4 cases ad hoc, OQ-2 §14)
+Motif:     eisenhower.md §5 porte `quadrantOf`, mais AUCUNE spec de module
+           (docs/features/specs/ = productivity.tasks + agent.kernel) ne le déclare
+Bloque:    oui — sans contrat, l'écran invente un schéma ou reste muet (OQ-2)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la tête lit `useTask` (AD-7) ; **à ajouter** : les sous-tâches (miroir `subtasks`, `sync-config.yaml` l. 42) et la mini-matrice (`quadrantOf`) — aujourd'hui absentes du code |
+| S2 | 6 états prouvés | §4(a) — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4(b)/§4(c) — `detailState` = `error` code `task/not_found` (l. 144) ; jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : la tête + les sous-tâches du miroir lisibles ; le CTA focus reste actif (local) |
+| S5 | Retour arrière vérifié | relance froide → re-lecture du miroir (`useTaskFlags` → `useKilledDetection`, l. 65-69) |
+| S6 | Isolation utilisateur | RLS sur `tasks`/`subtasks` (user A ≠ user B) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (overlay → panneau) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `quadrantOf` (mini-matrice) correct ? | Vitest ≥ 80 % sur `packages/domain` |
+| Intégration | ✅ | vue PowerSync `subtasks` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | producteur `TaskCompleted` (`events.ts` l. 23) via `completeTask` | test AD-9 producer/consumer |
+| E2E | ✅ | « ouvrir une tâche → cocher une sous-tâche → compléter » ? | Playwright web |
+| Failure | ✅ | sync échoué → `Callout danger` + retry, contenu local conservé ? | test failure |
+| Permission | ⚠️ | aucune sur le détail → n/a justifié | — |
+| Offline | ✅ | réseau coupé → tête + sous-tâches + CTA focus OK ? | test offline |
+| Recovery | ✅ | relance froide → état intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (TTI < 300 ms sur le sheet, WDS 05.5 §10) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.tasks` (`toggleSubTask`) | ≥ 1 test | ✅ partiel — `productivity.test.ts` « reschedule + subtask toggle write owned tables only » (l. 77) |
+| Région « détail » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `taches-detail` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — `Tasks.stories.tsx` couvre `TaskCard`/`TaskFilterBar`/`EisenhowerMatrix`/`KanbanColumn`/`TodayFocusPanel`, **pas** le détail ; `TaskInspector` (composite) est sans story (`ui-brick-inventory.md` §4.1) |
+| Écran `taches-detail` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R13 (3 zones absentes du code) + OQ-2/3/4
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-17** — Seuil de bascule overlay → panneau (§15) : `lg` (1024 px) confirmé ? (cf. OQ-4 globale)
+- **OQ-18** — **Écart code ↔ spec** : le code réel (`tasks/index.tsx` l. 515-563) ne
+  rend **ni** la liste de sous-tâches (§2/§3), **ni** la mini-matrice (§2/§3), **ni** le
+  CTA focus (§2/§3, AD-14). Le §1 promet « lancer le Focus en 1 geste » ; le code ne
+  l'offre pas. → **OQ** : la spec est-elle la cible (à implémenter), ou l'écran
+  doit-il être re-spécifié à la baisse ? Décideur : Product / Design System.
+- **OQ-19** — Le statut `in_progress` du domaine (`entities-productivity.ts` l. 8) est
+  rendu « En cours » par `TASK_STATUS_FR` (`tasks/index.tsx` l. 49) ; mais `taches-liste.md`
+  §4(b) documente le même statut sous l'id `doing` (`01 §4.1 l.165`). **Nommage** :
+  `doing` (doc) vs `in_progress` (domaine + code). → **OQ** de nommage (cf. MT-1
+  `productivity.tasks.md`, même classe de dérive doc↔code).
