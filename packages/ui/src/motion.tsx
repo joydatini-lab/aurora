@@ -31,7 +31,7 @@ import type { ReactNode } from "react";
  * index.ts (index → motion → theme/provider → index), which breaks the
  * barrel export.
  */
-function useReducedMotion(): boolean {
+export function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState<boolean>(
     () =>
       typeof window !== "undefined" &&

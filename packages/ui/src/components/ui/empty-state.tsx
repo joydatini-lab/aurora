@@ -93,7 +93,7 @@ const Header = ({ icon, tone = "muted", iconSize, children, className, ...props 
 /* Content                                                             */
 /* ------------------------------------------------------------------ */
 
-export interface ContentProps extends ComponentPropsWithRef<"div"> {}
+export type ContentProps = ComponentPropsWithRef<"div">;
 
 const Content = ({ className, ...props }: ContentProps) => {
   const { size } = useContext(RootContext);
@@ -114,7 +114,7 @@ const Content = ({ className, ...props }: ContentProps) => {
 /* Title                                                               */
 /* ------------------------------------------------------------------ */
 
-export interface TitleProps extends ComponentPropsWithRef<"h3"> {}
+export type TitleProps = ComponentPropsWithRef<"h3">;
 
 const Title = ({ className, ...props }: TitleProps) => {
   const { size } = useContext(RootContext);
@@ -135,8 +135,7 @@ const Title = ({ className, ...props }: TitleProps) => {
 /* Description                                                         */
 /* ------------------------------------------------------------------ */
 
-export interface DescriptionProps
-  extends ComponentPropsWithRef<"p"> {}
+export type DescriptionProps = ComponentPropsWithRef<"p">;
 
 const Description = ({ className, ...props }: DescriptionProps) => (
   <EmptyDescription
@@ -153,7 +152,7 @@ const Description = ({ className, ...props }: DescriptionProps) => (
 /* Footer                                                              */
 /* ------------------------------------------------------------------ */
 
-export interface FooterProps extends ComponentPropsWithRef<"div"> {}
+export type FooterProps = ComponentPropsWithRef<"div">;
 
 const Footer = ({ className, ...props }: FooterProps) => (
   <div

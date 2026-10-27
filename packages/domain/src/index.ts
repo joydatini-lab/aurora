@@ -36,6 +36,9 @@ export * from './entities-integrations';
 export * from './entities-identity';
 export * from './entities-engineering';
 
+// ---- Design Space Pro (reference v1.1 §6, AD-15) ----
+export * from './entities-design';
+
 // ---- Ascent (wave 3, W3-E2, AD-15) ----
 export * from './ascent';
 

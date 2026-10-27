@@ -32,6 +32,7 @@ import {
 import {
   buildProgressResearchHandler,
   buildSkillRecomputeHandler,
+  PROGRESS_JOB_HANDLERS,
   PROGRESS_JOB_KINDS,
 } from '../src/jobs.ts';
 import type {
@@ -258,21 +259,53 @@ test('dashboard: skillTrajectoryChart is a G2 line spec', () => {
 });
 
 /** Job handlers: skill_recompute + research-scoped ops (AD-8). */
-test('jobs: skill_recompute handler idempotent on evidence', async () => {
+test('jobs: skill_recompute sweeps every skill the user has evidence for', async () => {
   const evidence: ProgressEvidence[] = [
     buildEvidence({ userId: USER, skillId: 'S-6', type: 'qcm', level: 'recalled', observedAt: NOW, confidence: 0.6 }),
   ];
+  const saved: SkillState[] = [];
   const handler = buildSkillRecomputeHandler({
+    listSkillIds: async () => ['S-6'],
     getEvidences: async () => evidence,
     getSkillState: async () => null,
+    saveSkillState: async (_u, s) => {
+      saved.push(s);
+    },
     now: () => NOW,
   });
-  const r = await handler.handler('J-1', USER, { skillId: 'S-6' });
-  assert.equal(r.ok, true);
-  assert.equal((r.result as { changed?: boolean })?.changed, true);
 
-  const bad = await handler.handler('J-2', USER, {});
-  assert.equal(bad.ok, false);
+  // The cron payload is `{}` (0014): the sweep must accept it, not reject it.
+  const sweep = await handler.handler('J-1', USER, {});
+  assert.equal(sweep.ok, true);
+  assert.equal((sweep.result as { skills?: number })?.skills, 1);
+  assert.equal((sweep.result as { changed?: number })?.changed, 1);
+  // The recompute is PERSISTED — otherwise the job reports ok and writes nothing.
+  assert.equal(saved.length, 1);
+  assert.equal(saved[0]?.skillId, 'S-6');
+  assert.equal(saved[0]?.level, 'recalled');
+
+  // A payload.skillId still narrows the sweep to that one skill.
+  const narrowed = await handler.handler('J-2', USER, { skillId: 'S-6' });
+  assert.equal(narrowed.ok, true);
+  assert.equal((narrowed.result as { skills?: number })?.skills, 1);
+
+  // No evidence → nothing to recompute, still a success (AD-8 idempotent).
+  const empty = buildSkillRecomputeHandler({
+    listSkillIds: async () => [],
+    getEvidences: async () => [],
+    getSkillState: async () => null,
+    saveSkillState: async () => {},
+    now: () => NOW,
+  });
+  const none = await empty.handler('J-3', USER, {});
+  assert.equal(none.ok, true);
+  assert.equal((none.result as { skills?: number })?.skills, 0);
+});
+
+test('jobs: the static PROGRESS_JOB_HANDLERS table carries both kinds', () => {
+  assert.equal(PROGRESS_JOB_HANDLERS.length, 2);
+  const kinds = PROGRESS_JOB_HANDLERS.map((h) => h.jobKind).sort();
+  assert.deepEqual(kinds, ['research', 'skill_recompute']);
 });
 
 test('jobs: research scenario op returns deterministic scenario', async () => {

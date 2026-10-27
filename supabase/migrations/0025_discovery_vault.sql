@@ -45,7 +45,7 @@ CREATE TABLE discovery_vault (
 COMMENT ON TABLE discovery_vault IS
   'Discovery module (AD-7 owner) : le vault de veille par (user, domaine) — '
   'VAULT.md évolutif + manifest append-only (runs). Écrit UNIQUEMENT par le '
-  'job research (AD-7 single-writer) ; lu par le client (PowerSync) + l'agent '
+  'job research (AD-7 single-writer) ; lu par le client (PowerSync) + l''agent '
   'chat (READ-ONLY, Lot 3). discovery-vault plan 2026-10-10.';
 
 CREATE TRIGGER discovery_vault_updated BEFORE UPDATE ON discovery_vault

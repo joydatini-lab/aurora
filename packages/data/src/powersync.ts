@@ -67,7 +67,7 @@ export const POWERSYNC_SCHEMA: PowerSyncSchema = {
   mirrorTables: {
     productivity: [
       'tasks', 'subtasks', 'milestones', 'projects', 'goals', 'habits', 'routines',
-      'focus_sessions', 'decisions', 'calendar_events',
+      'focus_sessions', 'focus_profiles', 'decisions', 'calendar_events',
     ],
     knowledge: [
       'notes', 'resources', 'semantic_nodes', 'semantic_edges',
@@ -75,7 +75,7 @@ export const POWERSYNC_SCHEMA: PowerSyncSchema = {
     ],
     learning: ['courses', 'subjects', 'skills', 'learning_sessions', 'reviews'],
     progress: ['skill_states', 'progress_snapshots'],
-    discovery: ['discovery_items', 'gaps'],
+    discovery: ['discovery_items', 'gaps', 'discovery_vault'],
     artifact: ['artifacts'],
     integrations: ['automations'],
     identity: ['user_context'],

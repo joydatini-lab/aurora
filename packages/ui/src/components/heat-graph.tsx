@@ -1,7 +1,7 @@
 "use client";
 
 import * as HeatGraphPrimitive from "heat-graph";
-import { useMemo } from "react";
+import { useState } from "react";
 import { cn } from "src/lib/utils";
 
 const LEVEL_TINT = [
@@ -13,7 +13,10 @@ const LEVEL_TINT = [
 ] as const;
 
 export function HeatGraph({ data }: { data: HeatGraphPrimitive.DataPoint[] }) {
-  const end = useMemo(() => new Date(), [data]);
+  // `end` = le « maintenant » de la vue : figé au montage (l'ancien
+  // useMemo ne dependait pas vraiment de `data`, ce qui invalidait
+  // l'instant a chaque frappe sans raison).
+  const [end] = useState(() => new Date());
   return (
     <HeatGraphPrimitive.Root
       data={data}

@@ -95,7 +95,15 @@ g2() {
   #   cfut_ (Cloudflare user tokens),
   #   Bearer <value>,
   #   <KEY_NAME>=<value> dans du code (pas dans .env ou .ps1).
-  local secret_re='(^|[^A-Za-z0-9_])(sk-[A-Za-z0-9]{8,}|gsk_[A-Za-z0-9_-]{8,}|cfut_[A-Za-z0-9_-]{8,})|Bearer[[:space:]]+[A-Za-z0-9._-]{8,}|(^|[^A-Za-z0-9_])(API_KEY|SERVICE_ROLE_KEY|SUPABASE_DB_URL|POWERSYNC_SECRET|ONESIGNAL_REST_API_KEY|Sentry_DSN|SENTRY_DSN|POSTHOG_API_KEY)=.{8,}'
+  #
+  # NOTE (bug corrige 2026-10-24) : le seuil `sk-` etait {8,}, ce qui
+  # capturait les IDENTIFIANTS de competence du domaine (`sk-capacite-
+  # portante`, 8+ chars) et les CLASSES CSS de squelette (`sk-progress`,
+  # `sk-dashboard`) — 20 faux positifs, zero vrai secret. Toute cle
+  # reelle fait >= 20 caracteres apres le prefixe (OpenAI legacy = 48,
+  # `sk-proj-…` = 70+, `sk-ant-…` = 90+, OpenRouter = 64). Le seuil
+  # passe a {20,} (et `-`/`_` sont admis, comme dans les vraies cles).
+  local secret_re='(^|[^A-Za-z0-9_])(sk-[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9_-]{8,}|cfut_[A-Za-z0-9_-]{8,})|Bearer[[:space:]]+[A-Za-z0-9._-]{8,}|(^|[^A-Za-z0-9_])(API_KEY|SERVICE_ROLE_KEY|SUPABASE_DB_URL|POWERSYNC_SECRET|ONESIGNAL_REST_API_KEY|Sentry_DSN|SENTRY_DSN|POSTHOG_API_KEY)=.{8,}'
   local hits=""
   for f in $(code_files); do
     case "$f" in

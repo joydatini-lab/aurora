@@ -2,7 +2,6 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
@@ -12,10 +11,5 @@
   "exclude": [
     "dist",
     "../integrations"
-  ],
-  "references": [
-    {
-      "path": "../domain"
-    }
   ]
 }

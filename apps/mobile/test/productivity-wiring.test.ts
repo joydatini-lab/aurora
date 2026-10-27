@@ -85,14 +85,19 @@ function makeDecisionRow(over: Record<string, unknown>): Record<string, unknown>
   };
 }
 
+// The mirror row is shaped like the DATABASE, not like the client schema:
+// habits has name/target/status/streak (0002) and NO title/description/active.
+// Seeding the client-schema shape is what hid the drift for so long — the test
+// passed while the relay would have delivered an unreadable row.
 function makeHabitRow(over: Record<string, unknown>): Record<string, unknown> {
   return {
     id: 'h1',
     user_id: 'user1',
-    title: 'Habit 1',
-    description: undefined,
+    name: 'Habit 1',
     frequency: JSON.stringify({ cadence: 'daily' }),
-    active: 1,
+    target: 'daily',
+    status: 'active',
+    streak: 3,
     created_at: '2026-10-01T00:00:00.000Z',
     updated_at: '2026-10-01T00:00:00.000Z',
     ...over,
@@ -103,8 +108,10 @@ function makeRoutineRow(over: Record<string, unknown>): Record<string, unknown> 
   return {
     id: 'r1',
     user_id: 'user1',
-    title: 'Routine 1',
-    description: undefined,
+    name: 'Routine 1',
+    anchor: JSON.stringify({ type: 'time', at: '08:00' }),
+    steps: JSON.stringify([]),
+    status: 'active',
     created_at: '2026-10-01T00:00:00.000Z',
     updated_at: '2026-10-01T00:00:00.000Z',
     ...over,
@@ -126,8 +133,8 @@ function makeCountdownRow(over: Record<string, unknown>): Record<string, unknown
 
 function seedStore(): LocalStore {
   const store = new InMemoryLocalStore();
-  store.upsert('tasks', makeTaskRow({ id: 't1', status: 'todo', due_date: '2026-10-12T00:00:00.000Z' }) as never);
-  store.upsert('tasks', makeTaskRow({ id: 't2', status: 'done', due_date: '2026-10-11T00:00:00.000Z', completed_at: '2026-10-11T10:00:00.000Z', updated_at: '2026-10-11T10:00:00.000Z' }) as never);
+  store.upsert('tasks', makeTaskRow({ id: 't1', status: 'todo', due_at: '2026-10-12T00:00:00.000Z' }) as never);
+  store.upsert('tasks', makeTaskRow({ id: 't2', status: 'done', due_at: '2026-10-11T00:00:00.000Z', updated_at: '2026-10-11T10:00:00.000Z' }) as never);
   store.upsert('goals', makeGoalRow({}) as never);
   store.upsert('decisions', makeDecisionRow({}) as never);
   store.upsert('habits', makeHabitRow({}) as never);
@@ -140,12 +147,12 @@ function seedStore(): LocalStore {
 // Tests
 // ---------------------------------------------------------------------------
 
-test('A2 readProductivity: snake→camel mapping — tasks subject→title, due_date→dueAt', () => {
+test('A2 readProductivity: snake→camel mapping — tasks subject→title, due_at→dueAt', () => {
   const store = seedStore();
   const read = readProductivity(store);
   const task = read.tasks.find((t) => t.id === 't1') as Task;
   assert.equal(task.title, 'Tâche A', 'subject miroir → title entité');
-  assert.equal(task.dueAt, '2026-10-12T00:00:00.000Z', 'due_date miroir → dueAt');
+  assert.equal(task.dueAt, '2026-10-12T00:00:00.000Z', 'due_at miroir → dueAt');
   assert.equal(task.status, 'todo');
 });
 

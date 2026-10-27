@@ -187,7 +187,9 @@ export function SemanticTreeRenderer({
   const laid = useMemo(
     () => toFlowNodes(layoutWithDagre(allNodes, edges, bridges ?? []), allNodes, edges, bridges ?? []),
     // R4: cached internally — deps are the batch key inputs.
-    [allNodes, edges, bridges, effectiveVisible],
+    // (`effectiveVisible` n'entre pas dans le calcul du layout : il pilote
+    //  l'ouverture des branches, pas la disposition des noeuds.)
+    [allNodes, edges, bridges],
   );
 
   // Branch deploy: update internal state + fire the app callback +

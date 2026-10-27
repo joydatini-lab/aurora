@@ -10,6 +10,7 @@
  */
 export * from './course-import';
 export * from './fsrs';
+export * from './jobs';
 export * from './mirror-cognitive';
 export * from './qcm';
 export * from './retrieval';

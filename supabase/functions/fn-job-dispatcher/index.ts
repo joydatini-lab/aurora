@@ -17,12 +17,20 @@
  */
 import { ok, err, ulid } from "../_shared/envelope.ts";
 import type { UserContext } from "../../../packages/domain/src/index.ts";
+import type { ProgressEvidence, SkillState } from "../../../packages/domain/src/index.ts";
 import { PRODUCTIVITY_JOB_HANDLERS } from "../../../packages/productivity/src/jobs.ts";
+import { buildSkillRecomputeHandler, buildProgressResearchHandler, PROGRESS_JOB_HANDLERS } from "../../../packages/progress/src/jobs.ts";
+// The `fsrs-tick` and `course_import` handlers are LEARNING's, not Progress's.
+// The dispatcher used to import `PROGRESS_FSRS_TICK_HANDLER` and
+// `PROGRESS_COURSE_IMPORT_HANDLER` from packages/progress/src/jobs.ts and
+// neither symbol existed anywhere in the repo, so this EF could not boot, was
+// never deployed, and 34 cron jobs sat pending from 2026-10-08. The pure
+// algorithms were already written (learning/fsrs.ts, learning/course-import.ts);
+// only this I/O glue was missing.
 import {
-  PROGRESS_JOB_HANDLERS,
-  PROGRESS_FSRS_TICK_HANDLER,
-  PROGRESS_COURSE_IMPORT_HANDLER,
-} from "../../../packages/progress/src/jobs.ts";
+  buildFsrsTickHandler,
+  buildCourseImportHandler,
+} from "../../../packages/learning/src/jobs.ts";
 // G9 (wave 3, feature-agentique 2026-10-06) : le handler `research` du
 // module Discovery (packages/discovery/src/jobs.ts) est importé ICI —
 // l'ancienne référence `DISCOVERY_JOB_HANDLERS` pointait vers
@@ -208,6 +216,275 @@ function buildDiscoveryHandlers() {
   ];
 }
 
+/**
+ * LOT T1 — the Learning handlers, wired with the deployment-time seams.
+ *
+ * Same pattern as `buildDiscoveryHandlers`: the module file exports pure
+ * handler factories; the dispatcher injects the REST I/O so the module stays
+ * secret-free (AD-3) and the EF holds the env.
+ *
+ * - `fsrs-tick`: reads the due `flashcards` rows, advances each schedule with
+ *   the pure `fsrsNext` (already written in packages/learning/src/fsrs.ts), and
+ *   PATCHes the row back. Idempotent (AD-8): a card not yet due is never read,
+ *   so re-running the tick changes nothing.
+ * - `course_import`: advances the `course_imports` row (OCR then KB ingestion).
+ *   The OCR provider is a NEEDS_DECISION, so `extract` is a seam: absent env →
+ *   the import degrades to `needs_manual`, never a broken job (AD-1).
+ *
+ * Absent SUPABASE_URL / SERVICE_ROLE_KEY → both handlers are the documented
+ * no-op (the dispatcher still reports `ok`, nothing is lost — AD-1/AD-8).
+ */
+function buildLearningHandlers(): RegisteredHandler[] {
+  const configured = Boolean(SUPABASE_URL && SERVICE_ROLE_KEY);
+  const headers = restHeaders();
+  const rest = `${SUPABASE_URL}/rest/v1`;
+
+  const fsrsTick = buildFsrsTickHandler({
+    getDueCards: async (userId, now, limit) => {
+      if (!configured) return [];
+      const qs =
+        `select=id,due,stability,difficulty&user_id=eq.${encodeURIComponent(userId)}` +
+        `&due=lte.${encodeURIComponent(new Date(now).toISOString())}` +
+        `&order=due.asc&limit=${limit}`;
+      const res = await fetch(`${rest}/flashcards?${qs}`, { headers }).catch(() => null);
+      if (!res || !res.ok) return [];
+      const rows = (await res.json()) as Array<Record<string, unknown>>;
+      return rows.map((r) => ({
+        id: String(r.id),
+        due: Date.parse(String(r.due ?? 0)) || 0,
+        stability: r.stability === null || r.stability === undefined ? null : Number(r.stability),
+        difficulty: r.difficulty === null || r.difficulty === undefined ? null : Number(r.difficulty),
+        lapses: Number(r.lapses ?? 0),
+      }));
+    },
+    saveSchedule: async (userId, schedules) => {
+      if (!configured) return;
+      // One PATCH per card: PostgREST has no bulk-update-by-id with distinct
+      // values, and the tick is bounded (<= limit cards). Awaited in sequence
+      // so a failure is attributable to a single card.
+      for (const s of schedules) {
+        await fetch(
+          `${rest}/flashcards?id=eq.${encodeURIComponent(s.id)}&user_id=eq.${encodeURIComponent(userId)}`,
+          {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({
+              due: new Date(s.due).toISOString(),
+              stability: s.stability,
+              difficulty: s.difficulty,
+              last_reviewed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }),
+          },
+        ).catch(() => null);
+      }
+    },
+    now: () => Date.now(),
+  });
+
+  const courseImport = buildCourseImportHandler({
+    getImport: async (importId, userId) => {
+      if (!configured) return null;
+      const qs =
+        `select=id,user_id,course_id,source,r2_key,status,job_id` +
+        `&id=eq.${encodeURIComponent(importId)}&user_id=eq.${encodeURIComponent(userId)}&limit=1`;
+      const res = await fetch(`${rest}/course_imports?${qs}`, { headers }).catch(() => null);
+      if (!res || !res.ok) return null;
+      const rows = (await res.json()) as Array<Record<string, unknown>>;
+      const r = rows[0];
+      if (!r) return null;
+      return {
+        id: String(r.id),
+        userId: String(r.user_id),
+        courseId: r.course_id === null || r.course_id === undefined ? null : String(r.course_id),
+        source: String(r.source ?? "other"),
+        r2Key: r.r2_key === null || r.r2_key === undefined ? null : String(r.r2_key),
+        status: String(r.status ?? "pending"),
+        jobId: r.job_id === null || r.job_id === undefined ? null : String(r.job_id),
+      };
+    },
+    // OCR is a NEEDS_DECISION (no provider named in the perimeter). The seam
+    // returns empty text, which makes the handler degrade to `needs_manual`
+    // rather than invent an extraction (AD-1: never a fake result).
+    extract: async () => ({ text: "", pageCount: 0 }),
+    ingestKnowledge: async () => [],
+    setStatus: async (importId, userId, status, jobId) => {
+      if (!configured) return;
+      await fetch(
+        `${rest}/course_imports?id=eq.${encodeURIComponent(importId)}&user_id=eq.${encodeURIComponent(userId)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({
+            status,
+            job_id: jobId,
+            updated_at: new Date().toISOString(),
+          }),
+        },
+      ).catch(() => null);
+    },
+    now: () => new Date().toISOString(),
+  });
+
+  return [fsrsTick, courseImport];
+}
+
+/**
+ * Progress's `skill_recompute` handler, wired to the deployment-time REST
+ * seams — the exact counterpart of `buildLearningHandlers` above.
+ *
+ * The module table `PROGRESS_JOB_HANDLERS` is deliberately NOT registered:
+ * `registerHandlers` is FIRST-wins by (module, jobKind), so its no-op
+ * `skill_recompute` would shadow this REST-wired one and the job would report
+ * `ok` while writing nothing.
+ *
+ * `0014_cron_placeholders.sql` documents the intent of this kind as
+ * "Re-derives skill_states from evidence" and the cron carries
+ * `payload = '{}'::jsonb`: the sweep is over every skill the user has evidence
+ * for. A `payload.skillId` narrows it (the event-driven path).
+ *
+ * Absent SUPABASE_URL / SERVICE_ROLE_KEY → the ports are the documented no-op
+ * (AD-1/AD-8: the job still reports `ok`, nothing is lost).
+ */
+function buildProgressHandlers(): RegisteredHandler[] {
+  const configured = Boolean(SUPABASE_URL && SERVICE_ROLE_KEY);
+  const headers = restHeaders();
+  const rest = `${SUPABASE_URL}/rest/v1`;
+
+  /** The sweep input: distinct skill ids the user has evidence for. */
+  const listSkillIds = async (userId: string): Promise<string[]> => {
+    if (!configured) return [];
+    const qs =
+      `select=skill_id&user_id=eq.${encodeURIComponent(userId)}` +
+      `&skill_id=not.is.null&limit=1000`;
+    const res = await fetch(`${rest}/progress_evidences?${qs}`, { headers }).catch(
+      () => null,
+    );
+    if (!res || !res.ok) return [];
+    const rows = (await res.json()) as Array<Record<string, unknown>>;
+    return [...new Set(rows.map((r) => String(r.skill_id)).filter((s) => s !== ""))];
+  };
+
+  const getEvidences = async (
+    userId: string,
+    skillId: string,
+  ): Promise<ProgressEvidence[]> => {
+    if (!configured) return [];
+    const qs =
+      `select=id,user_id,skill_id,goal_id,type,level,date,context,confidence,source_event_id` +
+      `&user_id=eq.${encodeURIComponent(userId)}` +
+      `&skill_id=eq.${encodeURIComponent(skillId)}&order=date.asc&limit=1000`;
+    const res = await fetch(`${rest}/progress_evidences?${qs}`, { headers }).catch(
+      () => null,
+    );
+    if (!res || !res.ok) return [];
+    const rows = (await res.json()) as Array<Record<string, unknown>>;
+    return rows.map((r) => ({
+      id: String(r.id),
+      userId: String(r.user_id),
+      skillId: r.skill_id === null || r.skill_id === undefined ? undefined : String(r.skill_id),
+      goalId: r.goal_id === null || r.goal_id === undefined ? undefined : String(r.goal_id),
+      type: String(r.type) as ProgressEvidence["type"],
+      level: String(r.level ?? "discovered") as ProgressEvidence["level"],
+      confidence: Number(r.confidence ?? 0),
+      sourceEventId:
+        r.source_event_id === null || r.source_event_id === undefined
+          ? undefined
+          : String(r.source_event_id),
+      observedAt: String(r.date ?? new Date().toISOString()),
+      context: r.context === null || r.context === undefined ? undefined : String(r.context),
+    }));
+  };
+
+  const getSkillState = async (
+    userId: string,
+    skillId: string,
+  ): Promise<SkillState | null> => {
+    if (!configured) return null;
+    const qs =
+      `select=id,user_id,skill_id,level,freshness,confidence,last_evidence_at` +
+      `&user_id=eq.${encodeURIComponent(userId)}` +
+      `&skill_id=eq.${encodeURIComponent(skillId)}&limit=1`;
+    const res = await fetch(`${rest}/skill_states?${qs}`, { headers }).catch(() => null);
+    if (!res || !res.ok) return null;
+    const rows = (await res.json()) as Array<Record<string, unknown>>;
+    const r = rows[0];
+    if (!r) return null;
+    return {
+      id: String(r.id),
+      userId: String(r.user_id),
+      skillId: String(r.skill_id),
+      level: String(r.level ?? "discovered") as SkillState["level"],
+      freshness: freshnessWordToNumber(r.freshness),
+      confidence: Number(r.confidence ?? 0),
+      // `evidenceRefs` + `history` have NO column in `skill_states` (0005).
+      // The OR-Set and the level history are therefore not round-tripped; an
+      // empty set is the honest value, never an invented one (AD-1).
+      evidenceRefs: [],
+      updatedAt: String(r.last_evidence_at ?? new Date().toISOString()),
+    };
+  };
+
+  /**
+   * Persist the recomputed state (AD-7: Progress is the sole writer of
+   * `skill_states`). PostgREST upsert needs a unique constraint on the
+   * conflict target; `skill_states` only has a PK on `id`, so the row is
+   * located by (user_id, skill_id) and PATCHed, or POSTed when absent.
+   */
+  const saveSkillState = async (userId: string, state: SkillState): Promise<void> => {
+    if (!configured) return;
+    const body = JSON.stringify({
+      level: state.level,
+      freshness: freshnessNumberToWord(state.freshness),
+      confidence: state.confidence ?? 0,
+      last_evidence_at: state.updatedAt,
+      updated_at: new Date().toISOString(),
+    });
+    const qs = `user_id=eq.${encodeURIComponent(userId)}&skill_id=eq.${encodeURIComponent(state.skillId)}`;
+    const patched = await fetch(`${rest}/skill_states?${qs}`, {
+      method: "PATCH",
+      headers: { ...headers, Prefer: "return=representation" },
+      body,
+    }).catch(() => null);
+    if (patched && patched.ok) {
+      const rows = (await patched.json().catch(() => [])) as unknown[];
+      if (Array.isArray(rows) && rows.length > 0) return;
+    }
+    await fetch(`${rest}/skill_states`, {
+      method: "POST",
+      headers: { ...headers, Prefer: "return=minimal" },
+      body: JSON.stringify({ user_id: userId, skill_id: state.skillId, ...JSON.parse(body) }),
+    }).catch(() => null);
+  };
+
+  const skillRecompute = buildSkillRecomputeHandler({
+    listSkillIds,
+    getEvidences,
+    getSkillState,
+    saveSkillState,
+    now: () => new Date().toISOString(),
+  });
+
+  return [skillRecompute];
+}
+
+/** `skill_states.freshness` is TEXT ('fresh'|'stale'|'forgotten', 0005) while
+ *  the domain `SkillState.freshness` is a 0..1 number (ADR S18.2). Map both
+ *  ways so the column is never written with a raw float. */
+function freshnessWordToNumber(v: unknown): number {
+  const s = String(v ?? "");
+  if (s === "fresh") return 1;
+  if (s === "stale") return 0.5;
+  return 0;
+}
+
+function freshnessNumberToWord(n: number | undefined): string {
+  if (n === undefined) return "forgotten";
+  if (n >= 0.75) return "fresh";
+  if (n >= 0.25) return "stale";
+  return "forgotten";
+}
+
 /** The full global switch, wired at import time (chevauchement rule:
  *  this file is the ONLY place the wiring lives; module packages
  *  provide their handler tables). Unroutable jobs stay pending
@@ -218,9 +495,16 @@ function wireGlobalJobSwitch(): void {
   registerHandlers([
     ...PRODUCTIVITY_JOB_HANDLERS,
     ...buildDiscoveryHandlers(),
+    // Progress FIRST, then its module table. `registerHandlers` is FIRST-wins
+    // by (module, jobKind): `buildProgressHandlers()` registers the REST-wired
+    // `skill_recompute`, so the no-op one in `PROGRESS_JOB_HANDLERS` is ignored
+    // — which is the point. Reversing these two lines would silently shadow the
+    // real handler and the job would report `ok` while writing nothing.
+    // The module table still contributes Progress's `research`-scoped handler,
+    // which has no REST-wired counterpart.
+    ...buildProgressHandlers(),
     ...PROGRESS_JOB_HANDLERS,
-    PROGRESS_FSRS_TICK_HANDLER,
-    PROGRESS_COURSE_IMPORT_HANDLER,
+    ...buildLearningHandlers(),
     ...SCIENTIFIC_JOB_HANDLERS,
     ...INTEGRATIONS_JOB_HANDLERS,
     // agent_run (wave 3, AD-8): handler body lives in packages/agent
@@ -487,8 +771,50 @@ async function report(
   }).catch(() => {});
 }
 
+// ——— Auth guard (migration 0028) ————————————————————————————————————————
+//
+// Before 0028 this function had NO auth check: anything reaching the URL
+// could force a dispatch sweep. That was latent (the function was never
+// deployed) but it stops being latent the moment a wake-up calls it. The
+// wake-up and the guard ship together.
+//
+// The internal channel is the established one (`fn-canvas`,
+// `_shared/fn-agent-bootstrap.ts:409`): the `x-aurora-internal` header
+// carrying `INTERNAL_FN_SECRET`. Absent secret = the internal path is simply
+// unavailable and the function fails closed with 401 — never "allow because
+// unconfigured", which is how an auth guard becomes a formality.
+const INTERNAL_FN_SECRET = Deno.env.get("INTERNAL_FN_SECRET") ?? "";
+const INTERNAL_SECRET_HEADER = "x-aurora-internal";
+
+/** Constant-time compare (timing-attack safe — same helper shape as fn-canvas). */
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= (a.charCodeAt(i) & 0xff) ^ (b.charCodeAt(i) & 0xff);
+  }
+  return diff === 0;
+}
+
+/**
+ * The caller may act when it presents the internal secret. The secret is
+ * env-only (AD-3): never in the repo, never on the device.
+ */
+function isAuthorized(req: Request): boolean {
+  if (!INTERNAL_FN_SECRET) return false;
+  const presented = req.headers.get(INTERNAL_SECRET_HEADER) ?? "";
+  if (!presented) return false;
+  return constantTimeEqual(presented, INTERNAL_FN_SECRET);
+}
+
 Deno.serve(async (req) => {
   try {
+    if (!isAuthorized(req)) {
+      return new Response(
+        JSON.stringify(err("job/unauthorized", "missing or invalid internal secret")),
+        { status: 401, headers: { "Content-Type": "application/json" } },
+      );
+    }
     const body = await req.json().catch(() => ({}));
     const limit = (body as { limit?: number }).limit ?? 10;
     const now = new Date().toISOString();

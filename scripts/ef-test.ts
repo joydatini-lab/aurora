@@ -16,6 +16,10 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 const API_KEY = process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
+// The dispatcher requires the service-internal header since migration 0028
+// (`x-aurora-internal: <INTERNAL_FN_SECRET>`). Without it the CORRECT answer
+// is 401 — see the `expect401` flag below.
+const INTERNAL_FN_SECRET = process.env.INTERNAL_FN_SECRET ?? "";
 
 const FNS = ["fn-job-dispatcher", "fn-import-course", "fn-notifications", "fn-agent-run"];
 
@@ -39,6 +43,9 @@ async function main() {
   let allOk = true;
   for (const fn of targets) {
     const url = `${SUPABASE_URL}/functions/v1/${fn}`;
+    // The dispatcher is fail-closed since 0028. Without the internal secret,
+    // asserting a 401 IS the contract check; with it, a 200/202 is.
+    const needsInternal = fn === "fn-job-dispatcher";
     try {
       const res = await fetch(url, {
         method: "POST",
@@ -46,15 +53,20 @@ async function main() {
           "Content-Type": "application/json",
           // Service-internal EF calls use the publishable key (AD-16, 01 S5.1).
           "apikey": API_KEY || "missing",
+          ...(needsInternal && INTERNAL_FN_SECRET
+            ? { "x-aurora-internal": INTERNAL_FN_SECRET }
+            : {}),
         },
         body: JSON.stringify(payloads[fn] ?? {}),
       });
       const body = await res.json().catch(() => ({}));
-      const ok = res.status === 200 || res.status === 202;
+      const expect401 = needsInternal && !INTERNAL_FN_SECRET;
+      const ok = expect401 ? res.status === 401 : res.status === 200 || res.status === 202;
       const envelopeOk = body && (body.ok === true || body.ok === false);
       allOk = allOk && ok && envelopeOk;
       console.log(
         `${ok ? "OK " : "ERR"} ${fn} -> HTTP ${res.status}` +
+        (expect401 ? " (expected 401: INTERNAL_FN_SECRET unset)" : "") +
         (envelopeOk ? " envelope={ok:..." : " (no envelope)") +
         ` body=${JSON.stringify(body).slice(0, 120)}`,
       );

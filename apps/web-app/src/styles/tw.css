@@ -1,0 +1,10 @@
+/**
+ * Tailwind v3 entry pour la coquille web (même convention que
+ * `apps/mobile/src/styles/tw.css`) : les composants `@aurora/ui` sont du Radix
+ * + utilitaires Tailwind, stylés seulement si Tailwind génère leurs classes.
+ * Les tokens couleur résolvent vers les `var(--aurora-*)` écrits par
+ * `<AuroraThemeProvider>` (AD-17).
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

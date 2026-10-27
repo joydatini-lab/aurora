@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "jsx": "react-jsx",
+    "allowImportingTsExtensions": true,
+    "allowArbitraryExtensions": true,
+    "noEmit": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "baseUrl": ".",
+    "paths": {
+      "@aurora/web-app/*": ["./src/*"],
+      "@aurora/ui": ["../../packages/ui/src/index.ts"],
+      "src/*": ["../../packages/ui/src/*"]
+    }
+  },
+  "include": ["src", "test"],
+  "exclude": ["dist"]
+}

@@ -2,7 +2,6 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
     "jsx": "react-jsx",
     "lib": [
       "ES2022",
@@ -15,22 +14,4 @@
   ],
   "exclude": [
     "dist"
-  ],
-  "references": [
-    {
-      "path": "../../packages/domain"
-    },
-    {
-      "path": "../../packages/data"
-    },
-    {
-      "path": "../../packages/agent"
-    },
-    {
-      "path": "../../packages/scientific-engine"
-    },
-    {
-      "path": "../../packages/integrations"
-    }
-  ]
-}
+  ]}

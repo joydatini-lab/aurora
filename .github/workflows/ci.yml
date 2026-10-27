@@ -11,6 +11,9 @@
 #   - Les scripts check-* n'echouent PAS tant que le workspace n'existe pas
 #     (steps continue-on-error + log explicite, "skip with reason", pas FAIL
 #     bloquant) — le CI doit tourner des que ci.yml existe.
+#   RETIRE le 2026-10-24 (Phase 0, lot P0-A) : les 22 gardes `continue-on-error`
+#   sont supprimees — les 19 packages existent, le gate est vert, la CI doit
+#   desormais BLOQUER sur un echec. Cf. docs/ci/gate.md §4.5.
 #
 # Branch protection main (reglage GitHub, PAS automatise par ce fichier —
 # documente dans docs/ci/gate.md et .github/BRANCH-PROTECTION.md) :
@@ -20,9 +23,14 @@ name: CI
 
 on:
   push:
-    branches: [main, "wave0/**", "wave*/**"]
+    branches: [main, "wave0/**", "wave*/**", "rebaseline/**"]
   pull_request:
     branches: [main]
+  # Le depot est un FORK : les evenements `push` n'y declenchent pas le CI de
+  # facon fiable (0 run sur 2 pushes, alors qu'Actions est actif et qu'un
+  # dispatch explicite cree bien un run). Le dispatch manuel garantit qu'on
+  # peut lancer le gate a la demande sur n'importe quelle ref.
+  workflow_dispatch:
 
 # Concurrency : 1 run de travail par ref — un nouveau push sur la meme ref
 # remplace l'ancien (in-progress sur main est annule pour eviter la file).
@@ -37,7 +45,7 @@ concurrency:
 # sur les secrets que wave 1+ (tests live Supabase), marquee ci-gate-todo.
 env:
   PNPM_VERSION: "10.28.0"
-  NODE_VERSION: "22"
+  NODE_VERSION: "24"  # engines: node >=22 ; le depot tourne en 24 (cf docs/ci/gate.md)
 
 jobs:
   # ------------------------------------------------------------------
@@ -63,22 +71,17 @@ jobs:
       - name: Install dependencies
         # Le workspace ne contient QUE pnpm-workspace.yaml a ce stade de
         # wave 0 (aucun packages/ ni apps/) — pnpm install doit rester
-        # idempotent et rapide. continue-on-error tant que le bloc
-        # `packages:` du workspace n'a pas encore de membres (ACHILLES
-        # crele les packages en parallele) ; l'echec est loggue, pas
-        # bloquant, pour les memes raisons que les check-*.
+        # idempotent et rapide.
         run: pnpm install
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
       - name: Typecheck (tsc --noEmit)
         # Skip with reason tant que le workspace n'existe pas.
         if: ${{ hashFiles('tsconfig.json', 'packages/*/tsconfig.json') != '' }}
-        run: pnpm -r exec tsc --noEmit
+        run: pnpm -r typecheck
 
       - name: Lint (eslint)
         if: ${{ hashFiles('package.json') != '' }}
-        run: pnpm -r exec eslint . --max-warnings=0
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
+        run: pnpm -r lint
 
       # ---- 4 boundary greps (SPEC "gate de boundaries", AD-1/AD-2/AD-3) ----
       # Scripts livres dans le commit "wave0/hermes: 4 boundary grep tests"
@@ -86,22 +89,18 @@ jobs:
       - name: "Boundary G1: vendor names hors adapters"
         if: ${{ hashFiles('scripts/check-boundaries.sh') != '' }}
         run: sh scripts/check-boundaries.sh G1
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
       - name: "Boundary G2: secrets in code"
         if: ${{ hashFiles('scripts/check-boundaries.sh') != '' }}
         run: sh scripts/check-boundaries.sh G2
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
       - name: "Boundary G3: hardcoded user"
         if: ${{ hashFiles('scripts/check-boundaries.sh') != '' }}
         run: sh scripts/check-boundaries.sh G3
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
       - name: "Boundary G4: DOM access in agent"
         if: ${{ hashFiles('scripts/check-boundaries.sh') != '' }}
         run: sh scripts/check-boundaries.sh G4
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
   # ------------------------------------------------------------------
   # 2. Gate main-only — main buildable (SPEC "main buildable apres
@@ -111,7 +110,16 @@ jobs:
     # Sur main (et son push, son PR vers main) le gate complet doit PASS.
     # Sur les autres refs on ne le declenche pas : ce sont les PR qui
     # fusionnent sur main qui le declenchent (jobs on: pull_request).
-    if: ${{ github.ref == 'refs/heads/main' || github.event_name == 'pull_request' }}
+    #
+    # CORRIGE 2026-10-26 : le depot est un FORK, ou NI `push` NI `pull_request`
+    # ne declenchent le CI (mesure : 0 run sur un push de 14 commits, 0 run sur
+    # la PR #1). La condition precedente rendait donc `ci-gate` -- 20+ checks,
+    # dont les gardes de drift et de routage -- STRUCTURELLEMENT inatteignable :
+    # seul `workflow_dispatch` cree un run, et il etait exclu. Le gate complet
+    # n'avait jamais tourne. `workflow_dispatch` est desormais autorise, ce qui
+    # rend le gate lancable a la demande sur n'importe quelle ref. Sûr : aucun
+    # step de `ci-gate` ne consomme de secret (verifie).
+    if: ${{ github.ref == 'refs/heads/main' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     needs: [ci-base]
     steps:
@@ -131,35 +139,30 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
       - name: Typecheck
         if: ${{ hashFiles('tsconfig.json') != '' }}
-        run: pnpm -r exec tsc --noEmit
+        run: pnpm -r typecheck
 
       - name: Lint
         if: ${{ hashFiles('package.json') != '' }}
-        run: pnpm -r exec eslint . --max-warnings=0
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
+        run: pnpm -r lint
 
-      - name: Tests (vitest)
-        # Wave 0: vitest n'est pas encore une dep du workspace — le test
-        # du spine est execute par la step dediee ci-dessous (node
-        # type-stripping natif, zero dep). Ce step est branche en wave 1
-        # quand le runner arrive (if: le fichier de config existe).
-        if: ${{ hashFiles('vitest.config.ts') != '' && exists('packages/domain/package.json') }}
-        run: pnpm -r exec vitest run
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
+      - name: Tests
+        # Le runner reel du depot est `pnpm -r test` (chaque package declare le
+        # sien : vitest pour packages/ui, `node --experimental-strip-types
+        # --test` pour les autres). L'ancienne garde `hashFiles('vitest.config.ts')`
+        # etait toujours FAUSSE (ce fichier n'existe pas a la racine) : les 661
+        # tests ne tournaient donc JAMAIS en CI.
+        if: ${{ hashFiles('packages/domain/package.json') != '' }}
+        run: pnpm -r test
 
       - name: Build
-        run: pnpm -r exec tsc --noEmit
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
+        run: pnpm -r build
 
       # ---- Static RLS + no cross-join (commit "wave0/hermes: spine test +
       #      RLS + no cross-join", a suivre) ----
       # Scan supabase/migrations/*.sql + vues PowerSync (packages/data).
-      # Tant que MINERVA (migrations) et ACHILLES (packages) n'ont pas
-      # livre, les steps sont continue-on-error avec log explicite.
       - name: "Spine test: 2 equipes, 1 contrat (packages/domain)"
         # tests/spine/equipe-a.contract.ts et equipe-b.contract.ts produisent
         # le meme contrat (type-check croise, pas de re-declaration — AD-15,
@@ -171,26 +174,89 @@ jobs:
         # Skip with reason tant que packages/domain n'existe pas.
         if: ${{ hashFiles('tests/spine/spine.test.ts') != '' }}
         run: node --experimental-strip-types --no-warnings tests/spine/spine.test.ts
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
       - name: "RLS penetration (static, 01 S2.2 / S7)"
         if: ${{ hashFiles('scripts/check-rls.sh') != '' }}
         run: sh scripts/check-rls.sh
-        continue-on-error: ${{ !exists('supabase/migrations') }}
-        # TODO(wave1): run against live Supabase — le gate static ne couvre
-        # que le shape des policies ; le test live (user A ne lit pas user B)
-        # sera branche sur la DB dev, avec les secrets GitHub (cf secrets-checklist).
+        # Ce gate est STATIQUE (il lit les migrations). La preuve live
+        # d'isolation (user A ne lit pas user B, sur CHAQUE table) est
+        # scripts/rls-live-check.sh — reproductible SANS credential, via
+        # Docker + supabase/postgres. Non branchee en CI pour l'instant :
+        # elle demande un runner avec Docker (~2 min de pull d'image).
+
+      - name: "EF imports resolve (supabase/functions not in any tsconfig)"
+        # supabase/functions/** is in NO tsconfig, so typecheck never reads it.
+        # That hole hid a real defect: fn-job-dispatcher imported two symbols
+        # that do not exist, so the EF could not boot, was never deployed, and
+        # 34 cron jobs sat pending for 16 days.
+        if: ${{ hashFiles('scripts/check-ef-imports.mjs') != '' }}
+        run: node scripts/check-ef-imports.mjs
+
+      - name: "EF bundles deployable (workspace imports inlined)"
+        # check-ef-imports proves the symbols resolve in the repo; this proves
+        # the FUNCTION CAN SHIP self-contained. Measured live 2026-10-24: 5 EFs
+        # ACTIVE (0 workspace imports each) and 3 missing — fn-canvas (0),
+        # fn-integrations (2), fn-job-dispatcher (10). Deployment stopped
+        # (CI deploy is `if: false` pending OQ-03); fn-canvas is the
+        # counterexample showing workspace imports are not the sole cause.
+        # Rebuilds from source (a stale dist/ cannot satisfy it) and asserts no
+        # workspace path, no CJS require(), no bare specifier in the output.
+        if: ${{ hashFiles('scripts/check-ef-bundles.mjs') != '' }}
+        run: node scripts/check-ef-bundles.mjs
 
       - name: "No cross-module JOIN (03 S5.4 / F-03)"
         if: ${{ hashFiles('scripts/check-view-joins.ts') != '' }}
         # Node 22.20+ : --experimental-strip-types (run TS natif, zero dep).
         # Pas de pnpm tsx (tsx n'est pas encore une dep du workspace wave 0).
         run: node --experimental-strip-types scripts/check-view-joins.ts
-        continue-on-error: ${{ !exists('packages/data') }}
+
+      - name: "Job routing coverage (every JobKind has a handler)"
+        # check-ef-imports proves the dispatcher's imports RESOLVE; this proves
+        # the handlers they resolve to actually COVER the vocabulary. The two
+        # are different failures: PROGRESS_JOB_HANDLERS was a live, resolvable
+        # import of an EMPTY ARRAY, so 17 skill_recompute jobs were skipped
+        # silently for 16 days. Also guards the first-wins shadowing trap
+        # (a no-op table spread before its REST-wired counterpart).
+        if: ${{ hashFiles('tests/jobs/routing-coverage.test.ts') != '' }}
+        run: node --experimental-strip-types --no-warnings tests/jobs/routing-coverage.test.ts
+
+      - name: "Live-only DB objects are versioned (no un-versioned catalog)"
+        # The live database carried 3 functions the repo never versioned; a
+        # `db reset` would have erased them in silence and broken every signup.
+        # The static RLS scan reads migrations, so it cannot miss what is
+        # ABSENT — this compares the invariant instead.
+        if: ${{ hashFiles('tests/db/live-only-functions.test.ts') != '' }}
+        run: node --experimental-strip-types --no-warnings tests/db/live-only-functions.test.ts
+
+      - name: "Client schema matches the migrations (PowerSync mirror drift)"
+        # live-only-functions compares FUNCTIONS; this compares COLUMNS. The
+        # client PowerSync schema is the runtime declaration of which synced
+        # tables/columns exist. Measured 2026-10-26: 28 of 31 mirrored tables
+        # declared columns that do not exist (habits.title vs the real
+        # habits.name) and omitted columns that do, and 2 synced tables
+        # (focus_profiles, discovery_vault) were absent entirely. PowerSync
+        # stores undeclared columns but never exposes them, so the app read
+        # `undefined` in silence. No test saw it: mobile tests seed an
+        # InMemoryLocalStore shaped like the CLIENT schema, while the relay
+        # delivers rows shaped like the DATABASE.
+        if: ${{ hashFiles('tests/db/client-schema-drift.test.ts') != '' }}
+        run: node --experimental-strip-types --no-warnings tests/db/client-schema-drift.test.ts
+
+      - name: Domain↔schema drift (writers emit columns no schema has)
+        # `client-schema-drift` compares the PowerSync CLIENT schema to the
+        # migrations — both SQL-side, so it cannot see a DOMAIN-vs-database
+        # drift. Measured 2026-10-26: `createTask` patches `tags` and
+        # `recurrence_rule`, `updateProject` patches `view_mode`; the live
+        # catalog, powersync-schema.ts and the generated SQLite DDL have none of
+        # the three. The local store is a Map keyed by column name, so the write
+        # is accepted and rendered, and only the upstream PATCH fails — silent
+        # write loss. The guard CALLS the real writers and checks every patch
+        # key, with a KNOWN_DEFECTS list that tripwires once a defect is fixed.
+        if: ${{ hashFiles('tests/db/domain-schema-drift.test.ts') != '' }}
+        run: node --experimental-strip-types --no-warnings tests/db/domain-schema-drift.test.ts
 
       - name: Boundary greps (G1-G4)
         run: sh scripts/check-boundaries.sh
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
       - name: "Node-native tests (E2E gate: OQ-08 device + Focus DPC S13)"
         # Wave 7 ERYNIS : the OQ-08 device gate (testing/matrix S1) + the
@@ -201,7 +267,6 @@ jobs:
         # against the real harness at release time.
         if: ${{ hashFiles('apps/mobile/test/e2e-device.test.ts') != '' }}
         run: node --experimental-strip-types --no-warnings --test apps/mobile/test/e2e-device.test.ts apps/mobile/test/focus-dpc.test.ts
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
       - name: "Perf gate (30fps / TTI / JS budget, 02 S9.1)"
         # Wave 5 ERYNIS : the static perf budgets (apps/mobile/src/perf)
@@ -209,7 +274,6 @@ jobs:
         # 30 fps). Device-observed via Sentry at release (OQ-08).
         if: ${{ hashFiles('apps/mobile/test/perf-budget.test.ts') != '' }}
         run: node --experimental-strip-types --no-warnings --test apps/mobile/test/perf-budget.test.ts
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
       - name: "Product modes + command palette (feature-registry S7/S4)"
         # Wave 5 ERYNIS : 6 product modes + the capability-registry
@@ -218,7 +282,6 @@ jobs:
         # automation all resolve to the same capability).
         if: ${{ hashFiles('apps/mobile/test/product-modes.test.ts') != '' }}
         run: node --experimental-strip-types --no-warnings --test apps/mobile/test/product-modes.test.ts
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
       # ---- Lot déploiement 2026-10-14 (plan A3, guard de dérive) ----
       # Le SSoT SYNC_STREAMS (packages/data) + les 2 boot sites
@@ -233,7 +296,6 @@ jobs:
           node --experimental-strip-types --no-warnings \
             --import ./test/register-resolve-hook.mjs \
             --test test/sync-config-wiring.test.ts
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
       - name: "R2 storage adapter (le presign SigV4, AD-16, lot A4)"
         if: ${{ hashFiles('packages/integrations/test/r2-storage.test.ts') != '' }}
@@ -241,7 +303,6 @@ jobs:
           cd packages/integrations
           node --experimental-strip-types --no-warnings \
             --test test/r2-storage.test.ts
-        continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
       - name: Gate summary
         run: |

@@ -21,12 +21,21 @@ importers:
       '@eslint/js':
         specifier: ^9.0.0
         version: 9.39.5
+      '@types/node':
+        specifier: ^22.20.4
+        version: 22.20.4
       eslint:
         specifier: ^9.0.0
         version: 9.39.5(jiti@2.7.0)
       eslint-plugin-import:
         specifier: ^2.31.0
         version: 2.32.0(@typescript-eslint/parser@8.70.1(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))
+      eslint-plugin-react-hooks:
+        specifier: ^5.2.0
+        version: 5.2.0(eslint@9.39.5(jiti@2.7.0))
+      eslint-plugin-storybook:
+        specifier: ^10.6.1
+        version: 10.6.1(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -124,6 +133,9 @@ importers:
       '@capacitor/core':
         specifier: ^7.6.9
         version: 7.6.9
+      '@capacitor/preferences':
+        specifier: ^7.0.2
+        version: 7.0.4(@capacitor/core@7.6.9)
       '@ionic/react':
         specifier: ^8.8.19
         version: 8.8.19(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -222,6 +234,64 @@ importers:
         specifier: workspace:*
         version: link:../../packages/scientific-engine
 
+  apps/web-app:
+    dependencies:
+      '@aurora/data':
+        specifier: workspace:*
+        version: link:../../packages/data
+      '@aurora/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@aurora/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@phosphor-icons/react':
+        specifier: ^2
+        version: 2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tanstack/react-query':
+        specifier: ^5.103.2
+        version: 5.103.2(react@18.3.1)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+      react-router-dom:
+        specifier: ^6.30.6
+        version: 6.30.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      tailwind-merge:
+        specifier: ^2.5.5
+        version: 2.6.1
+    devDependencies:
+      '@types/react':
+        specifier: ^18.3.31
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.7
+        version: 18.3.7(@types/react@18.3.31)
+      '@vitejs/plugin-react':
+        specifier: ^4.3.0
+        version: 4.7.0(vite@5.4.21(@types/node@22.20.4)(lightningcss@1.32.0))
+      autoprefixer:
+        specifier: ^10.4.20
+        version: 10.6.1(postcss@8.5.28)
+      postcss:
+        specifier: ^8.4.47
+        version: 8.5.28
+      tailwindcss:
+        specifier: ^3.4.19
+        version: 3.4.19
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@22.20.4)(lightningcss@1.32.0)
+
   packages/agent:
     dependencies:
       '@ai-sdk/openai-compatible':
@@ -236,6 +306,12 @@ importers:
       zod:
         specifier: ^3.25.76
         version: 3.25.76
+
+  packages/artifact:
+    dependencies:
+      '@aurora/domain':
+        specifier: workspace:*
+        version: link:../domain
 
   packages/ascent:
     dependencies:
@@ -317,7 +393,19 @@ importers:
         specifier: workspace:*
         version: link:../domain
 
+  packages/identity:
+    dependencies:
+      '@aurora/domain':
+        specifier: workspace:*
+        version: link:../domain
+
   packages/integrations:
+    dependencies:
+      '@aurora/domain':
+        specifier: workspace:*
+        version: link:../domain
+
+  packages/knowledge:
     dependencies:
       '@aurora/domain':
         specifier: workspace:*
@@ -336,13 +424,16 @@ importers:
         version: link:../domain
       '@capacitor/app':
         specifier: ^7.1.2
-        version: 7.1.2(@capacitor/core@8.5.2)
+        version: 7.1.2(@capacitor/core@7.6.9)
+      '@capacitor/core':
+        specifier: ^7.6.9
+        version: 7.6.9
       '@capacitor/network':
         specifier: ^7.0.4
-        version: 7.0.4(@capacitor/core@8.5.2)
+        version: 7.0.4(@capacitor/core@7.6.9)
       '@capacitor/push-notifications':
         specifier: ^7.0.7
-        version: 7.0.7(@capacitor/core@8.5.2)
+        version: 7.0.7(@capacitor/core@7.6.9)
     devDependencies:
       '@types/node':
         specifier: ^22.20.4
@@ -1293,6 +1384,11 @@ packages:
 
   '@capacitor/network@7.0.4':
     resolution: {integrity: sha512-fNhN3968AQWMnzasPJ0B8e+nyk7+R6V9PWIBQWSQRHrKndDgWRHpxkjEzJPgnJr3EjnKLjbwO+UYy+EwBlGs3A==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
+
+  '@capacitor/preferences@7.0.4':
+    resolution: {integrity: sha512-TJhkwaI2RCs/iDC9PjNczZV4h6JM4gUtTuKMeFdy0OwGgFEHf4TrtW2mFMc1TnPDalYQ91p9NT+UKgiJs9/xtg==}
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
 
@@ -5610,6 +5706,12 @@ packages:
       '@typescript-eslint/parser':
         optional: true
 
+  eslint-plugin-react-hooks@5.2.0:
+    resolution: {integrity: sha512-+f15FfK64YQwZdJNELETdn5ibXEUQmW1DZL6KXhNnc2heoy/sg9VJJeT7n8TlMWouzWqSWavFkIhHyIbIAEapg==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0 || ^9.0.0
+
   eslint-plugin-storybook@10.6.1:
     resolution: {integrity: sha512-XBmXuQcI0wzxMYc0rWKIiydvUxgS+GzLesO1YK1adnj97LhMqqsnlalbM+nXfQo1JoH2F2CI12sAH9/dAC99Dw==}
     peerDependencies:
@@ -8081,6 +8183,9 @@ packages:
     resolution: {integrity: sha512-yEFYrVhod+hdNyx7g5Bnkkb0G6si8HJurOoOEgC8B/O0uXLHlaey/65KRv6cuWBNhBgHKAROVpc7QyYqE5gFng==}
     engines: {node: '>=20'}
 
+  tailwind-merge@2.6.1:
+    resolution: {integrity: sha512-Oo6tHdpZsGpkKG88HJ8RR1rg/RdnEkQEfMoEk2x1XRI3F1AxeU+ijRXpiVUF4UbLfcxxRGw6TbUINKYdWVsQTQ==}
+
   tailwind-merge@3.7.0:
     resolution: {integrity: sha512-XPPUyAc+cvspz3lHTcR/QgPfW2A0lv/xQNIjX3HGhLR+Nq2lHaLq5MtTesHn8GUr3W3DguT2KT5x3NVgRtYwmA==}
 
@@ -9496,9 +9601,9 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.6.9
 
-  '@capacitor/app@7.1.2(@capacitor/core@8.5.2)':
+  '@capacitor/app@7.1.2(@capacitor/core@7.6.9)':
     dependencies:
-      '@capacitor/core': 8.5.2
+      '@capacitor/core': 7.6.9
 
   '@capacitor/core@7.6.9':
     dependencies:
@@ -9508,13 +9613,17 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@capacitor/network@7.0.4(@capacitor/core@8.5.2)':
+  '@capacitor/network@7.0.4(@capacitor/core@7.6.9)':
     dependencies:
-      '@capacitor/core': 8.5.2
+      '@capacitor/core': 7.6.9
 
-  '@capacitor/push-notifications@7.0.7(@capacitor/core@8.5.2)':
+  '@capacitor/preferences@7.0.4(@capacitor/core@7.6.9)':
     dependencies:
-      '@capacitor/core': 8.5.2
+      '@capacitor/core': 7.6.9
+
+  '@capacitor/push-notifications@7.0.7(@capacitor/core@7.6.9)':
+    dependencies:
+      '@capacitor/core': 7.6.9
 
   '@chromatic-com/storybook@5.4.0(storybook@10.6.1(@types/react@18.3.31)(react@18.3.1))':
     dependencies:
@@ -14081,11 +14190,24 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
+  eslint-plugin-react-hooks@5.2.0(eslint@9.39.5(jiti@2.7.0)):
+    dependencies:
+      eslint: 9.39.5(jiti@2.7.0)
+
   eslint-plugin-storybook@10.6.1(eslint@9.39.5(jiti@1.21.7))(typescript@5.9.3):
     dependencies:
       '@typescript-eslint/types': 8.70.1
       '@typescript-eslint/utils': 8.70.1(eslint@9.39.5(jiti@1.21.7))(typescript@5.9.3)
       eslint: 9.39.5(jiti@1.21.7)
+    transitivePeerDependencies:
+      - supports-color
+      - typescript
+
+  eslint-plugin-storybook@10.6.1(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3):
+    dependencies:
+      '@typescript-eslint/types': 8.70.1
+      '@typescript-eslint/utils': 8.70.1(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      eslint: 9.39.5(jiti@2.7.0)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -17207,6 +17329,8 @@ snapshots:
   symbol-tree@3.2.4: {}
 
   tagged-tag@1.0.0: {}
+
+  tailwind-merge@2.6.1: {}
 
   tailwind-merge@3.7.0: {}
 

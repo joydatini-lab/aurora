@@ -15,8 +15,8 @@
 #       policies, pas par BYPASSRLS — 01 S2.2 regle 1)
 #
 # C'est un check STATIQUE. Le test live (user A ne lit pas les lignes de
-# user B sur chaque table) reste a faire contre une Supabase dev — marque
-# "TODO(wave1): run against live Supabase" dans le fichier et dans ci.yml.
+# user B sur chaque table) est desormais FAIT et reproductible sans
+# credential : scripts/rls-live-check.sh (Docker + supabase/postgres).
 #
 # Usage: sh scripts/check-rls.sh
 # Exit: 0 clean / 0 (skip, pas de migrations) / 1 echec + fichier/ligne.
@@ -35,7 +35,6 @@ cd "$REPO_ROOT" || exit 1
 MIG_DIR="supabase/migrations"
 if [ ! -d "$MIG_DIR" ]; then
   echo "[check-rls] SKIP — $MIG_DIR n'existe pas encore (MINERVA crele en parallele)."
-  echo "[check-rls] TODO(wave1): run against live Supabase (user A ne lit pas user B, sur chaque table)."
   exit 0
 fi
 
@@ -126,7 +125,9 @@ fi
 
 if [ "$rc" -eq 0 ]; then
   echo "[check-rls] RLS static checks passed (migrations: $(ls "$MIG_DIR"/*.sql 2>/dev/null | wc -l) fichiers)."
-  echo "[check-rls] TODO(wave1): run against live Supabase (penetration user A vs B, sur chaque table)."
+  echo "[check-rls] NOTE: this gate is STATIC (it reads the migrations). The live
+[check-rls]       isolation proof (user A vs user B, every table) is
+[check-rls]       scripts/rls-live-check.sh — no credentials needed."
 else
   echo "[check-rls] RLS static checks FAILED."
 fi

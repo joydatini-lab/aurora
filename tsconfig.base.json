@@ -2,10 +2,25 @@
   "compilerOptions": {
     "target": "ES2022",
     "lib": [
-      "ES2022"
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "node"
     ],
     "module": "ESNext",
     "moduleResolution": "bundler",
+    /* Alias `src/*` -> packages/ui/src/* (CRLF preserve). Il vit d'origine
+       dans packages/ui/tsconfig.paths.json, donc seuls les fichiers lus
+       depuis packages/ui le resolvaient. Tout consommateur qui tire
+       packages/ui/src/** dans son propre programme (apps/mobile via son
+       paths @aurora/ui -> source ; apps/server) echouait en TS2307 sur les
+       334 imports `src/...` du depot. Sans `baseUrl`, TS resout `paths`
+       relativement au tsconfig qui les declare -> la racine du depot. */
+    "paths": {
+      "src/*": ["./packages/ui/src/*"]
+    },
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
@@ -15,7 +30,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
-    "composite": true,
     "declaration": true,
     "declarationMap": true,
     "noEmit": false,

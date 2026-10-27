@@ -2,7 +2,6 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
     "allowImportingTsExtensions": true,
     /* M-63 (S6, plan v2) : `evidenceFromMirrorValidation` + les re-exports
        de `recompute.ts` résolvent les chemins relatifs `.ts` explicites. */
@@ -14,10 +13,5 @@
   ],
   "exclude": [
     "dist"
-  ],
-  "references": [
-    {
-      "path": "../domain"
-    }
   ]
 }

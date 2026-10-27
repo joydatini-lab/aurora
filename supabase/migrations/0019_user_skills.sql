@@ -92,7 +92,7 @@ VALUES
 (
   'agent.summaries', 'science',
   'Résumés de précision',
-  "L'utilisateur demande de résumer du matériel de cours, des notes, ou une lecture.",
+  'L''utilisateur demande de résumer du matériel de cours, des notes, ou une lecture.',
   'Produire un résumé structuré, fidèle au corpus, avec les points clés et les détails essentiels',
   '[
     "Identifier le corpus source (cours, notes, lecture) et son volume",
@@ -114,7 +114,7 @@ VALUES
 (
   'agent.analyses', 'science',
   'Analyses de performance',
-  "L'utilisateur demande d'analyser sa progression, identifier un gap ou comprendre une stagnation.",
+  'L''utilisateur demande d''analyser sa progression, identifier un gap ou comprendre une stagnation.',
   'Produire une analyse causale, factuelle, avec trajectoires et causes identifiées',
   '[
     "Lire les progress_trajectories et progress_analyze pour le domaine concerné",
@@ -135,7 +135,7 @@ VALUES
 (
   'agent.formulas', 'science',
   'Calculs scientifiques et formules',
-  "L'utilisateur demande un calcul, une vérification physique/maths, ou la résolution d'un problème scientifique.",
+  'L''utilisateur demande un calcul, une vérification physique/maths, ou la résolution d''un problème scientifique.',
   'Résoudre ou vérifier un calcul scientifique avec précision, en utilisant le moteur scientifique',
   '[
     "Structurer le problème : données connues, inconnues, unités",
@@ -157,8 +157,8 @@ VALUES
 (
   'agent.doc-generation', 'documents',
   'Génération de documents',
-  "L'utilisateur demande de créer un document (DOCX, PDF, PPTX, XLSX) ou de modifier un document existant.",
-  "Produire un document professionnel, bien structuré, dans le format demandé",
+  'L''utilisateur demande de créer un document (DOCX, PDF, PPTX, XLSX) ou de modifier un document existant.',
+  'Produire un document professionnel, bien structuré, dans le format demandé',
   '[
     "Identifier le format cible (DOCX, PDF, PPTX, XLSX) et le contenu à générer",
     "Structurer le contenu : titres, sections, tableaux, formules (LaTeX si DOCX)",
@@ -180,7 +180,7 @@ VALUES
 (
   'agent.qcm-design', 'documents',
   'QCM et Flashcards',
-  "L'utilisateur demande de générer des questions, un QCM, des flashcards ou des exercices.",
+  'L''utilisateur demande de générer des questions, un QCM, des flashcards ou des exercices.',
   'Générer des questions progressives, fidèles au corpus, avec analyse des erreurs',
   '[
     "Identifier le sujet et le niveau de difficulté cible",
@@ -201,7 +201,7 @@ VALUES
 (
   'agent.planning', 'marketing',
   'Planification et Time Blocking',
-  "L'utilisateur demande de planifier sa journée, sa semaine, ou de réorganiser ses tâches.",
+  'L''utilisateur demande de planifier sa journée, sa semaine, ou de réorganiser ses tâches.',
   'Produire un plan de journée réaliste, priorisé, avec blocs de temps et pauses',
   '[
     "Lire les tâches ouvertes (task_update) et les objectifs actifs (goal_status)",
@@ -223,7 +223,7 @@ VALUES
 (
   'agent.focus', 'marketing',
   'Focus et Pomodoro',
-  "L'utilisateur demande de démarrer une session focus, bloquer des apps, ou programmer des Pomodoros.",
+  'L''utilisateur demande de démarrer une session focus, bloquer des apps, ou programmer des Pomodoros.',
   'Démarrer une session focus productif avec les bonnes conditions (son, blocklist, durée)',
   '[
     "Vérifier si le focus est possible (focus.start + focus.block si DPC dispo)",
@@ -243,10 +243,10 @@ VALUES
 (
   'agent.goals', 'marketing',
   'Décomposition d''objectifs',
-  "L'utilisateur demande de créer, décomposer, ajuster ou terminer un objectif.",
+  'L''utilisateur demande de créer, décomposer, ajuster ou terminer un objectif.',
   'Aider l''utilisateur à transformer un objectif vague en un plan concret et exécutable',
   '[
-    "Clarifier l''objectif : qu'est-ce qui est concret ? mesurable ? avec une deadline ?",
+    "Clarifier l''objectif : qu''est-ce qui est concret ? mesurable ? avec une deadline ?",
     "Utiliser goal_create pour créer l''objectif (GoalProject dynamique)",
     "Décomposer en sous-objectifs (goal_feature_add)",
     "Identifier les premières actions concrètes (3-5 max)",
@@ -265,7 +265,7 @@ VALUES
 (
   'agent.research', 'research',
   'Recherche et Découverte',
-  "L'utilisateur demande de chercher une information, un cours, une source ou de comprendre un concept.",
+  'L''utilisateur demande de chercher une information, un cours, une source ou de comprendre un concept.',
   'Chercher, vérifier et synthétiser une information de manière fiable',
   '[
     "Formuler la question de recherche (course_search ou research)",
@@ -287,7 +287,7 @@ VALUES
 (
   'agent.mirror', 'research',
   'Miroir cognitif',
-  "L'utilisateur demande d'analyser une session d'apprentissage ou de détecter ses erreurs de compréhension.",
+  'L''utilisateur demande d''analyser une session d''apprentissage ou de détecter ses erreurs de compréhension.',
   'Identifier les fausses croyances, les lacunes de compréhension et proposer des corrections',
   '[
     "Utiliser mirror_analyze (job agent_run, capability mirror_cognitive)",
@@ -307,7 +307,7 @@ VALUES
 (
   'agent.habits', 'marketing',
   'Habitudes et Discipline',
-  "L'utilisateur fait un check-in d'habitude ou demande du coaching / de la motivation.",
+  'L''utilisateur fait un check-in d''habitude ou demande du coaching / de la motivation.',
   'Soutenir la discipline par le suivi des habitudes et le coaching ponctuel',
   '[
     "Utiliser habit_checkin pour enregistrer le check-in quotidien",
@@ -328,7 +328,7 @@ VALUES
 (
   'agent.presentations', 'documents',
   'Présentations et Slides',
-  "L'utilisateur demande de créer une présentation PPTX ou des slides.",
+  'L''utilisateur demande de créer une présentation PPTX ou des slides.',
   'Produire une présentation structurée, visuelle, avec un message clair par slide',
   '[
     "Identifier le public et l''objectif de la présentation (convaincre, informer, enseigner)",
@@ -350,7 +350,7 @@ VALUES
 (
   'agent.marketing', 'marketing',
   'Marketing et Communication',
-  "L'utilisateur demande de rédiger un email, un post, une campagne ou un copy marketing.",
+  'L''utilisateur demande de rédiger un email, un post, une campagne ou un copy marketing.',
   'Rédiger un contenu marketing clair, persuasif, adapté au canal',
   '[
     "Identifier le canal (email, LinkedIn, Twitter/X, blog, fiche produit)",
@@ -372,7 +372,7 @@ VALUES
 (
   'agent.social', 'social',
   'Réseau et Collaboration',
-  "L'utilisateur demande de rédiger un message, de coordonner avec des collègues ou de gérer sa présence sociale.",
+  'L''utilisateur demande de rédiger un message, de coordonner avec des collègues ou de gérer sa présence sociale.',
   'Aider à communiquer de manière efficace et collaborative dans un contexte de réseau / équipe',
   '[
     "Identifier le contexte (message à un collègue, coordination d''équipe, post social)",
@@ -394,7 +394,7 @@ VALUES
 (
   'agent.creative', 'creative',
   'Créativité et Contenu',
-  "L'utilisateur demande de brainstormer, écrire une histoire, créer du contenu original ou développer une idée.",
+  'L''utilisateur demande de brainstormer, écrire une histoire, créer du contenu original ou développer une idée.',
   'Faciliter le processus créatif : brainstorm, structuration, rédaction',
   '[
     "Identifier le type de contenu (histoire, poème, article, concept, monde, personnage)",
@@ -417,7 +417,7 @@ VALUES
 (
   'agent.review', 'marketing',
   'Revue et Analytics',
-  "L'utilisateur demande une revue quotidienne, hebdomadaire ou mensuelle de sa progression.",
+  'L''utilisateur demande une revue quotidienne, hebdomadaire ou mensuelle de sa progression.',
   'Produire une revue factuelle, avec planned vs actual, tendances de procrastination et recommandations',
   '[
     "Utiliser review_run (job) pour la revue périodique",
@@ -438,7 +438,7 @@ VALUES
 (
   'agent.settings', 'marketing',
   'Préférences et Personnalisation',
-  "L'utilisateur demande de changer le thème, les notifications, ou les automations.",
+  'L''utilisateur demande de changer le thème, les notifications, ou les automations.',
   'Ajuster les préférences de l''utilisateur de manière non intrusive',
   '[
     "Identifier la préférence (thème, notifications, automation, focus)",
@@ -458,7 +458,7 @@ VALUES
 (
   'agent.artifacts', 'documents',
   'Artifacts et Exports',
-  "L'utilisateur demande de générer, prévisualiser ou exporter un artifact (PDF, DOCX, PPTX, XLSX, image, audio).",
+  'L''utilisateur demande de générer, prévisualiser ou exporter un artifact (PDF, DOCX, PPTX, XLSX, image, audio).',
   'Générer ou prévisualiser un artifact dans le format demandé, de manière fiable',
   '[
     "Identifier le type d''artifact (doc, image, audio, data)",

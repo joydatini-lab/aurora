@@ -134,7 +134,10 @@ export const OuvreEtSélectionne: Story = {
     const item = await new Promise<HTMLElement>((resolve) => {
       const obs = new MutationObserver(() => {
         const i = canvasElement.querySelector('[role="option"]');
-        if (i) obs.disconnect(), resolve(i as HTMLElement);
+        if (i) {
+          obs.disconnect();
+          resolve(i as HTMLElement);
+        }
       });
       obs.observe(canvasElement, { childList: true, subtree: true });
     });

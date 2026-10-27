@@ -17,7 +17,7 @@
  * pointeur natif + le `transform` inline suffisent, jamais une lib.
  */
 import { useCallback, useRef, useState } from 'react';
-import { useReducedMotion } from 'motion/react';
+import { useReducedMotion } from '@aurora/ui';
 
 export interface HorizontalSwiperHandlers {
   onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => void;

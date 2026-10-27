@@ -2,7 +2,6 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
     "allowImportingTsExtensions": true
   },
   "include": [
@@ -10,10 +9,5 @@
   ],
   "exclude": [
     "dist"
-  ],
-  "references": [
-    {
-      "path": "../domain"
-    }
   ]
 }

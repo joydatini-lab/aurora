@@ -71,7 +71,10 @@ export const OuvreReferme: Story = {
       const popover = await new Promise<HTMLElement>((resolve) => {
         const obs = new MutationObserver(() => {
           const p = body.querySelector('[data-state="open"]');
-          if (p) obs.disconnect(), resolve(p as HTMLElement);
+          if (p) {
+          obs.disconnect();
+          resolve(p as HTMLElement);
+        }
         });
         obs.observe(body, { childList: true, subtree: true, attributes: true });
       });
