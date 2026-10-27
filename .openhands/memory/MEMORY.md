@@ -154,3 +154,32 @@ Detail and per-lot narratives live in the daily logs (`.openhands/memory/YYYY-MM
   `NODE_OPTIONS=--max-old-space-size=8192`. Environmental.
 - `@aurora/ui` barrel is heavy (assistant-ui, antv, xyflow, katex): importing it just for
   `AURORA_ICONS` yields a ~9.4MB bundle. Real finding; a scoped `@aurora/ui/icons` would help.
+
+## L4 done (d2dc84f) — module specs + parallel-work division (e7b2c94)
+- `docs/features/specs/{productivity.tasks,agent.kernel}.md` = the §M1–§M6 module template
+  (capacités · données · chemin agent · surface · offline · preuve). §M6 must cite an EXECUTED
+  command or the spec is NOT_READY.
+- **agent_runs is NOT synced** (absent from `sync-config.yaml`, `powersync-schema.ts`,
+  `sqlite-schema.ts`). `agent-client.ts` reads it via PostgREST (`supabase.from('agent_runs')`)
+  while its comment claims "AD-7 local-first mirror" — the comment describes intent, not code.
+  Reading a run's state REQUIRES network. Coherent with AD-3/F-09, but write it down.
+- `tasks` column is `subject` (NOT `title`); `createTask` writes it at `tasks.ts:81`. Client schema
+  matches (drift `name`/`title` is habits/routines only). `0032` added `tags`/`recurrence_rule`,
+  and BOTH are in `powersync-schema.ts` → guarded by `domain-schema-drift.test.ts` (8/8).
+- Capability registry: 70 entries. `task.update` covers create (`action:'create'`); the matrix
+  names it "task.create / task.update" → naming drift only, behaviour covered.
+- **Screen count: trust the INDEX, not `ls`.** `docs/design-system/screens/` holds 47 `.md`, but 3
+  are not screens (`index.md`, `INDEX_REVIEW.md`, `brand-dna.md` — the L2 contract). Real = 44
+  screens + 13 Design Space (OQ-6) = 57. Counting files overstates by 3.
+- **No migration-numbering guard exists** (next free = `0033`; `0200` is an out-of-sequence
+  wave-0 block). Two branches can both create `0033_*.sql` → reserve in
+  `docs/plans/2026-10-27-division-du-travail-parallele.md` §7 before writing.
+- Parallelism (verified): `git worktree add` works; pnpm store `/workspace/.pnpm-store/v10`
+  (1.6 G) is SHARED → a worktree re-downloads nothing. 23 G free disk. Three writer-exclusive
+  paths: the index (G7), `supabase/migrations/`, `packages/domain/`.
+- Gate baseline on this base: **1326 node:test + 52 vitest, 0 fail**; typecheck+lint exit 0;
+  boundaries G1–G4, check-rls (33 files), view-joins (93 .sql), drift 8/8+5/5, ef-imports (74
+  symbols/31 imports/19 files), ef-bundles (8) all green. `ci.yml` has 24 `hashFiles`-guarded steps
+  (a deleted file makes a step vanish silently — pitfall G2).
+- `pnpm` shim is `/tmp/bin/pnpm` → `exec corepack pnpm "$@"`; `/tmp` is EPHEMERAL here, recreate it
+  when "pnpm: command not found". `mkdir -p /tmp/bin` first or the `printf >` fails.
