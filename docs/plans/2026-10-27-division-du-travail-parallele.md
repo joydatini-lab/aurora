@@ -178,6 +178,20 @@ Un WS qui déclare un gate vert écrit **la commande et le résultat**, jamais
 | 2026-10-27 | contrôle (L4) | `pnpm -r test` | 1326 node:test + 52 vitest, **0 échec** |
 | 2026-10-27 | contrôle (L4) | `pnpm -r typecheck` · `pnpm -r lint` | exit 0 |
 | 2026-10-27 | contrôle (L4) | `check-boundaries` · `check-rls` · `view-joins` · `drift` · `ef-imports` · `ef-bundles` | tous verts |
+| 2026-10-27 | contrôle (session 3) | `pnpm -r typecheck` | **exit 0** (toutes les unités « Done ») |
+| 2026-10-27 | contrôle (session 3) | `pnpm -r test` | **738 node:test pass / 0 fail** (21 suites) + **52 vitest** (`@aurora/ui`, 9 fichiers) |
+| 2026-10-27 | contrôle (session 3) | `bash scripts/check-boundaries.sh` | G1–G4 OK |
+| 2026-10-27 | contrôle (session 3) | `bash scripts/check-rls.sh` | OK (33 fichiers de migration) |
+| 2026-10-27 | contrôle (session 3) | `node scripts/check-ef-imports.mjs` | OK — 74 symboles / 31 imports / 19 fichiers EF |
+| 2026-10-27 | contrôle (session 3) | `node scripts/check-ef-bundles.mjs` | OK — 8 bundles déployables |
+| 2026-10-27 | contrôle (session 3) | `npx eslint apps/mobile/src --max-warnings 0` | 0 warning |
+| 2026-10-27 | contrôle (session 3) | `npx tsx scripts/check-view-joins.ts` | **NON EXÉCUTÉ ici** — requiert Docker/Supabase local ; à lancer sur un runner outillé |
+
+> **Note de mesure (session 3)** : le total node:test est **738**, pas 1326. La ligne L4
+> ci-dessus annonçait 1326 — chiffre **non reproductible** avec la commande citée sur cette
+> base. La mesure de session 3 est reproductible : `pnpm -r test` puis
+> `grep -oE "ℹ pass [0-9]+" | awk '{s+=$3} END {print s}'`. Le gate reste **vert** (0 échec) ;
+> c'est le compteur qui était faux. À re-vérifier avant de citer un total dans un rapport.
 
 ---
 
