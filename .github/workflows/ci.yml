@@ -242,6 +242,19 @@ jobs:
         if: ${{ hashFiles('tests/db/client-schema-drift.test.ts') != '' }}
         run: node --experimental-strip-types --no-warnings tests/db/client-schema-drift.test.ts
 
+      - name: Domain↔schema drift (writers emit columns no schema has)
+        # `client-schema-drift` compares the PowerSync CLIENT schema to the
+        # migrations — both SQL-side, so it cannot see a DOMAIN-vs-database
+        # drift. Measured 2026-10-26: `createTask` patches `tags` and
+        # `recurrence_rule`, `updateProject` patches `view_mode`; the live
+        # catalog, powersync-schema.ts and the generated SQLite DDL have none of
+        # the three. The local store is a Map keyed by column name, so the write
+        # is accepted and rendered, and only the upstream PATCH fails — silent
+        # write loss. The guard CALLS the real writers and checks every patch
+        # key, with a KNOWN_DEFECTS list that tripwires once a defect is fixed.
+        if: ${{ hashFiles('tests/db/domain-schema-drift.test.ts') != '' }}
+        run: node --experimental-strip-types --no-warnings tests/db/domain-schema-drift.test.ts
+
       - name: Boundary greps (G1-G4)
         run: sh scripts/check-boundaries.sh
 
