@@ -225,26 +225,10 @@ const BOOKKEEPING = new Set([
  * list can never silently outlive the problem it documents.
  */
 const KNOWN_DEFECTS: Record<string, { defect: string; evidence: string; fix: string }> = {
-  'tasks.tags': {
-    defect: 'createTask patches `tags`, but NO schema has the column (live catalog, powersync-schema.ts and the SQLite DDL all lack it).',
-    evidence: 'packages/productivity/src/tasks.ts:83',
-    fix: 'Add `tags jsonb NOT NULL DEFAULT \'[]\'` to tasks — `dependencies` (0002_productivity.sql:75) is the symmetric precedent already present.',
-  },
-  'tasks.recurrence_rule': {
-    defect: 'createTask patches `recurrence_rule` for recurring tasks; the column does not exist.',
-    evidence: 'packages/productivity/src/tasks.ts:97',
-    fix: 'Add `recurrence_rule text` to tasks (the recurrence is grouped by `parent_recurrence_key`, which does exist).',
-  },
-  'projects.view_mode': {
-    defect: 'updateProject patches `view_mode`; the column does not exist.',
-    evidence: 'packages/productivity/src/goals-projects.ts:183',
-    fix: 'Either add `view_mode text` to projects, or store the preference in the UI store (pack 02 §3.2) and drop it from the command.',
-  },
-  'artifacts.kind': {
-    defect: 'The domain union allows csv/text/code; the CHECK constraint rejects them, so writing one fails in Postgres at runtime.',
-    evidence: 'packages/domain/src/entities-artifact.ts:14-26 vs supabase/migrations/0007_artifact.sql:11',
-    fix: 'Widen the CHECK in a migration (additive, safe) or narrow the domain union — owner call, AD-15.',
-  },
+  // EMPTY as of 2026-10-26: all four entries (tasks.tags, tasks.recurrence_rule,
+  // projects.view_mode, artifacts.kind) were fixed by migration 0032. The
+  // tripwire test below asserts this list stays honest — re-adding an entry for
+  // a defect that no longer reproduces fails the suite.
 };
 
 // ---------------------------------------------------------------------------
@@ -350,14 +334,28 @@ function domainUnionValues(file: string, field: string): string[] {
 
 /** Values of the first `CHECK (col IN (…))` for a column. */
 function checkValues(table: string, col: string): string[] {
+  // LAST definition wins, not the first. A constraint can be widened later via
+  // `ALTER TABLE ... DROP CONSTRAINT ... ADD CONSTRAINT`, and an earlier version
+  // of this function read only the original `CREATE TABLE` — so after migration
+  // 0032 widened `artifacts_kind_check`, the guard still reported the stale
+  // 0007 list and called a FIXED defect broken. Same class of bug as the drift
+  // it exists to catch: reading one copy of a duplicated fact.
   const dir = join(ROOT, 'supabase', 'migrations');
+  let found: string[] = [];
   for (const f of readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()) {
     const sql = readFileSync(join(dir, f), 'utf8');
-    if (!sql.includes(`CREATE TABLE ${table} `)) continue;
-    const m = sql.match(new RegExp(`CHECK\\s*\\(\\s*${col}\\s+IN\\s*\\(([^)]+)\\)`, 'i'));
-    if (m) return [...m[1]!.matchAll(/'([a-z0-9_-]+)'/g)].map((x) => x[1]!);
+    const re = new RegExp(
+      `CHECK\\s*\\(\\s*(?:${col}\\s+IS\\s+NULL\\s+OR\\s+)?${col}\\s+IN\\s*\\(([^)]+)\\)`,
+      'gi',
+    );
+    for (const m of sql.matchAll(re)) {
+      const values = [...m[1]!.matchAll(/'([a-z0-9_-]+)'/g)].map((x) => x[1]!);
+      // Guard against matching a DIFFERENT table's same-named column: require
+      // the statement to mention the table somewhere before this CHECK.
+      if (values.length > 0 && sql.slice(0, m.index!).includes(table)) found = values;
+    }
   }
-  return [];
+  return found;
 }
 
 test('domain-schema drift: Artifact.kind domain values must all be accepted by the CHECK', () => {

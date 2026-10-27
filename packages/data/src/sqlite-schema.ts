@@ -76,6 +76,8 @@ export const MIRROR_TABLES: readonly MirrorTableDef[] = [
       'energy TEXT',
       'work_context TEXT',
       'actual_minutes INTEGER',
+      'tags TEXT NOT NULL DEFAULT \'[]\'', // OR-Set (03 S5.3) — écrit par createTask
+      'recurrence_rule TEXT', // RFC 5545, optionnel — écrit par createTask
       'dependencies TEXT NOT NULL DEFAULT \'[]\'', // OR-Set (03 S5.3)
       'evidence_refs TEXT NOT NULL DEFAULT \'[]\'', // OR-Set (03 S5.3)
       'created_at TEXT NOT NULL',
@@ -100,6 +102,7 @@ export const MIRROR_TABLES: readonly MirrorTableDef[] = [
       'status TEXT NOT NULL DEFAULT \'active\'',
       'start_date TEXT',
       'end_date TEXT',
+      'view_mode TEXT', // ProjectView (entities-productivity.ts:59)
       'created_at TEXT NOT NULL',
       'server_updated_at_ms INTEGER NOT NULL DEFAULT 0',
       'local_mutation_id TEXT NOT NULL DEFAULT \'\'',
