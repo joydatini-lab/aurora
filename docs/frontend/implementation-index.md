@@ -130,7 +130,7 @@ capacités · données · chemin agent · surface · offline · preuve.
 |---|---|---|---|
 | **V0** | `productivity.tasks`, `agent.kernel` | ✅ **2** (`docs/features/specs/`) | **0** |
 | **V0.1** | `productivity.{eisenhower,calendar,goals,habits,focus}`, `learning.flashcards` | ✅ **6** (2026-10-27, WS-2a) | **0** |
-| **V0.2** | `learning.import`, `knowledge.tree`, `discovery.veille`, `progress.mirror`, `artifact.canvas` | 🔄 en cours (WS-2b) | 5 |
+| **V0.2** | `learning.import`, `knowledge.tree`, `discovery.veille`, `progress.mirror`, `artifact.canvas` | ✅ **5** (2026-10-27, WS-2b) | **0** |
 | V1 | écrans des 5 onglets primaires | ✅ 5 specs d'écran (WS-3.1) | 0 |
 | V2 | Productivity restant (10) | — | 10 |
 | V3 | Learning + Knowledge (8) | — | 8 |
@@ -138,13 +138,13 @@ capacités · données · chemin agent · surface · offline · preuve.
 | V5 | Design Space (13 écrans) | — | 13 |
 | V6 | Transverses (5) | — | 5 |
 
-**État au 2026-10-27** : **8 specs de module** écrites sur les **13** de la file WS-2
-(2 déjà faites — `productivity.tasks`, `agent.kernel` — + 11 listées au plan §9 ;
-WS-2a a livré 6, WS-2b en livre 5). Mesure : `ls docs/features/specs/*.md | wc -l` → 8,
-et `grep -cE "^## §M[1-6] " <spec>` → **6/6 pour les 8**.
-Spot-check indépendant du poste de contrôle sur `productivity.eisenhower` : les
-références `eisenhower.ts:70` (`quadrantOf`), `eisenhower.ts:48` (`urgencyOf`) et
-`0002_productivity.sql:65-67` sont **exactes**.
+**État au 2026-10-27 — la file WS-2 est TERMINÉE** : **13/13 specs de module**
+écrites. Mesure reproductible : `ls docs/features/specs/*.md | wc -l` → **13**, et
+`for f in docs/features/specs/*.md; do grep -cE "^## §M[1-6] " $f; done` → **6/6
+pour les 13** (aucune exception). Spot-check indépendant du poste de contrôle sur
+`productivity.eisenhower` : `eisenhower.ts:70` (`quadrantOf`), `eisenhower.ts:48`
+(`urgencyOf`) et `0002_productivity.sql:65-67` sont **exacts**.
+Les 13 specs sont **poussées** sur `rebaseline/2026-10-23`.
 
 **Règle** : un module sans spec §M1–§M6 est `NOT_READY` pour un lot. Une spec
 dont **§M6 n'est pas vérifiable par une commande exécutée** reste `NOT_READY` —
