@@ -66,7 +66,7 @@ que si le précédent est vert.
 | **L1** | **Référentiel de décision** | ✅ **fait** — protocole + 7 arbitrages + cet index | 0 OQ Design Space ouverte | — |
 | **L2** | **Contrat Brand DNA** | ✅ **fait** (`8046ba4`) | 16 tests verts, 0 table neuve | — |
 | **L2b** | **Garde de dérive domaine↔schéma** | ✅ **fait** — `tests/db/domain-schema-drift.test.ts`, câblé au CI | 8/8 verts, non-vacuité prouvée par mutation | — |
-| **L3** | **Coquille `apps/web-app`** | App React + ReUI, tokens `packages/ui`, routing 9 sections (§4.2) | 3 paliers responsive, `pnpm -F @aurora/web-app build` vert | — |
+| **L3** | **Coquille `apps/web-app`** | ✅ **fait** (`b92c722`) — app React, tokens `packages/ui`, 9 sections §4.2 + Agent, 3 paliers responsive | 17 tests web-app + 4 ui, live 3 paliers, `build` vert | — |
 | **L4** | **Socle branché sur la coquille** | 5 écrans primaires (`home`, `taches-liste`, `cours-liste`, `progress-dashboard`, `agent-chat`) dans `web-app` | S1–S11 de `spec-template-v1.md` §4 | L3 |
 | **L5** | **Design Space — projet + brief** (D1) | `design-space`, `design-brief` sur `Project` existant | parcours brief → Brand DNA | L3 |
 | **L6** | **Design Space — moteur LOGO** (D3) | `packages/design-engines` **créé ici** + moteur SVG + `logo-studio` | SVG canonique, calques, diff avant/après | L5, OQ-8 |
@@ -103,7 +103,7 @@ rend la file exécutable sans question : la spec *est* la réponse.
 
 ---
 
-## 5. Les 7 pièges vérifiés (à ne pas reproduire)
+## 5. Les 8 pièges vérifiés (à ne pas reproduire)
 
 | # | Piège | Cas réel mesuré | Garde |
 |---|---|---|---|
@@ -114,6 +114,13 @@ rend la file exécutable sans question : la spec *est* la réponse.
 | G5 | **Le gate n'a jamais tourné** | `ci-gate` structurellement inatteignable sur ce fork (0 run sur 14 commits + PR) | `workflow_dispatch` + condition |
 | G6 | **Changelog ≠ arbre** | changelog revendique « product modes » ; `ef48cb5` les a supprimés | le changelog est un **journal**, pas un état |
 | G7 | **Un plan contredit l'autre** | `redefinition-priorites` (socle) vs `plan-directeur` (périmètre complet), même jour | **cet index** est la vue unique |
+| G8 | **Une variable CSS que personne ne lit** | `resolveThemeCSSVars` émettait `--aurora-accent.primary` (point) ; tout le dépôt lit `--aurora-accent-primary` (tiret) → `--primary`/`--accent` vides, état actif invisible. Masqué sur mobile par les replis `tokens.css`, exposé par `web-app` | `packages/ui/test/theme-css-vars-naming.test.ts` (`b92c722`) |
+
+**Leçon G8 (à généraliser)** : un nom de variable CSS est une **interface entre
+deux fichiers**. Quand l'émetteur et le lecteur divergent, aucune erreur n'est
+levée — la valeur est simplement vide, et le symptôme (« ça a l'air transparent »)
+n'apparaît que si on MESURE le rendu. Ne jamais conclure d'un nom lu dans le code :
+lire la variable calculée dans le navigateur (`getPropertyValue`).
 
 ### 5.1 Instances de G4 vérifiées le 2026-10-26
 
