@@ -149,3 +149,153 @@
 - **OQ-06** : 2 panneaux desktop (Phase 2, doc §23.4) — 05 §4.5.2 l. 2472-2476 dit « desktop = les 5 questions passent en grille 2×3 (pas une liste linéaire — le desktop a la largeur) ; les ChartSpec G2 s'élargissent (le contenu reste identique, seul le layout change, doc §23.4) ; les actions flottantes passent dans la TopBar » mais **pas** de SSoT pour le breakpoint (pas de rule pour « desktop = quel width min », pas de pattern de split-view dans ui-libraries S1) → **OQ** (pas de spec breakpoint, pas de rule pour split-view mobile → desktop, pas de composant split dans la battery).
 - **OQ-07** : Nombre de `ListItem` dépliables (5 questions du ADR §18.1) — 05 §4.5.2 dit « une liste de questions (5 ListItem dépliables, une par question du doc §18.1) » mais **pas** de SSoT pour l'implémentation (pas de rule pour « adaptatif = quelle logique ? » ; pas de spec pour le calcul du nombre ; pas de composant dédié dans la battery shadcn) → **OQ** (pas de spec adaptatif, pas de rule pour calcul, pas de composant dédié).
 - **OQ-08** : SSoT écran manquante (05 §4.5.2, OQ-43) — l'écran est **claimé** dans le 44 du SSoT §4 l. 1316 mais **non détaillé** écran-par-écran (docs/progress/overview.md est claimé, non détaillé, OQ-43 dans `_inventory.md` §3 l. 188 : « progress-dashboard | SSoT écran manquante (18.6, muet écran-par-écran) ») → **OQ** (pas de spec écran, pas de SSoT écran-par-écran, pas de règle pour la composition des 5 `ListItem` dépliables).
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Tableau de bord** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `progress-dashboard` dans la ligne « Tableau de bord », avec `home`,
+`analytics`, `design-space`).
+
+L'écran réel est `ProgressPage` (`apps/mobile/src/pages/progress/index.tsx` l. 31-113) ;
+le détail (`ProgressDetailPage`, l. 115-158) est un **overlay** au-dessus du tab
+(`router.tsx` l. 95). Le shell web (`apps/web-app`) **ne rend pas encore** cet écran :
+il n'existe **aucune** section `progress` dans `navigation.ts` — la section la plus
+proche est `accueil`/`apprendre` ; le rail web **n'expose pas** `/progress`.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : sélecteur de période + tuiles KPI (grille 2×1, `progress/index.tsx` l. 82) + zone chart | tab bar basse | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** (nav + contenu) ; le §3/§14 prévoit une **grille 2×3** des 5 questions (doc §23.4) et le `SegmentedControl` **disparaît** (le desktop montre les 4 périodes) | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°1** : un écran n'a qu'**un** gabarit (« Tableau de bord ») et ne teste
+jamais la largeur lui-même — il déclare le gabarit, le shell applique l'arrangement
+(`AppShell.tsx` l. 71-111, `useLayoutMode` l. 38).
+
+> **OQ-09** — le seuil exact de la grille 2×3 (`lg` = 1024 px) n'est pas ratifié au
+> niveau de l'écran (cf. OQ-4 globale ; §14 OQ-06 le notait déjà).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Progress** (`module-ownership-matrix.md`) |
+| R2 | Ligne de catalogue | ✅ | `progress.dashboards` (`master-feature-catalog.md` L63 : « today/week/month/trajectory boards (18.6) ; mirrors (skill_states, progress_snapshots — 03 §4.2) ; offline-capable ; trends = S jobs ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `SkillState` (`entities-progress.ts` l. 80), `ProgressSnapshot` (l. 55), `ProgressTrend` (l. 107) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4(a) |
+| R6 | États §6.1 couverts | ✅ | §4(b) (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 120 ; catalog L63) |
+| R8 | Événements déclarés | ✅ | producteur `ProgressEvidenceCreated` (`events.ts` l. 69, « Producer: PROGRESS ONLY ») ; l'écran **ne l'émet pas** (lecture seule) |
+| R9 | Permissions déclarées | ✅ | aucune |
+| R10 | Entrée de nav déclarée | ✅ | `/progress` = onglet primaire 4 (`router.tsx` l. 78) ; **mais** absent de `navigation.ts` (web) — voir §20 OQ-10 |
+| R11 | Tokens identifiés | ✅ | §3/§6 ; CSS `[data-progress-screen]` (`data.css` l. 440), `AuroraCard variant="kpi"` (`aurora-card.tsx` l. 525) |
+| R12 | Contrat de données | ❌ **NON** | la page rend un **état vide figé** : `<UxStates state={{ status: 'empty' }}>` (`progress/index.tsx` l. 73) — **aucune** lecture des miroirs `skill_states`/`progress_snapshots` (`sync-config.yaml` l. 82-83) ; les hooks existent pourtant (`useSkillStates`/`useProgressSnapshots`, `query/hooks.ts` l. 102/113) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-01…OQ-08 (§14) ouvertes ; blocage d'implémentation = R12 (phantom empty-state) |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (état vide
+**fabriqué** : `{ status: 'empty' }` figé, `progress/index.tsx` l. 73 — alors que les
+hooks `useSkillStates`/`useProgressSnapshots` **existent** et lisent les miroirs ;
+c'est le défaut « phantom empty-state » de `implementation-index.md` §5) et **R13**
+(OQ §14 ouvertes, dont **OQ-08** : « SSoT écran manquante (18.6, muet écran-par-écran) »).
+
+**Demande de contrat (plan §4)** :
+
+```
+WS:        WS-3.1 (specs d'écran)
+Chemin:    docs/features/specs/progress.md  (module spec, gabarit §M1–§M6)
+Besoin:    (a) la ligne de catalogue détaillée de `progress.dashboards` (composition
+           des 5 questions du ADR §18.1) ;
+           (b) le contrat de lecture locale des miroirs `skill_states` +
+           `progress_snapshots` (colonnes : packages/data/src/powersync-schema.ts
+           skill_states l. ~/ progress_snapshots)
+Motif:     docs/features/specs/ = productivity.tasks.md + agent.kernel.md SEULEMENT :
+           le module Progress n'a AUCUNE spec §M1–§M6 ; `_inventory.md` l. 188 (OQ-43)
+           acte déjà « SSoT écran manquante (18.6, muet écran-par-écran) »
+Bloque:    oui — sans contrat, le dashboard reste un état vide figé (violation S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | le dashboard lit les miroirs via `useSkillStates`/`useProgressSnapshots` (`query/hooks.ts` l. 102/113) ; **interdit** : `{ status: 'empty' }` figé (aujourd'hui l. 73) |
+| S2 | 6 états prouvés | §4(a) — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | pattern global, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : les agrégats **existants** lisibles (miroirs) ; les **nouveaux** calculs différés (AD-8, job serveur) |
+| S5 | Retour arrière vérifié | relance froide → dashboard re-lu (`useKilledDetection`) |
+| S6 | Isolation utilisateur | RLS sur `skill_states`/`progress_snapshots` (user A ≠ user B) |
+| S7 | Tokens-only | §3/§6 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (grille 2×3 à `lg`+) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `dashboard`/`skillTrajectoryChart`/`trendBoard` (module Progress) corrects ? | Vitest ≥ 80 % ; `progress-wiring.test.ts` couvre le repo |
+| Intégration | ✅ | vues PowerSync `skill_states`/`progress_snapshots` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | `ProgressEvidenceCreated` (producteur **Progress only**, `events.ts` l. 65-69) | test AD-9 producer/consumer |
+| E2E | ✅ | « réviser → le dashboard se met à jour » ? | Playwright web |
+| Failure | ✅ | job de recalcul échoué → état `error` + `jobId` retryable (AD-8) ? | test failure |
+| Permission | ⚠️ | aucune sur le dashboard → n/a justifié | — |
+| Offline | ✅ | réseau coupé → agrégats existants lisibles, nouveaux différés ? | test offline |
+| Recovery | ✅ | relance froide → dashboard intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (30 fps sur le chart, `matrix.md` §1) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `progress` (repo `createProgressRepo`) | ≥ 1 test par classe applicable | ✅ partiel — `progress-wiring.test.ts` (repo + wrappers, sur mémoire) |
+| Région « dashboard » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `progress-dashboard` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Learn.stories.tsx` couvre `ProgressView` (le composite, avec `MetricPoint`), **pas** l'écran `/progress` |
+| Écran `progress-dashboard` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (dashboard figé) + OQ-08 (SSoT écran)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-09** — Seuil de la grille 2×3 desktop (§15) : `lg` (1024 px) confirmé ? (cf. OQ-4 globale ; §14 OQ-06)
+- **OQ-10** — **Nav web** : `/progress` est un **onglet primaire** de `router.tsx` (l. 78)
+  mais **absent** de `apps/web-app/src/lib/navigation.ts` (les 9 sections A→I ne
+  contiennent pas `progress` ; « Progression » n'apparaît pas). → **OQ** : où vit le
+  tab Progress dans la coquille web (section nouvelle ? rattaché à `apprendre` ?) —
+  sans quoi l'écran est **inatteignable** sur web.
+- **OQ-11** — **Écart code ↔ spec (période)** : le §3/§14 décrivent un `SegmentedControl`
+  « 7 j / 30 j / semestre / année » ; le code réel expose `today / week / month /
+  trajectory` (`progress/index.tsx` l. 24-29). **Deux jeux de périodes** différents. →
+  **OQ** : lequel est normatif ? (cf. §14 OQ-03 sur le 4ᵉ segment.)
+- **OQ-12** — **Écart code ↔ spec (contenu)** : le §3 décrit 5 `ListItem` dépliables (les
+  5 questions ADR §18.1) ; le code réel rend 2 tuiles KPI `AuroraCard variant="kpi"`
+  (« Maîtrise moyenne », « Révisions faites », `progress/index.tsx` l. 83-96) + une zone
+  chart vide. → **OQ** : la composition des tuiles KPI est-elle spécifiée (à ajouter au
+  §3) ou le §3 est-il obsolète ?
