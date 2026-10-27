@@ -233,9 +233,18 @@ export function resolveThemeCSSVars(
     ...(Object.keys(NEUTRAL_STYLES["light"]) as TokenKey[]),
   ];
   for (const key of keys) {
-    const cssVarName = key === "theme.gradient"
-      ? "--aurora-theme-gradient"
-      : `--aurora-${key}`;
+    const cssVarName =
+      key === "theme.gradient"
+        ? "--aurora-theme-gradient"
+        : // Forme TIRET, pas point. Les tokens de thème sont nommés `accent.primary`
+          // en interne, mais TOUT le dépôt les lit en `--aurora-accent-primary` :
+          // `styles/aurora.css`, les CSS de `apps/mobile`, et `toShadcnVars`
+          // ci-dessous (qui fait `g("--aurora-accent-primary")`). Émettre la forme
+          // point produisait des variables que PERSONNE ne lit : `--primary` et
+          // `--accent` restaient vides, et l'état actif de la navigation était
+          // invisible. Défaut constaté en mesurant le rendu live de la coquille
+          // web (`--accent` = ""), pas en relisant le code.
+          `--aurora-${key.replace(/\./g, "-")}`;
     out[cssVarName] = resolveToken(themeName, style, key, presetName);
   }
 
