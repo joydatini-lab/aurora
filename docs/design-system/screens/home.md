@@ -218,3 +218,149 @@ Règle ui-libraries S9 (l. 352-353) : **4 fichiers SSoT** au repo root — `auro
 | **OQ-13** | `ListItem` (§3 lignes 1/3/4) | Les 3 lignes du §3 citent **« shadcn `list-item` »** comme lib pour le `ListItem` DS — **factice** : le `ListItem` est un **composant DS maison** (05 §3.3 l. 508-530, 05 §4.1.2 l. 1369-1371), **pas** une lib S1 ui-libraries (S1 l. 5-60 : pas de `list-item` dans la table ; les libs S1 = shadcn/ui batterie, AG Grid, FullCalendar, Lucide, Tiptap, Framer Motion, Magic UI, Aceternity). S3 l. 136 interdit **`ion-list` data tables** (pas le `ListItem` DS du `05 §3.3`) | (a) Corriger le §3 : `ListItem` = composant DS (05 §3.3 l. 508-530), **pas** shadcn `list-item` (b) Ajouter une entrée S1 `list-item` (si le `ListItem` DS est en réalité un wrapper shadcn) | Design System owner (05 §3.3 + ui-libraries S1) | 05 §3.3 l. 508-530 (ListItem DS) ; ui-libraries S1 l. 5-60 (pas de `list-item`) ; S3 l. 136 (`ion-list` data interdit, pas le `ListItem` DS) |
 | **OQ-14** | Bloc 7 `Suggestions Coach` — miroir local (doc §12 home.md) | Le bloc 7 = flux **serveur** (`agent.capabilities.*`, catalog l. 72-73 : `fn-agent-run` + jobs serveur, AD-12/F-09) **sans miroir local de suggestions** (catalog l. 73 : la suggestion n'est pas persistée) — le bloc **n'existe que** si une suggestion a déjà été **servie** (AD-14 l. 1404-1405 : « le Home n'affiche un bloc 7 que s'il y a une suggestion »). **Question** : s'il n'y a **jamais** de miroir, comment le bloc 7 réapparaît-il au **retour** réseau après offline/`killed` ? Le run `fn-agent-run` est-il **re-déclenché** au relaunch (05 §4.1.2 l. 1411-1415 : « ré-évaluation des suggestions » = nouveau run serveur, pas une re-lecture du miroir) ? | (a) Nouveau run `fn-agent-run` au retour réseau (bloc 7 = `loading` du run en cours, puis `Callout info` servi ; pas de re-lecture miroir) (b) Un miroir **mince** de la dernière suggestion servée (bloc 7 = dernière valeur + `Badge info`, comme les blocs 4/5) — à préciser dans le catalog (l. 73 : « sans mirror ») | Open — AD-12 owner (catalog l. 72-73) + 05 §4.1.2 (l. 1411-1415) | master-feature-catalog l. 72-73 (`agent.capabilities.*` = serveur, sans miroir) ; 05 §4.1.2 l. 1411-1415 (retour réseau = ré-évaluation des suggestions) ; SSoT manquante : aucune ligne catalog sur le **miroir** (ou l'absence) de suggestions servies |
 | **OQ-16** | Bloc 4 `Progression critique` — « élément Progress le plus urgent » (§3 ligne 4) | La ligne 4 du §3 (et §2 zone content) citait **« doc §18.1 »** pour « l'élément Progress le plus urgent » — **citation factice vérifiée** : la doc Progress (`docs/progress/overview.md`) définit §18.1 = **les 5 questions fondamentales** (« where am I really ; what really improved ; what stagnates/regresses/is forgotten ; why ; which next action yields the most useful progress », l. 7-9) — pas l'« élément le plus urgent » ; l'échelle de niveaux 1-8 = §18.2 (cf. 05 §3.6.11 l. 1136-1139 : 8 niveaux « découverte → compréhension → … → expertise »). Le concept « l'élément **Progress** le plus urgent » n'a pas de ligne SSoT identifiée (la notion de priorité/urgence vit dans Productivity — ADR §2.3, pas dans §18) | (a) Ré-citer **doc §18.2** (échelle des niveaux, l'élément au niveau le plus bas = le plus urgent) (b) Ré-citer **ADR §18** en entier (la 5ᵉ question = « which next action yields the most useful progress ») (c) Retirer la citation (concept non couvert par une ligne SSoT explicite) | Open — Progress owner (ADR §18 / doc Progress) + Design System owner (05 §4.1.2 l. 1377-1379) | doc §18.1 (factice : 5 questions, pas « le plus urgent ») ; 05 §3.6.11 l. 1136-1139 (échelle 8 niveaux = §18.2) ; SSoT manquante : aucune ligne SSoT explicite « l'élément Progress le plus urgent » |
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Tableau de bord** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `home` dans la ligne « Tableau de bord », avec `progress-dashboard`,
+`analytics`, `design-space`).
+
+L'écran réel est `apps/mobile/src/pages/home/index.tsx` (Ionic, 1 colonne). Le shell
+web (`apps/web-app`) **ne rend pas encore** cet écran : la section `accueil`
+(`apps/web-app/src/lib/navigation.ts` l. 63-71) porte `readiness: 'shell'`, donc
+`ShellState` (`apps/web-app/src/routes/ShellState.tsx` l. 22) affiche un état
+honnête « Coquille prête ». Le tableau ci-dessous est donc **la cible** (Phase 1–2),
+pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : les 7 slots empilés dans l'ordre AD-14 | tab bar basse (5 onglets) | cible mobile (Phase 3) — `apps/mobile` (Ionic) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail (`navFormForMode` → `rail`, `layout-tokens.ts` l. 51-55) | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** (nav + contenu) ; `xl` ouvre un 3ᵉ panneau inspecteur, `2xl` plafonne la largeur | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle AD-14 (invariante)** : la composition **fixe et ordonnée** des 7 slots
+(`HOME_SLOTS`, `home/index.tsx` l. 34-42) **ne change pas** selon le breakpoint — seul
+l'**arrangement** change (`web-shell-and-responsive.md` §3.3 : « Le shell change, **pas**
+la composition »). Un écran ne teste jamais la largeur lui-même : il consomme
+`useLayoutMode()` (`apps/web-app/src/shell/AppShell.tsx` l. 38) et déclare son gabarit.
+
+> **OQ-17** — le seuil exact de bascule 1 → 2 panneaux (`lg` = 1024 px) est une
+> proposition (`layout-tokens.ts` l. 16-22) ; il n'est pas ratifié au niveau de l'écran
+> (cf. OQ-4 globale de `spec-template-v1.md`).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`docs/frontend/module-ownership-matrix.md` : « Screens \| Home (AD-14), Inbox, Tasks… ») |
+| R2 | Ligne de catalogue | ⚠️ **N/A justifié** | Home **n'est pas une feature** : c'est la **composition** AD-14. Aucune ligne `home` dans `master-feature-catalog.md` ; les features **constituantes** ont une ligne (`productivity.tasks` L19, `progress.dashboards` L63, `learning.flashcards` L36, `agent.capabilities.*` L73) |
+| R3 | Types SSoT dans `packages/domain` | ✅ (partiel) | `GoalProject` (`entities-goal.ts` l. 11), `Task` (`entities-productivity.ts` l. 10) ; les 4 slots non câblés n'ont **aucun** type consommé (voir R12) |
+| R4 | Spec §1–§14 complète | ✅ | ce document (§1–§14 renseignés) |
+| R5 | 6 états S6 couverts | ✅ | §4a (matrice par bloc) + §4c |
+| R6 | États §6.1 couverts | ✅ | §4b (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 81) |
+| R8 | Événements déclarés | ✅ | Home est **lecture seule** — n'émet rien ; consomme indirectement `TaskCompleted` (`packages/domain/src/events.ts` l. 23) via les slots |
+| R9 | Permissions déclarées | ✅ | aucune (Home ne demande rien ; capture = `/inbox`) |
+| R10 | Entrée de nav déclarée | ✅ | `/home` = onglet primaire 1 (`navigation.ts` l. 63-71 ; `router.tsx` l. 74-75) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») ; `home.css` (`.aurora-slot`, `.goal-cards`, `.next-actions`) |
+| R12 | Contrat de données | ❌ **NON** | 4 slots (due-reviews, coach-suggestion, today-agenda, immediate-focus) rendent un état **figé** `{ status: 'empty' }` (`home/index.tsx` l. 129, réutilisé l. 189/201/213/225) — **aucune** lecture du miroir (S1) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-1…OQ-16 (§14) restent ouvertes ; le blocage d'implémentation est R12 (état vide fantôme) |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (les slots
+3–6 sont un « phantom empty-state » : un état vide **fabriqué** avec zéro appel de
+données — exactement le défaut que `docs/frontend/implementation-index.md` §5 dénonce)
+et **R13** (OQ §14 ouvertes).
+
+**Demande de contrat (plan §4)** — pour lever R12 sans inventer de schéma :
+
+```
+WS:        WS-3.1 (specs d'écran)
+Chemin:    docs/features/specs/learning.md  ·  docs/features/specs/calendar.md  ·  docs/features/specs/focus.md
+Besoin:    les contrats de lecture locale (miroirs) que les slots 3/5/6 consomment :
+           due-reviews (Learning), today-agenda (Calendar), immediate-focus (Focus)
+Motif:     §M4 de productivity.tasks.md n'existe que pour Productivity/Agent ; les
+           3 autres modules n'ont AUCUNE spec de module (docs/features/specs/ = 2 fichiers)
+Bloque:    oui — sans contrat, le slot reste un état vide figé (violation S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | les 7 slots lisent le store local (AD-7) ; **interdit** : `{ status: 'empty' }` figé (aujourd'hui l. 129/189/201/213/225 — à remplacer par un vrai hook) |
+| S2 | 6 états prouvés | §4a — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4b (404 = `not-found` global ; les 8 modules désactivés disparaissent, `ModuleQuickAccess` l. 143) |
+| S4 | Offline vérifié | §12 — réseau coupé : les 7 slots lisent le miroir ; le bloc 7 (suggestions Coach) disparaît (pas de miroir) |
+| S5 | Retour arrière vérifié | relance froide → re-lecture du miroir (`useKilledDetection`, `hooks/use-killed.ts`) |
+| S6 | Isolation utilisateur | RLS sur `tasks`/`goals` (user A ≠ user B) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `goalShapeIcon` dérive la forme depuis `layoutTagFor` (`goal-card.tsx` l. 30-32) ? | Vitest ≥ 80 % sur `packages/domain` / `@aurora/goal-engine` |
+| Intégration | ✅ | les vues PowerSync `tasks`/`goals` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | `TaskCompleted` consommé par Progress/Learning/Agent (`events.ts` l. 21-22) | test AD-9 producer/consumer |
+| E2E | ✅ | Home AD-14 : « créer → compléter une tâche » visible au slot 7 ? | Playwright web (parcours L5) |
+| Failure | ✅ | slot en erreur → `Callout danger` + retry sans casser les autres slots (AD-7) ? | test failure |
+| Permission | ⚠️ | aucune sur Home (capture = `/inbox`) → n/a justifié | — |
+| Offline | ✅ | réseau coupé → slots 1/2/7 OK, slot 7 Coach absent ? | test offline |
+| Recovery | ✅ | relance froide → 7 slots re-lus ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `goal-engine` (`layoutTagFor`, `goalShapeIcon`) | ≥ 1 test | à écrire |
+| Région « 7 slots » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `home` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — aucune story `home` (`ui-brick-inventory.md` §4 : pas de composite Home) |
+| Écran `home` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (slots figés) + R13 (OQ)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-17** — Seuil de bascule 1 → 2 panneaux (§15) : `lg` (1024 px) confirmé ? (cf. OQ-4 globale)
+- **OQ-18** — Contrat de lecture des slots 3/5/6 (§16, demande de contrat) : Learning
+  (due-reviews), Calendar (today-agenda), Focus (immediate-focus) n'ont **aucune spec
+  de module**. Le slot lit-il un miroir (comme les slots 2/7), ou est-il dérivé d'une
+  autre source ? → à trancher par les owners de module.
+- **OQ-19** — Le slot 2 `critical-progress` lit `useGoals()` (`query/hooks.ts` l. 15-24),
+  donc les **objectifs**, alors que §2/§3 décrivent le bloc 4 « Progression critique »
+  comme un `SkillStateBadge` (Progress). **Deux blocs** portent le mot « critique »
+  (bloc 2 objectifs vs bloc 4 progression). L'ordre AD-14 réel du code
+  (`HOME_SLOTS` l. 34-42) diffère de l'ordre SSoT 05 §4.1.2 (bloc 2 « Prochaine action
+  importante »). → **OQ** : quel est l'ordre normatif, le SSoT 05 ou `HOME_SLOTS` ?
