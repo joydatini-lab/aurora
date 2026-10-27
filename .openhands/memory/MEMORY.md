@@ -199,6 +199,31 @@ Detail and per-lot narratives live in the daily logs (`.openhands/memory/YYYY-MM
   `AURORA_ICONS` yields a ~9.4MB bundle. Real finding; a scoped `@aurora/ui/icons` would help.
 
 ## L4 done (d2dc84f) — module specs + parallel-work division (e7b2c94)
+
+**WS-2 COMPLETE 2026-10-27**: all **13/13 module specs** written (`docs/features/specs/`),
+each verified 6/6 sections §M1–§M6. Delivered by 2 parallel cloud agents (WS-2a 6 + WS-2b 5)
++ the 2 from L4. Merged into `rebaseline/2026-10-23`. WS-3.1 delivered 5 screen specs
+(`home`, `taches-detail`, `cours-liste`, `progress-dashboard`, `agent-chat`), each 5/5
+sections §15–§19, zero data-contract redefinition. Index §4.1/§4.2 updated to match.
+
+**Parallel-agent lessons (learned the hard way, 3 infra failures)**:
+- The Cloud LLM provider returned "Service Temporarily Unavailable" (HTML maintenance page)
+  mid-run on **WS-2 (11 modules at once), WS-2b (5 modules), and WS-EF**. Agents that push
+  only at the END lose everything. **Always instruct: commit AND push after EVERY unit.**
+  WS-2a (6 modules, push-per-module) finished with all 6 intact; WS-2 (11 at once, push at
+  end) lost all of it.
+- Launch API: `POST /api/v1/app-conversations` with `selected_repository`+`selected_branch`
+  returns an ASYNC start-task; resolve the conversation via
+  `GET /api/v1/app-conversations/start-tasks?ids=<id>` — the response is a **list**, not an
+  object (`d.get('items')` raises AttributeError). Poll with `.../app-conversations/search`.
+- Agent `execution_status` values: `running` / `finished` / `error` / `None`. Check pushed
+  branches (`git ls-remote --heads origin`) — that is the real deliverable, not the status.
+- Agents get a clone of the branch at launch; their own branch must be created and pushed by
+  them. Merge their branch with `--no-ff`; `.openhands/memory/*` appends merge cleanly (both
+  sides append at the end — git auto-merges distinct hunks).
+- My own verification regex was wrong once: `grep -cE "^## (15|16|17|18|19)\."` returned 0/5
+  on a compliant deliverable because the headings are `## §15 Responsive` (with the § sign).
+  **Verify the verification pattern before concluding a deliverable is non-compliant.**
 - `docs/features/specs/{productivity.tasks,agent.kernel}.md` = the §M1–§M6 module template
   (capacités · données · chemin agent · surface · offline · preuve). §M6 must cite an EXECUTED
   command or the spec is NOT_READY.
