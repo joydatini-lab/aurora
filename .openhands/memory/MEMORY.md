@@ -101,6 +101,41 @@ Detail and per-lot narratives live in the daily logs (`.openhands/memory/YYYY-MM
   reference only. Refutation: `docs/plans/2026-10-23-repriorisation.md`.
 
 ## Live DB / RLS verification
+- Supabase MCP tools ARE available (`shttp_*`): `list_tables`, `execute_sql` (read-only),
+  `list_edge_functions`, `get_advisors`. Use them to verify live state instead of guessing.
+  Live project ref `opagfyspdbhxthlxvlrk`.
+- **`job_queue` is DEAD on live (proven 2026-10-27)**: 40 rows stuck `pending` since
+  2026-10-08, `attempts = 0` (20 `fsrs-tick` + 20 `skill_recompute`). Chain of proof:
+  `cron.job` id 10 (`aurora_event_dispatch`, `*/5 * * * *`) → `wake_job_dispatcher()` →
+  pg_net POST `/functions/v1/fn-job-dispatcher`; **`net._http_response` returns 404
+  "Requested function was not found"**. `fn-job-dispatcher` is NOT deployed (only 5 EFs live:
+  `fn-agent-run`, `fn-import-course`, `fn-notifications`, `fn-skills`, `fn-dev-auth`; repo has 8).
+  Also `vault.decrypted_secrets` holds ONLY `SUPABASE_PROJECT_URL` — **`INTERNAL_FN_SECRET`
+  is missing**, so the wake-up stays inert even after deploying. 0028 §APPLICATION STATUS
+  (l.151-171) already lists the 3 operator steps; none done. `net._http_response` is the
+  fastest way to prove an EF invocation failed.
+- Live migrations stop at **0031** (`version_user_context_features`); repo `0032_fix_phantom_columns.sql`
+  is NOT applied live. Next free number = **0033** (0200 is out-of-sequence, ignore for numbering).
+- **PowerSync relay is ALREADY deployed and alive**: `GET .../probes/liveness` → 200 on
+  `6ab1612e8453e7cf8338ef9a.powersync.journeyapps.com`; slot
+  `powersync_6ab1612e8453e7cf8338ef9a_1_caf1` exists (pgoutput, inactive). "Deploy the sync"
+  is therefore NOT the blocker — auth is.
+- **PowerSync CLI**: the package is `powersync` (NOT `@powersync/cli`); use `npx --yes powersync`.
+  Admin API host = `https://powersync-api.journeyapps.com` (default `_PS_MANAGEMENT_SERVICE_URL`).
+  Real routes are in `@powersync/management-types/dist/routes/manage-routes.js`
+  (`/api/v1/instances/{list,get,status,deploy,…}`) — the plausible-looking `/api/v1/instances`
+  and `/api/v1/me` are 404. Auth var is **`PS_ADMIN_TOKEN`** (PAT), not `POWERSYNC_TOKEN`.
+  `powersync login` refuses non-interactive stdin and there is no `--token` flag.
+- **A `jpt_` token is not automatically a valid PAT.** The owner-supplied token decodes to
+  `{"i":"6ae08f234eab87b369318777","n":"604f96…","u":"6ab1609e88083500079d0b69"}` and is
+  rejected by BOTH APIs: management → 401 "could not decode token - Unsupported token";
+  sync service → 401 `PSYNC_S2101` "Token is not a well-formed JWT". The documented-good token
+  (changelog v1.7) had `i=6ab74f…` and covered org Aurora `6ab1609e…`; the new one points at
+  `…b69`. Ask the owner to regenerate a PAT at dashboard.powersync.com/account/access-tokens.
+  Note: `i` (instance) and `u` (user) in the payload do NOT imply the token can read that org.
+- `sync-config.yaml` = **11 streams** / **33 `SELECT * FROM`**. `focus_profiles` IS synced (l.54);
+  migration 0027's "à ajouter au checkpoint lead" comment is stale. Counting streams with
+  `grep -c auto_subscribe` gives 12 — wrong; count 2-space-indented top-level keys under `streams:`.
 - The static gate reads migrations; `scripts/rls-live-check.sh` applies all of them on
   supabase/postgres (Docker) + runs `tests/rls-penetration.sql` with 2 auth users AND a negative
   control (disable RLS → the test MUST fail). It has found real defects.
