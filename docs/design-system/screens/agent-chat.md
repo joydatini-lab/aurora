@@ -222,3 +222,144 @@ Comportement des 3 couches sur le /agent (05 §5 l. 2925-3306 ; overview.md §3 
 | **OQ-4** | `AgentThinkingLoader` — chip durée | Le §9.3 l. 446-448 dit la chip est **optionnelle** (`elapsedSeconds` prop) ; le §9.3 l. 519-526 dit la chip **repliable** (avec chevron + `aria-expanded`) est **spécifiée pour le /agent** (lot 6 DYAD) mais **le composant n'expose que `elapsedSeconds`** (pas de chevron, pas de `aria-expanded`, pas de révélation du thinking summary) — le §9.3 l. 519-526 dit « le composant **n'expose que** `elapsedSeconds` » **mais** décrit la chip repliable **comme si elle existait**. **Quelle est la SSoT** ? Le composant actuel (packages/ui) a-t-il **été modifié** pour ajouter la chip repliable, ou le §9.3 l. 519-526 est une **spec future** ? | (a) Le composant **expose** déjà la chip repliable (le §9.3 l. 519-526 = **implémenté**, le digest est **en retard**) (b) La chip repliable est **spécifiée mais pas implémentée** (le /agent doit **attendre** l'implémentation, ou **travailler autour** (OQ DS)) (c) La chip repliable = **sorte du /agent** (le /agent utilise **uniquement** `elapsedSeconds` statique, pas de chevron) | DS owner / kernel owner | ui-libraries §9.3 l. 446-448, 519-526 ; packages/ui AgentThinkingLoader.tsx (code actuel, à vérifier) |
 | **OQ-5** | `TextField` — label vs placeholder | Le §7 dit le `TextField` **n'a pas** de label visible (chat input, 05 §3.2 l. 412 : « un champ = un seul label visible ») mais le **placeholder** = « Décris ce que tu veux faire… » — 05 §3.2 l. 412 dit « le placeholder = exemple, le label = nom du champ ; label **au-dessus** (jamais à l'intérieur) ». **Un chat input sans label** est-il **autorisé** ? La SSoT 05 §3.2 **exige** un label visible ; le /agent **n'a pas** de label (le placeholder **suffit**). **Quelle est la SSoT** ? | (a) Le /agent a **un** label visible au-dessus (ex. « Intention ») + placeholder (conforme 05 §3.2 l. 412) (b) Le /agent n'a **pas** de label (placeholder **uniquement** — exception au 05 §3.2, OQ DS) (c) Le `TextField` du /agent = un **composant différent** (pas un `TextField` DS, un `ChatInput` custom — OQ DS) | Design System / 05 §3.2 owner | 05 §3.2 l. 412-420 (label au-dessus, **jamais** à l'intérieur) ; ui-libraries S1 l. 17 (`TextField` = shadcn input) |
 | **OQ-6** | Run en cours au kill — reprise | Le §12 dit le run en cours est **perdu** au kill (AD-8 : le job est **persisté** côté serveur, le device ne le re-joue **pas**, kernel §10 l. 104-105). **Mais** le kernel §10 dit aussi « state lives in Postgres (`job_queue` + step records), executors are stateless (AD-8) ». Si le job est **persisté** côté serveur, est-ce que le device **peut** re-attacher le run **en cours** au re-launch (le job est **toujours** dans `job_queue`, le device **re-lecture** l'état du run) ? Le §12 dit **non** (le device ne **re-joue** pas) — mais le kernel §10 dit le state est **persisté**. **Quelle est la SSoT** ? | (a) Le device **ne** re-attache **jamais** un run (le /agent affiche un `Callout info` « Run réinitialisé » au re-launch si le run était **en cours** au kill) (b) Le device **re-attache** le run (le `AgentRunState` est **re-lu** depuis le serveur au re-launch, le /agent **reprend** le streaming là où il **était** — AD-8 : le state est **persisté**) (c) Le device **re-attache** uniquement si le run est **< 5 min** (le run **ancien** = perdu, le run **récent** = repris) | kernel owner / 02 §4 owner | kernel §10 l. 104-105 (state persisté Postgres) ; kernel §4 (AgentRunState, F-09) ; 02 §4 (device consomme **uniquement** AgentRunState) |
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Flux** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la matrice nomme
+`agent-chat` dans la ligne « Flux », avec `discovery-feed`, `inbox`).
+
+L'écran réel est `AgentPage` (`apps/mobile/src/pages/agent/index.tsx`, 1722 lignes). Le
+shell web (`apps/web-app`) **ne rend pas encore** cet écran : la section `agent`
+(`navigation.ts` l. 136-144) porte `readiness: 'shell'`.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : le fil (`#agent-transcript`, l. 820) + composer en bas | tab bar basse (tab « Agent » actif) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : liste (conversations/runs) à gauche, conversation à droite | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°2** : sous `lg`, les surfaces secondaires (`/agent/conversations`,
+`/agent/capacites`, `/agent/bibliotheque`, `router.tsx` l. 83-86) sont des **détails
+over-tab** (`O`) ; à `lg`+, elles deviennent des **panneaux**. Le fil de conversation
+reste **inchangé** (le `AgentThinkingLoader` est inline, pas un bloc séparé — §3 él. 5).
+
+> **OQ-07** — le seuil exact de bascule liste/conversation (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Agent** (`module-ownership-matrix.md`) |
+| R2 | Ligne de catalogue | ✅ | `agent.capabilities.*` (`master-feature-catalog.md` L73) + `agent.kernel` (L70) |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `AgentRun` (`entities-agent.ts` l. 114) ; `AIResponseEnvelope` (`envelopes.ts` l. 20) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (matrice par élément) |
+| R6 | États §6.1 couverts | ✅ | §4 (en-cours = streaming) |
+| R7 | Classe offline déclarée | ✅ | §12 : `hybrid` (fil local, run serveur) ; `online-required` pour le run |
+| R8 | Événements déclarés | ✅ | le kernel **n'écrit pas** de table module ; il émet des commandes (AD-9). Aucun événement de domaine émis par l'écran |
+| R9 | Permissions déclarées | ✅ | aucune (destructif = `Modal` de confirmation, AD-12/kernel §12) |
+| R10 | Entrée de nav déclarée | ✅ | `/agent` = onglet primaire 5 (`navigation.ts` l. 136-144 ; `router.tsx` l. 79) |
+| R11 | Tokens identifiés | ✅ | §3 ; CSS `.agent-*` (`agent.css`) ; `AgentThinkingLoader` (couleur = tokens accent, §3 él. 5) |
+| R12 | Contrat de données | ✅ | le run lit `agent_runs` via le client publishable (`useAgentRun`, `query/agent-runs.ts` l. 39+) — **réseau requis** (`agent.kernel.md` §M5 : `agent_runs` **non** synchronisé) ; le fil local est persisté (`ui-state`) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-1…OQ-6 (§14) ouvertes (taille du loader, chip durée, label du `TextField`, reprise au kill) |
+
+**Verdict : `NOT_READY`** — 12 critères sur 13. **Un bloquant** : **R13** (OQ §14
+ouvertes — **OQ-6** « run en cours au kill » est le plus structurant : il touche la
+sémantique `killed` de l'écran). Le contrat de données (R12) est **documenté** :
+`agent.kernel.md` §M4/§M5 acte explicitement que `agent_runs` n'est **pas** synchronisé
+(`agent-client.ts:313,327`) et que lire l'état d'un run **exige le réseau** (AK-1).
+
+> **Note** : l'écran est **implémenté** (1722 lignes) — c'est le seul des 5 écrans
+> primaires dans ce cas. La spec §1–§14 le décrivait comme « GAP (OQ-44, muet
+> écran-par-écran) » ; le code a depuis divergé du §3 (voir §20 OQ-8).
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | le run lit `useAgentRun` (client publishable, AD-3) ; **interdit** : message/réponse codés en dur |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état (dont `killed` = `Reconnexion…`, l. 1017-1023) |
+| S3 | 404/feature-disabled | `not-found` global (route `/agent/:runId` inconnue) ; une feature désactivée **retire** son tool (kernel §14), jamais un état « feature disabled » ici |
+| S4 | Offline vérifié | §12 — réseau coupé : le fil local lisible ; le `TextField` **désactivé honnêtement** (pas de spinner infini) |
+| S5 | Retour arrière vérifié | relance froide → fil re-lu (`useKilledDetection`, l. 75) |
+| S6 | Isolation utilisateur | RLS sur `agent_runs` (user A ≠ user B) |
+| S7 | Tokens-only | §3 — aucune valeur brute |
+| S8 | A11y AA | §11 — le fil = `role="tabpanel"`/`tabIndex=0` (l. 822-824) ; `aria-live` sur les statuts (l. 1030) |
+| S9 | Responsive vérifié | §15 — 3 paliers |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `computeStepHash` (binding device ↔ kernel) stable ? | ✅ — `confirmations-wiring.test.ts` (l. 44-46, importe `packages/agent/src/kernel.ts`) |
+| Intégration | ✅ | le poll `agent_runs` + re-sync après coupure ? | test `agent-runs` |
+| Contrat | ✅ | `buildConfirmationPayload` émet `resumeFrom`/`decisions[]` corrects ? | ✅ — `confirmations-wiring.test.ts` (M-73) |
+| E2E | ✅ | « intention → plan → confirmation → résultat » ? | Playwright web (`e2e-agent-scenarios.md`, 20 scénarios) |
+| Failure | ✅ | provider down → `Callout danger` + fallback (AD-5) ? | test failure |
+| Permission | ✅ | action destructive **bloquée** sans confirmation (AD-12) ? | ✅ — `kernel.test.ts` « destructive without confirmation is blocked » (l. 123) |
+| Offline | ✅ | réseau coupé → fil local + `TextField` désactivé ? | test offline |
+| Recovery | ✅ | run en cours au kill → état honnête (OQ-6) ? | test recovery |
+| Plateforme | ⏳ | budgets perf (streaming GPU-only, `matrix.md` §1) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `agent.kernel` | ≥ 1 test par classe applicable | ✅ — `packages/agent/test/` **17 suites** (`kernel.test.ts` 21 tests, `run-state.test.ts` 9) |
+| Région « fil de conversation » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `agent-chat` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `AgentView` (composite, 3 modes) existe ; `aurora-orb-wiring.test.ts` pinne l'état vide ; **pas** de story de l'écran `/agent` |
+| Écran `agent-chat` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R13 (OQ §14, dont OQ-6)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (destructif → confirmation)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-7** — Seuil de bascule liste/conversation (§15) : `lg` (1024 px) confirmé ? (cf. OQ-4 globale)
+- **OQ-8** — **Écart code ↔ spec (modes)** : le §1/§2 décrivent « un fil de messages »
+  (ListItems user/agent, Callout, tool-call card). Le code réel expose **4 modes
+  d'agent** (`AgentMode = 'chat' | 'agent' | 'mirror' | 'ascent'`, `agent/index.tsx`
+  l. 119) avec un **orbe Aurora** dans l'état vide (`AuroraOrb`, `aurora-orb-wiring.test.ts`)
+  et un **niveau de réflexion** (`ThinkingLevel = 'low' | 'medium' | 'high' | 'max'`,
+  l. 142) — **aucun** de ces éléments n'est dans le §3. → **OQ** : les 4 modes + l'orbe
+  + le niveau de réflexion doivent-ils être ajoutés au §3 (spec en retard sur le code),
+  ou sont-ils hors périmètre de la spec ? Décideur : Design System / Product.
+- **OQ-9** — **Miroir du run** : le §12 dit que le run « ne se re-joue pas » au kill et
+  que `agent_runs` est « sans miroir local ». Le code lit pourtant `agent_runs` via
+  `useAgentRun` (poll réseau) et l'`AgentRunRow` porte le `steps_json` + le prompt de
+  confirmation (`mapAgentRunRow`). → **OQ** : confirmer que `agent_runs` reste
+  **serveur-only** (AK-1 `agent.kernel.md`) et que le mot « miroir » du §12 désigne le
+  **fil local** (`ui-state`), pas `agent_runs`.
+- **OQ-10** — **`data-state` du transcript** : le code calcule `data-state` ∈
+  `killed | streaming | loading | empty | offline` (l. 824-835) — un jeu d'états
+  **différent** des 6 états S6 nommés par AD-13. → **OQ** : le `data-state` du DOM est-il
+  un contrat E2E (à documenter), ou un détail d'implémentation ?
