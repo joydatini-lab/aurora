@@ -115,54 +115,67 @@ rend la file exécutable sans question : la spec *est* la réponse.
 | G6 | **Changelog ≠ arbre** | changelog revendique « product modes » ; `ef48cb5` les a supprimés | le changelog est un **journal**, pas un état |
 | G7 | **Un plan contredit l'autre** | `redefinition-priorites` (socle) vs `plan-directeur` (périmètre complet), même jour | **cet index** est la vue unique |
 
-### 5.1 Instances de G4 vérifiées le 2026-10-26 (non corrigées)
+### 5.1 Instances de G4 vérifiées le 2026-10-26
 
-Ces deux dérives sont **réelles et non traitées**. Elles sont consignées ici parce
-qu'elles bloqueront un lot dès qu'il touchera ces tables.
-
-| # | Dérive | Domaine (SSoT) | Base (`supabase/migrations/`) | Conséquence |
+| # | Dérive | Domaine (SSoT) | Base (`supabase/migrations/`) | Statut |
 |---|---|---|---|---|
-| **D1** | `Project.title` vs `projects.name` | `entities-productivity.ts:13` → `title` | `0002_productivity.sql:14` → `name` ; `powersync-schema.ts:92` → `name` | Un mapper qui lit `row.title` obtient `undefined` : titre vide, **sans erreur** |
-| **D2** | `Artifact.kind` accepte `csv`/`text`/`code` | `entities-artifact.ts:14–26` → 13 valeurs | `0007_artifact.sql:11` → `CHECK (kind IN (…))` **10 valeurs** | Écrire `kind:'csv'` est **rejeté par Postgres** — la contrainte refuse une valeur que le type de domaine autorise |
+| **D1** | `Project.title` vs `projects.name` | `entities-productivity.ts:13` → `title` | `0002_productivity.sql:14` → `name` ; `powersync-schema.ts` → `name` | **Renommage DÉLIBÉRÉ** — traduit par les writers (`goals-projects.ts:184`), pas un défaut. Idem `Task.title`→`subject`, `deadline`→`end_date`, `timeSpentSec`→`actual_minutes`. |
+| **D2** | `Artifact.kind` accepte `csv`/`text`/`code` | `entities-artifact.ts:14–26` → 13 valeurs | `0007_artifact.sql:11` → 10 valeurs | ✅ **CORRIGÉ** (`fb608c1`, migration 0032) — contrainte élargie à 13 valeurs |
 
-**Motif de non-correction** : les deux exigent une décision de propriétaire (AD-15) —
-renommer une colonne live, ou élargir une contrainte live. Ce n'est pas un correctif
-d'agent. **Ce qui est demandé ici : que le prochain lot qui touche `projects` ou
-`artifacts` le sache avant de coder**, au lieu de le découvrir en production.
+**D1 n'est pas un défaut** : le writer traduit le nom (`title` → `name`), donc rien
+n'est perdu. Ce qui serait un défaut, c'est un mapper qui lirait `row.title` — et le
+garde le détecte (il exige une entrée `RENAMES` explicite pour chaque paire).
 
-### 5.2 D3 — colonnes fantômes : les writers écrivent ce qui n'existe pas
+### 5.2 D3 — colonnes fantômes : ✅ CORRIGÉ (`fb608c1`, migration 0032)
 
-**Mesuré et confirmé contre la base live le 2026-10-26.** Trois colonnes sont
-émises par des writers et n'existent **dans aucun** schéma — ni la base live, ni
-`powersync-schema.ts`, ni le DDL SQLite généré.
+**Mesuré et confirmé contre la base live le 2026-10-26, puis corrigé.** Trois colonnes
+étaient émises par des writers et n'existaient **dans aucun** schéma — ni la base live,
+ni `powersync-schema.ts`, ni le DDL SQLite généré.
 
-| Colonne écrite | Par | Preuve | Effet |
+| Colonne écrite | Par | Preuve | Effet mesuré |
 |---|---|---|---|
-| `tasks.tags` | `createTask` | `packages/productivity/src/tasks.ts:83` | Les tags sont écrits localement, affichés, **jamais persistés** |
-| `tasks.recurrence_rule` | `createTask` | `packages/productivity/src/tasks.ts:97` | La règle de récurrence est perdue au premier PATCH |
-| `projects.view_mode` | `createProject` + `updateProject` | `goals-projects.ts:164` (create) et `:183` (update) | La vue choisie ne survit pas au serveur |
+| `tasks.tags` | `createTask` | `packages/productivity/src/tasks.ts:83` | Les tags s'affichaient localement, **jamais persistés** |
+| `tasks.recurrence_rule` | `createTask` | `packages/productivity/src/tasks.ts:97` | La règle de récurrence était perdue au premier PATCH |
+| `projects.view_mode` | `createProject` + `updateProject` | `goals-projects.ts:164` / `:183` | La vue choisie ne survivait pas au serveur |
 
-**Pourquoi c'est silencieux — la chaîne, vérifiée :**
+**Pourquoi c'était silencieux — la chaîne, vérifiée :**
 1. `EngineLocalStoreBridge.upsert` est une **Map** indexée par nom de colonne
    (`local-store-bridge.ts:67`) : une clé inconnue est **acceptée**.
-2. L'écran lit la Map → **tout s'affiche correctement**.
-3. Le PATCH part vers PostgREST → la colonne n'existe pas → échec **traitée comme
-   une écriture en file d'attente**, pas comme un crash
-   (`supabase-connector.ts`).
-4. Résultat : l'utilisateur voit ses tags, et le serveur ne les a jamais eus.
-   C'est la classe « divergence silencieuse » que le dépôt n'arrête pas de trouver.
+2. L'écran lit la Map → **tout s'affichait correctement**.
+3. Le PATCH part vers PostgREST → la colonne n'existe pas → échec **traité comme
+   une écriture en file d'attente**, pas comme un crash.
+4. L'utilisateur voyait ses tags ; le serveur ne les a jamais eus.
 
-**Correctif disponible, non appliqué** (décision de propriétaire, AD-15) :
-`tasks.tags jsonb NOT NULL DEFAULT '[]'` (le précédent symétrique
-`dependencies` existe déjà, `0002_productivity.sql:75`), `tasks.recurrence_rule
-text`, et pour `view_mode` soit la colonne, soit le store UI (pack 02 §3.2).
+**Correctif appliqué** — migration `0032_fix_phantom_columns.sql`, additive et
+idempotente : `tasks.tags jsonb NOT NULL DEFAULT '[]'` (précédent symétrique :
+`tasks.dependencies`, `0002:75`), `tasks.recurrence_rule text` (nullable),
+`projects.view_mode text` + CHECK sur l'union fermée `ProjectView`, et
+`artifacts_kind_check` élargie à 13 valeurs (D2). Trois déclarations clientes
+alignées dans le même commit, sinon la migration aurait créé une **nouvelle**
+dérive : `powersync-schema.ts`, `sqlite-schema.ts`, et le garde.
 
-**Ce qui est fait maintenant** : un garde qui **appelle les vrais writers** et
-vérifie chaque clé de patch contre les migrations —
-`tests/db/domain-schema-drift.test.ts`, câblé au CI. Il porte une liste
-`KNOWN_DEFECTS` **à tripwire** : dès qu'un défaut est corrigé, le test **échoue**
-et force la suppression de l'entrée. La liste ne peut donc pas survivre au défaut.
-Non-vacuité prouvée : retirer l'entrée `tasks.tags` fait échouer le garde avec
+**Preuve indépendante** (vrai Postgres, `supabase/postgres:15.8.1.085`, 33
+migrations appliquées) — les écritures qui échouaient passent, et le contrôle
+négatif prouve que la contrainte élargie **mord encore** :
+```
+WRITE OK tasks: tags=[{"c":"x","v":"a","ts":1}] rule=FREQ=DAILY
+WRITE OK projects: view_mode=kanban
+WRITE OK artifacts: kinds=csv,text,code
+NEGATIVE CONTROL OK: bogus kind rejected
+```
+
+**Non fait, délibérément** : les vues `v_productivity_scope` (0015 + `relay.sql`)
+ne reçoivent pas ces colonnes. Ce sont déjà des projections à dénominateur commun
+(UNION ALL tasks/projects/goals) qui omettent `parent_recurrence_key`, `energy`,
+`work_context` et `actual_minutes` ; `view_mode` est propre à `projects`. Le
+runtime ne les lit pas — `sync-config.yaml` déclare des flux **per-table**
+précisément pour éviter « la perte de colonnes hétérogènes d'une UNION ALL ».
+
+**Le garde** : `tests/db/domain-schema-drift.test.ts` **appelle les vrais writers**
+et vérifie chaque clé de patch contre les migrations. Il porte une liste
+`KNOWN_DEFECTS` **à tripwire** — désormais **vide**, puisque les quatre entrées
+sont corrigées. Le tripwire garantit qu'une entrée ne peut pas survivre à son
+défaut. Non-vacuité prouvée par mutation : masquer 0032 fait échouer le garde avec
 `createTask writes tasks.tags — no such column`.
 
 ---
