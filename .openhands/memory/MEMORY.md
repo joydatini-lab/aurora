@@ -104,7 +104,7 @@ Detail and per-lot narratives live in the daily logs (`.openhands/memory/YYYY-MM
 - Supabase MCP tools ARE available (`shttp_*`): `list_tables`, `execute_sql` (read-only),
   `list_edge_functions`, `get_advisors`. Use them to verify live state instead of guessing.
   Live project ref `opagfyspdbhxthlxvlrk`.
-- **`job_queue` is DEAD on live (proven 2026-10-27)**: 40 rows stuck `pending` since
+- **`job_queue` is DEAD on live (proven 2026-10-27, twice)**: 40 rows stuck `pending` since
   2026-10-08, `attempts = 0` (20 `fsrs-tick` + 20 `skill_recompute`). Chain of proof:
   `cron.job` id 10 (`aurora_event_dispatch`, `*/5 * * * *`) → `wake_job_dispatcher()` →
   pg_net POST `/functions/v1/fn-job-dispatcher`; **`net._http_response` returns 404
@@ -114,6 +114,14 @@ Detail and per-lot narratives live in the daily logs (`.openhands/memory/YYYY-MM
   is missing**, so the wake-up stays inert even after deploying. 0028 §APPLICATION STATUS
   (l.151-171) already lists the 3 operator steps; none done. `net._http_response` is the
   fastest way to prove an EF invocation failed.
+- **ROOT CAUSE of the EF gap is a DECISION, not a technical blocker**: `scripts/build-ef.mjs:12-22`
+  (independent in-repo corroboration, measured 2026-10-24) lists the same 5 ACTIVE / 3 MISSING
+  and states the proximate cause: *"Deployment stopped — the CI deploy job is `if: false`
+  pending OQ-03, and the last manual deploys were 2026-09-30..2026-10-07."* **OQ-03** = the
+  `dev`/`staging`/`prod` env values (regions, R2 bucket names, provider account IDs), owner
+  Foundation, status OPEN (`docs/release/README.md:29,73`). Note `fn-canvas` has 0 workspace
+  imports and is still missing — so "imports workspace packages" is a correlation, NOT the cause.
+  Any "deploy the EFs" request is really "ratify OQ-03", an owner/Foundation decision.
 - Live migrations stop at **0031** (`version_user_context_features`); repo `0032_fix_phantom_columns.sql`
   is NOT applied live. Next free number = **0033** (0200 is out-of-sequence, ignore for numbering).
 - **PowerSync relay is ALREADY deployed and alive**: `GET .../probes/liveness` → 200 on
