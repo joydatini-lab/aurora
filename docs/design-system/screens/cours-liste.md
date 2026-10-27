@@ -134,3 +134,154 @@
 - **OQ-04** : AgentThinkingLoader dans l'écran (job d'import = « l'agent pense » visible ?) — 05 §4.6.2 loading dit « un Skeleton de la liste des chapitres » (l.2543–2546) — pour la **liste**, un Skeleton ; mais l'**import** = job agent (AD-12) ; **pas** de SSoT pour choisir entre ProgressRing indéterminé (05 l.582–588) et AgentThinkingLoader « thinking » (§9.3 l.420–487) → **OQ** (pas de spec « job = ring » vs « job = thinking », pas de règle de déclenchement, pas de SSoT pour l'état intermédiaire « l'agent est en train d'importer »).
 - **OQ-05** : Focus Mode atténuation du FAB (OQ-15 V1, ssootCode themeRefs theme-adapter.tsx FOCUS_OVERRIDES) — l'écran **consomme** l'override (pas de code Focus-specific, §10) mais **pas** de SSoT pour l'atténuation visuelle du FAB (pas de rule pour « atténué = quelle opacité / quel token » ; l'override Focus = `node.secondary-opacity`/`node.active-contrast`, **pas** les CTA) → **OQ** (pas de spec atténuation FAB, pas de token dédié, pas de rule pour CTA in Focus Mode).
 - **OQ-06** : Breakpoint desktop (grille 3 colonnes Phase 2, doc §23.4) — 05 §4.6.2 dit « desktop = cours-liste passe en grille 3 colonnes » (l.2560–2561) mais **pas** de SSoT pour le breakpoint (pas de rule pour « desktop = quel width min », pas de pattern split-view dans ui-libraries S1, cf. OQ-08 cours-detail §14) → **OQ** (pas de spec breakpoint, pas de composant grille dans la battery shadcn, pas de rule pour 1 colonne → 3 colonnes).
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Liste + détail** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `cours-*` dans la ligne « Liste + détail »).
+
+L'écran réel est `LearnPage` (`apps/mobile/src/pages/learn/index.tsx` l. 71-137) ; le
+détail (`LearnDetailPage`, l. 139-185) est un **overlay** au-dessus du tab `/learn`
+(`router.tsx` l. 94). Le shell web (`apps/web-app`) **ne rend pas encore** cet écran :
+la section `apprendre` (`navigation.ts` l. 91-98) porte `readiness: 'shell'`.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne (catalogue de modes + sections) | tab bar basse | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : liste de cours à gauche, détail à droite (l'overlay devient un panneau) ; la grille « Modes d'étude » (`.learn-modes`, `data.css` l. 1725) passe en 3 colonnes | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°2** : overlay (`O`) sous `lg`, panneau à `lg`+ — même composant,
+conteneur différent. Le `FAB` « Importer un cours » (§3) est **mobile-only** (§3 :
+« bottom-droit au-dessus de la BottomNav, mobile-only ») ; à `lg`+, l'import devient
+une action de `PageHeader` (`web-shell-and-responsive.md` §3.3).
+
+> **OQ-09** — le seuil exact de bascule overlay → panneau (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Learning** (`module-ownership-matrix.md` : « Learning \| Courses… ») |
+| R2 | Ligne de catalogue | ⚠️ | **aucune** ligne `learning.cours` n'existe. Les lignes proches : `learning.import` (L34), `learning.sheet` (L35), `learning.flashcards` (L36) — mais **pas** la feature « liste de cours ». → **demande de contrat** (voir ci-dessous) |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Course` (`entities-learning.ts` l. 7), `Subject` (l. 21) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4(a) |
+| R6 | États §6.1 couverts | ✅ | §4(b) (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §2/§12 : `learning.cours` lecture = offline (miroir local) ; import = online-required (`_inventory.md` l. 107) |
+| R8 | Événements déclarés | ✅ | producteur `CourseImported` (`events.ts` l. 35, « Producer: Learning ») |
+| R9 | Permissions déclarées | ✅ | camera/mic **optionnels** (capture documentaire §4.5.2) — premier usage, jamais au boot |
+| R10 | Entrée de nav déclarée | ✅ | `/learn` = onglet primaire 3 (`navigation.ts` l. 91-98 ; `router.tsx` l. 77) |
+| R11 | Tokens identifiés | ✅ | §3 + §6 ; CSS `.learn-*` (`data.css` l. 1711-1796) |
+| R12 | Contrat de données | ❌ **NON** | la page rend un **état vide figé** : la section « Cours » = `<div data-state="empty">` (`learn/index.tsx` l. 103) avec **zéro** appel de données ; « Révisions dues » = `state={{ status: 'empty' }}` (l. 90) ; aucune lecture de `courses` (miroir `sync-config.yaml` l. 74) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-01…OQ-08 (§14) ouvertes ; blocage d'implémentation = R12 (phantom empty-state) |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (la liste
+de cours est un « phantom empty-state » — `data-state="empty"` **fabriqué**, aucun
+appel de données ; `learn/index.tsx` l. 103 ; le miroir `courses` **existe** pourtant,
+`powersync-schema.ts` l. 320, `sync-config.yaml` l. 74) et **R2** (aucune ligne de
+catalogue pour la feature « liste de cours »).
+
+**Demande de contrat (plan §4)** :
+
+```
+WS:        WS-3.1 (specs d'écran)
+Chemin:    docs/features/specs/learning.md  (module spec, gabarit §M1–§M6)
+Besoin:    (a) la ligne de catalogue de la feature « cours (liste) » ;
+           (b) le contrat de lecture locale du miroir `courses` (colonnes :
+           user_id, title, description, subject_id, status, progress_pct,
+           created_at, updated_at — packages/data/src/powersync-schema.ts l. 320-333)
+Motif:     docs/features/specs/ = productivity.tasks.md + agent.kernel.md SEULEMENT :
+           le module Learning n'a AUCUNE spec §M1–§M6 (seul `learning.import` a une
+           ligne catalog)
+Bloque:    oui — sans contrat, la liste reste un état vide figé (violation S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la liste lit le miroir `courses` (AD-7) via un hook (`useCourses`, à créer sur le patron de `useHabits`, `query/hooks.ts` l. 61-70) ; **interdit** : `data-state="empty"` figé (aujourd'hui l. 103) |
+| S2 | 6 états prouvés | §4(a) — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4(c) — pattern global (`FeatureGate`/`not-found`), jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : la liste locale lisible ; le FAB d'import désactivé **honnêtement** |
+| S5 | Retour arrière vérifié | relance froide → liste du miroir (`useKilledDetection`) |
+| S6 | Isolation utilisateur | RLS sur `courses`/`subjects` (user A ≠ user B) |
+| S7 | Tokens-only | §3/§6 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | la projection `Course` (miroir → SSoT) est correcte ? | Vitest ≥ 80 % sur `packages/domain` |
+| Intégration | ✅ | vue PowerSync `courses` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | producteur `CourseImported` (`events.ts` l. 35) | test AD-9 producer/consumer |
+| E2E | ✅ | « importer un cours → il apparaît dans la liste » ? | Playwright web |
+| Failure | ✅ | import échoué → `Callout danger` + retry, les autres cours restent ? | test failure |
+| Permission | ✅ | refus camera/mic ne casse pas la liste (import différé) ? | test permission |
+| Offline | ✅ | réseau coupé → liste locale OK, import désactivé honnêtement ? | test offline |
+| Recovery | ✅ | relance froide → liste intacte ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `learning` (repo `createLearningRepo`) | ≥ 1 test par classe applicable | ✅ partiel — `learning-wiring.test.ts` (repo + wrappers, sur mémoire) |
+| Région « liste de cours » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `cours-liste` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Learn.stories.tsx` couvre `LearnView`/`Flashcard`/`QuizQuestionCard` (le composite), **pas** l'écran `/learn` |
+| Écran `cours-liste` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (liste figée) + R2 (catalogue)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (camera/mic optionnel)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-09** — Seuil de bascule overlay → panneau (§15) : `lg` (1024 px) confirmé ? (cf. OQ-4 globale)
+- **OQ-10** — **Contrat de lecture des cours** (§16, demande de contrat) : le module
+  Learning n'a **aucune** spec §M1–§M6 (`docs/features/specs/` = 2 fichiers). La liste
+  lit-elle le miroir `courses` (colonnes `title`/`subject_id`/`progress_pct`,
+  `powersync-schema.ts` l. 320-333) ? → à trancher par le owner Learning.
+- **OQ-11** — **Écart code ↔ spec** : le §3 décrit un `SegmentedControl` de filtre
+  semestre/matière, une ligne de cours (`ListItem` + `Badge` matière + `ProgressRing`
+  `xs`), un `FAB` « Importer un cours » et un `Button ghost` « Organiser ». Le code
+  réel (`learn/index.tsx`) rend une section « Cours » vide + un **catalogue de 10 modes
+  d'étude** (`MODE_CATALOG`, l. 50-61) qui **n'est pas** dans la spec. → **OQ** : le
+  catalogue de modes est-il un ajout non spécifié (à documenter) ou le §3 est-il
+  obsolète ?
+- **OQ-12** — Le §2 dit que la liste est « filtrable par semestre/matière » ; or le
+  miroir `courses` porte `subject_id` (`powersync-schema.ts` l. 324) mais **aucun**
+  `period`/`semester` (l'entité `Course.period` existe, `entities-learning.ts` l. 14,
+  mais **pas** le miroir). → **OQ** : le filtre par semestre est-il rendu possible par
+  le miroir, ou faut-il une colonne (demande de contrat / migration) ?
