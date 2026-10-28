@@ -26,6 +26,10 @@ export default defineConfig({
     alias: [
       { find: '@aurora/web-app', replacement: path.resolve(here, 'src') },
       { find: '@aurora/domain', replacement: pkgSrc('domain') },
+      // Le sous-chemin AVANT le barrel : sans ordre, `@aurora/data` capterait
+      // `@aurora/data/commands` (préfixe identique) et l'optimisation serait
+      // annulée silencieusement.
+      { find: '@aurora/data/commands', replacement: pkgSrc('data') + '/commands.ts' },
       { find: '@aurora/data', replacement: pkgSrc('data') },
       { find: '@aurora/ui', replacement: pkgSrc('ui') },
       { find: /^src\//, replacement: pkgSrc('ui') + '/' },

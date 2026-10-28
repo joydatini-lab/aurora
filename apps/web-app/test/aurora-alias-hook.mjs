@@ -56,6 +56,9 @@ const pkgSrc = (name) => path.resolve(here, `../../../packages/${name}/src`);
 const ALIASES = {
   '@aurora/ui': path.join(pkgSrc('ui'), 'index.ts'),
   '@aurora/domain': path.join(pkgSrc('domain'), 'index.ts'),
+  // Le sous-chemin AVANT le barrel (même préfixe) : `capture.ts` ne doit pas
+  // tirer `powersync-client` par le barrel dans les tests non plus.
+  '@aurora/data/commands': path.join(pkgSrc('data'), 'commands.ts'),
   '@aurora/data': path.join(pkgSrc('data'), 'index.ts'),
 };
 

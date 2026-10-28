@@ -10,6 +10,8 @@
     "baseUrl": ".",
     "paths": {
       "@aurora/web-app/*": ["./src/*"],
+      "@aurora/data/commands": ["../../packages/data/src/commands.ts"],
+      "@aurora/data": ["../../packages/data/src/index.ts"],
       "@aurora/ui": ["../../packages/ui/src/index.ts"],
       "src/*": ["../../packages/ui/src/*"]
     }

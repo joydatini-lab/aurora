@@ -56,29 +56,39 @@ export function DataSessionProvider({
     authState: 'idle',
     error: null,
   });
+  // La session n'est prête qu'après l'`await` de la fabrique : le cleanup du
+  // montage doit pouvoir la retrouver même s'il s'exécute avant. Une ref, pas
+  // un état — la relire ne doit pas redéclencher de rendu.
+  const disposeRef = React.useRef<((clear?: boolean) => Promise<void>) | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
     // La session est construite DANS l'effet : `createWebDataSession` touche
-    // `import.meta.env` et le constructor WASQLite, tous deux indisponibles au
-    // rendu serveur/test sans DOM.
-    let session: WebDataSession | null = null;
-    try {
-      session = createWebDataSession(readWebDataEnv());
-    } catch (err) {
-      if (!cancelled) {
-        setValue({
-          session: null,
-          boot: 'error',
-          authState: 'error',
-          error: err instanceof Error ? err.message : String(err),
-        });
-      }
-      return;
-    }
-
-    const boot = session;
+    // `import.meta.env` et charge `@aurora/data` en DYNAMIQUE (le moteur
+    // PowerSync ne doit pas entrer dans le bundle principal — cf. le commentaire
+    // de `data-session.ts`). Rien de tout cela n'existe au rendu sans DOM.
     void (async () => {
+      let session: WebDataSession | null = null;
+      try {
+        session = await createWebDataSession(readWebDataEnv());
+      } catch (err) {
+        if (!cancelled) {
+          setValue({
+            session: null,
+            boot: 'error',
+            authState: 'error',
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+        return;
+      }
+      if (cancelled) {
+        void session.dispose(false);
+        return;
+      }
+      disposeRef.current = (clear?: boolean) => session!.dispose(clear);
+
+      const boot = session;
       try {
         await boot.connect();
         if (!cancelled) {
@@ -104,8 +114,10 @@ export function DataSessionProvider({
     return () => {
       cancelled = true;
       // AD-7 : au démontage on relâche les watches sans vider la base — l'état
-      // hors-ligne doit survivre à un rechargement (critère L5 #1).
-      void boot.dispose(false);
+      // hors-ligne doit survivre à un rechargement (critère L5 #1). La session
+      // peut ne pas exister encore (init en vol) : le garde `cancelled` ci-dessus
+      // s'en charge.
+      void disposeRef.current?.(false);
     };
   }, []);
 

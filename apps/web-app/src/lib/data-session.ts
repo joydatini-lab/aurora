@@ -30,23 +30,15 @@
  * capture fonctionne, la synchro non. C'est un état dégradé HONNÊTE, pas une
  * panne : `sessionState` le dit à l'UI.
  */
-import {
-  createAuroraSupabaseClient,
-  createPowerSyncClientEngine,
-  EngineLocalStoreBridge,
-  SqliteCommandRepository,
-  SqliteQueryRepository,
-  SYNC_STREAMS,
-  UpsyncQueue,
-  type AuroraSupabaseClient,
-  type LocalCommandRepository,
-  type LocalQueryRepository,
-  type LocalStore,
-  type PowerSyncClientEngine,
-  type PowerSyncDatabaseCtor,
+import type {
+  AuroraSupabaseClient,
+  LocalCommandRepository,
+  LocalQueryRepository,
+  LocalStore,
+  PowerSyncClientEngine,
+  PowerSyncDatabaseCtor,
 } from '@aurora/data';
 import type { Task } from '@aurora/domain';
-import { PowerSyncDatabase } from '@powersync/web';
 
 /** L'état de la session Supabase, tel que l'UI doit le dire. */
 export type WebSessionState =
@@ -142,8 +134,34 @@ export function mapTaskRow(row: TaskRow): Task {
 /**
  * Compose la session de données web (03 S8.1). Le moteur est construit mais
  * NON connecté : `connect()` est la porte de disponibilité.
+ *
+ * POURQUOI CETTE FABRIQUE EST ASYNCHRONE (et pourquoi ça compte)
+ * `@aurora/data` traîne PowerSync + wa-sqlite (glue WASM) ; `@powersync/web`
+ * traîne le sync engine et son worker. Importés statiquement, ils entraient
+ * dans le bundle PRINCIPAL : 14 685 modules, ~15,8 Mo, et le `vite build` de
+ * la CI mourait en `JavaScript heap out of memory` (mesuré, 4 Go de heap).
+ * Un `import()` dynamique les déplace dans un chunk SÉPARÉ, chargé au montage
+ * du provider — le bundle initial redevient celui d'avant L5.
+ *
+ * Ce n'est pas une optimisation cosmétique : c'est le correctif du gate. Le
+ * budget perf (300 Ko gz, 02 S9.1) ne peut pas être tenu avec la glue WASM
+ * dans le chemin critique.
  */
-export function createWebDataSession(env: WebDataEnv): WebDataSession {
+export async function createWebDataSession(env: WebDataEnv): Promise<WebDataSession> {
+  // Le moteur n'entre dans le graphe qu'ici, jamais à l'évaluation du module.
+  const [
+    {
+      createAuroraSupabaseClient,
+      createPowerSyncClientEngine,
+      EngineLocalStoreBridge,
+      SqliteCommandRepository,
+      SqliteQueryRepository,
+      SYNC_STREAMS,
+      UpsyncQueue,
+    },
+    { PowerSyncDatabase },
+  ] = await Promise.all([import('@aurora/data'), import('@powersync/web')]);
+
   const clientFactory: () => AuroraSupabaseClient = () =>
     createAuroraSupabaseClient({
       env: {

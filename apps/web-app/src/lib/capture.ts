@@ -30,7 +30,12 @@ import type { Task } from '@aurora/domain';
 import type { ProductivityCommand } from '@aurora/productivity';
 import { captureTask } from '@aurora/productivity';
 import type { DomainCommand } from '@aurora/data';
-import { OWNER_MODULE_BY_ENTITY } from '@aurora/data';
+// Le sous-chemin, PAS le barrel : `@aurora/data` ré-exporte
+// `powersync-client`, qui importe `@powersync/capacitor` — et ce seul import
+// entraînait 14 685 modules dans le bundle principal (OOM mesuré). Ce fichier
+// n'a besoin que d'une table de correspondance PURE ; `commands.ts` n'importe
+// qu'un type de domaine.
+import { OWNER_MODULE_BY_ENTITY } from '@aurora/data/commands';
 
 /** L'enveloppe de contexte que le kernel exige (AD-2 : temps serveur canonique). */
 export interface CaptureContext {
