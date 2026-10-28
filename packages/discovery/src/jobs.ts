@@ -345,10 +345,35 @@ export function buildDiscoveryResearchHandler(deps: DiscoveryJobDeps): Registere
  * `filterCtx: { disciplines: [] }` is only the AD-1 fallback, the real
  * resolution happens at execution time in the handler.
  */
+/**
+ * Provider résolu à la PREMIÈRE UTILISATION, pas à l'import.
+ *
+ * `createResearchProvider()` lit `process.env` (clés Exa/Tavily/You.com). Tant
+ * que ce package n'était chargé que côté serveur, l'appeler ici passait. Depuis
+ * le pivot web, `@aurora/discovery` est atteignable depuis le bundle navigateur
+ * et l'appel au chargement faisait échouer tout le graphe d'imports
+ * (`ReferenceError: process is not defined` → écran blanc, 2026-10-28).
+ *
+ * Résoudre paresseusement ne change RIEN au contrat : le commentaire ci-dessous
+ * promettait déjà que « module-load never freezes an env-dependent provider » —
+ * c'était faux, ça le devient.
+ */
+let cachedResearchProvider: ResearchProvider | undefined;
+function resolveResearchProvider(): ResearchProvider {
+  cachedResearchProvider ??= createResearchProvider();
+  return cachedResearchProvider;
+}
+
+const lazyResearchProvider: ResearchProvider = {
+  id: 'lazy-research',
+  isConfigured: () => resolveResearchProvider().isConfigured(),
+  search: (query: ResearchQuery) => resolveResearchProvider().search(query),
+};
+
 export const DISCOVERY_JOB_HANDLERS: readonly RegisteredHandler[] = [
   buildDiscoveryResearchHandler({
     filterCtx: { disciplines: [] } as DiscoveryFilterContext,
-    provider: createResearchProvider(),
+    provider: lazyResearchProvider,
   }),
 ];
 

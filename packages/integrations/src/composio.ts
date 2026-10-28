@@ -18,6 +18,7 @@
  * router: optional capability absent = product keeps working).
  */
 import type { IntegrationsState } from '@aurora/domain';
+import { readEnv } from './env.ts';
 
 /** A tool discovered in the Composio catalog (composio.md §3). */
 export interface ComposioTool {
@@ -256,13 +257,9 @@ export class ComposioIntegrationProvider implements IntegrationProvider {
    */
   constructor(apiKey?: string, baseUrl?: string) {
     this.apiKey =
-      apiKey ?? (typeof process !== 'undefined' ? process.env.COMPOSIO_API_KEY ?? '' : '');
-    this.baseUrl =
-      baseUrl ??
-      (typeof process !== 'undefined'
-        ? process.env.COMPOSIO_BASE_URL ??
-          'https://backend.composio.dev/api/v3.1'
-        : 'https://backend.composio.dev/api/v3.1');
+      apiKey ?? readEnv('COMPOSIO_API_KEY');
+    // `readEnv` tolère déjà l'absence de `process` : plus besoin de garde ici.
+    this.baseUrl = baseUrl ?? readEnv('COMPOSIO_BASE_URL', 'https://backend.composio.dev/api/v3.1');
   }
 
   /**

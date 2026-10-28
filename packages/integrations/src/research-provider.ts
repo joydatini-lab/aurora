@@ -18,6 +18,7 @@ import type {
   ResearchResult,
   ResearchSourceKind,
 } from '@aurora/domain';
+import { readEnv } from './env.ts';
 
 /** Map a provider hit to the typed `ResearchResult` SSoT shape. */
 function toResult(
@@ -48,8 +49,8 @@ export class ExaResearchProvider implements ResearchProvider {
   private readonly url: string;
 
   constructor() {
-    this.apiKey = process.env.EXA_API_KEY ?? '';
-    this.url = process.env.EXA_URL ?? 'https://api.exa.ai/search';
+    this.apiKey = readEnv('EXA_API_KEY');
+    this.url = readEnv('EXA_URL', 'https://api.exa.ai/search');
   }
 
   isConfigured(): boolean {
@@ -108,8 +109,8 @@ export class TavilyResearchProvider implements ResearchProvider {
   private readonly url: string;
 
   constructor() {
-    this.apiKey = process.env.TAVILY_API_KEY ?? '';
-    this.url = process.env.TAVILY_URL ?? 'https://api.tavily.com/search';
+    this.apiKey = readEnv('TAVILY_API_KEY');
+    this.url = readEnv('TAVILY_URL', 'https://api.tavily.com/search');
   }
 
   isConfigured(): boolean {
@@ -167,8 +168,8 @@ export class YouComResearchProvider implements ResearchProvider {
   private readonly url: string;
 
   constructor() {
-    this.apiKey = process.env.YOU_API_KEY ?? '';
-    this.url = process.env.YOU_URL ?? 'https://api.you.com/api/v1/search';
+    this.apiKey = readEnv('YOU_API_KEY');
+    this.url = readEnv('YOU_URL', 'https://api.you.com/api/v1/search');
   }
 
   isConfigured(): boolean {

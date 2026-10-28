@@ -29,6 +29,7 @@
 // reste capable d'écrire dans le DOM même si tout le reste échoue.
 import './boot/fatal';
 import { fatal, markPainted, trace } from './boot/fatal';
+import { probeLocalDb, showDegradedNotice } from './boot/capabilities';
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -166,6 +167,21 @@ function start(): void {
   }
 
   async function boot(): Promise<void> {
+    // On demande d'abord au navigateur ce qu'il peut faire. Sans isolation
+    // cross-origin, `SharedArrayBuffer` est absent et WASQLite ne peut pas
+    // s'ouvrir : tenter `connect()` ne produirait qu'une attente jusqu'au
+    // budget, puis un message d'échec. On peint tout de suite et on explique.
+    const localDb = probeLocalDb();
+    trace(localDb.available ? 'capacité: base locale OK' : 'capacité: base locale INDISPONIBLE');
+
+    if (!localDb.available) {
+      console.warn('[Aurora]', localDb.reason, '— rendu en mode dégradé (AD-7 non disponible).');
+      showDegradedNotice(localDb.reason);
+      paint();
+      registerServiceWorker();
+      return;
+    }
+
     // 03 S8.1 : la boucle de sync est le critère de disponibilité. Hors ligne /
     // sans session → on garde la coquille local-mirror (AD-7), jamais de blocage.
     trace('connect:appel');
@@ -197,6 +213,12 @@ function start(): void {
       if (timer !== undefined) clearTimeout(timer);
     }
 
+    paint();
+    registerServiceWorker();
+  }
+
+  /** Monte l'interface. Point d'entrée unique du rendu (un seul endroit à auditer). */
+  function paint(): void {
     const rootEl = document.getElementById('root');
     if (!rootEl) throw new Error('[Aurora] #root introuvable');
 
@@ -213,9 +235,6 @@ function start(): void {
     requestAnimationFrame(() => {
       if (rootEl.childElementCount > 0) markPainted();
     });
-
-    // PWA : enregistré APRÈS le premier paint (ne retarde jamais le rendu).
-    registerServiceWorker();
   }
 
   // `boot` est async : un rejet doit remonter au panneau, pas finir en

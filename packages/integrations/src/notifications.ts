@@ -28,6 +28,7 @@ import type {
   IntegrationsState,
   NotificationPreference,
 } from '@aurora/domain';
+import { readEnv } from './env.ts';
 
 /** One delivery channel — the split target (overview.md §11). */
 export type NotificationChannel = 'push' | 'local' | 'in-app';
@@ -189,11 +190,11 @@ export class OneSignalServerClient {
   private readonly url: string;
 
   constructor() {
-    this.appId = process.env.ONESIGNAL_APP_ID ?? '';
+    this.appId = readEnv('ONESIGNAL_APP_ID');
     // Server key — MUST stay server-side (AD-3, 04 §7.2e anti-leak).
-    this.restKey = process.env.ONESIGNAL_REST_API_KEY ?? '';
+    this.restKey = readEnv('ONESIGNAL_REST_API_KEY');
     this.url =
-      process.env.ONESIGNAL_URL ?? 'https://onesignal.com/api/v1/notifications';
+      readEnv('ONESIGNAL_URL', 'https://onesignal.com/api/v1/notifications');
   }
 
   /** appKey (device-side, capacitor.config.ts, owner Foundation) —
