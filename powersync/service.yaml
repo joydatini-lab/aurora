@@ -1,7 +1,13 @@
 # PowerSync Cloud config (fetched from cloud, 2026-09-26)
 # yaml-language-server: $schema=https://unpkg.com/@powersync/cli-schemas@latest/json-schema/service-config.json
 #
-# Instance: Development (6ab1612e8453e7cf8338ef9a) — Aurora project, EU.
+# Instance: Development (6ab1612f02481fb31b986822) — Aurora project, EU.
+# NE PAS confondre avec Production (6ab1612e8453e7cf8338ef9a) : cet ID était
+# errone ici et faisait croire qu'on deployait en dev tout en visant prod.
+# Les DEUX instances partagent ce fichier ; toujours passer `--instance-id`
+# explicitement a `powersync deploy` (le lien de cli.yaml pointe Development).
+# Production utilise un role dedie (username: powersync_e56673171470a907b5579e90),
+# Development utilise `postgres` — ne pas deployer service-config en aveugle.
 # Backend: Supabase `opagfyspdbhxthlxvlrk` (base `postgres`).
 #
 # Mots de passe : stockés comme Cloud secret (`secret_ref: default_password`).
