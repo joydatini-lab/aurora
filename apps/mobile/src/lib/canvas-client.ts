@@ -37,6 +37,9 @@ const mapSession = (row: Record<string, unknown>): CanvasSession => ({
   title: String(row.title ?? ''),
   blocks: (row.blocks as CanvasBlock[]) ?? [],
   artifactId: row.artifact_id ? String(row.artifact_id) : undefined,
+  // G10/0023 : `locked` est une colonne du serveur ; l'omettre ici rendait
+  // le verrou inerte cote device (la page ne pouvait pas le lire).
+  locked: row.locked === true,
   createdAt: String(row.created_at ?? ''),
   updatedAt: String(row.updated_at ?? ''),
 });

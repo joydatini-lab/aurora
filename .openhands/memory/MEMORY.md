@@ -575,3 +575,23 @@ d'écran, mergées dans `rebaseline/2026-10-23`.
   pour tester `/tasks` etc. Sinon on croit a tort que le lazy est casse.
 - `waitUntil: 'networkidle'` ne survient JAMAIS (polling PowerSync) ->
   `domcontentloaded` + `waitForTimeout`.
+
+## TROISIEME garde vacante : les tests orphelins (mobile)
+- `apps/mobile/package.json` a un script `test` qui **liste les fichiers a la
+  main**. 30 fichiers `.test.ts` sur disque, 19 listes. **11 ne tournaient
+  jamais** via `pnpm -F @aurora/mobile test`.
+- Le CI en couvrait 3 par des etapes dediees (`e2e-device`, `perf-budget`,
+  `focus-dpc`). **8 ne tournaient NULLE PART** : `canvas-client`, `canvas-tools`,
+  `aurora-orb-wiring`, `feature-flags`, `integrations-wiring`, `release-gate`,
+  `shell-tab-bar-wiring`, `veille-programs`.
+- En les lancant : 7/8 verts, **`aurora-orb-wiring` avait 1 echec reel** — un
+  test **perime**, pas une regression : il exigeait la chaine litterale
+  `"import '../../styles/aurora-orb.css'"` alors que le composant avait ete
+  deplace (`'../styles/aurora-orb.css'`). Corrige en asserte l'INTENTION
+  (regex sur l'import du bon fichier), pas le chemin litteral.
+- **Corrige** : les 8 sont enregistres dans le script (19 -> 27 fichiers).
+  Mobile : **258 tests, 258 pass, 0 fail** (etait 233+2 orphelins).
+- **Lecon generale (3e fois)** : dans ce repo, un gate vert ne prouve rien tant
+  qu'on n'a pas verifie qu'il PEUT echouer ET qu'il VOIT tout. Trois variantes
+  du meme defaut : RLS negatif seul, perf gate sans dist, script de test a
+  liste manuelle. **Verifier la couverture du gate, pas seulement son resultat.**

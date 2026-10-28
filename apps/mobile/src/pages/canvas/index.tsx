@@ -163,7 +163,10 @@ export function CanvasPage() {
               }
             : ({ status: 'empty' } as const);
 
-  const canEdit = Boolean(canvas);
+  // G10 (0023) : une session verrouillee est read-only cote device, comme
+  // cote fn-canvas (qui rejette 'canvas/locked'). Sans cette garde, le
+  // client direct (PostgREST) ecrivait quand meme — le verrou etait inerte.
+  const canEdit = Boolean(canvas) && session?.locked !== true;
   const flatMarkdown = blocks.map((b) => b.content).join('\n\n');
   const htmlRender = view === 'html' ? markdownToHtml(flatMarkdown) : '';
 
@@ -210,7 +213,9 @@ export function CanvasPage() {
                             // dans le closure est stale d'une édition (YAGNI :
                             // le save debouncé porte la charge réseau, il doit
                             // porter la vérité, pas un état retardé).
-                            if (sessionId) save(sessionId, next);
+                            // G10 : le verrou bloque l'ecriture, pas seulement
+                            // le bouton — un onChange ne doit pas persister.
+                            if (sessionId && canEdit) save(sessionId, next);
                             return next;
                           });
                         }}

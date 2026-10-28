@@ -46,7 +46,15 @@ const agentPage = readFileSync(AGENT_PAGE, 'utf8');
 
 test('M-11b (a) : AuroraOrb.tsx existe et exporte le composant AuroraOrb', () => {
   assert.ok(orbTsx.includes('export function AuroraOrb'), 'export AuroraOrb');
-  assert.ok(orbTsx.includes("import '../../styles/aurora-orb.css'"), 'montage du CSS orbe');
+  // L'intention est « le composant monte le CSS de l'orbe ». On verifie
+  // l'IMPORT du bon fichier, pas un chemin litteral : le composant a ete
+  // deplace (../../ -> ../) et le test, jamais execute en CI, est reste
+  // sur l'ancien chemin et signalait une fausse regression.
+  assert.match(
+    orbTsx,
+    /import\s+['"][^'"]*styles\/aurora-orb\.css['"]/,
+    'montage du CSS orbe',
+  );
 });
 
 test('M-11b (a) : la page /agent importe et monte AuroraOrb', () => {
