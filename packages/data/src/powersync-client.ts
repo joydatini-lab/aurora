@@ -295,7 +295,51 @@ export class PowerSyncClientEngine {
       watch: (entity: string, onChange: (rows: Record<string, unknown>[]) => void) => {
         return this.watch(`SELECT * FROM ${entity}`, onChange);
       },
+      upsertRow: async (entity: string, row: Record<string, unknown>) => {
+        const cols = this.mirrorColumns(entity);
+        // On ne projette que les colonnes que le SCHÉMA déclare : une clé
+        // hors schéma (ex. `userId` du contrat `LocalRow`) ferait échouer
+        // l'INSERT, et l'écrire créerait la colonne fantôme que le dépôt
+        // traque.
+        const present = cols.filter((c) => row[c] !== undefined);
+        const values = present.map((c) => row[c]);
+        const placeholders = present.map((_, i) => `?${i + 1}`).join(', ');
+        // `INSERT OR REPLACE` : PowerSync lève la ligne sur la file CRUD
+        // native (PUT), donc l'écriture part au serveur (AD-7 / 03 S5.1.1).
+        await this.execute(
+          `INSERT OR REPLACE INTO ${entity} (${present.join(', ')}) VALUES (${placeholders})`,
+          values,
+        );
+      },
+      deleteRow: async (entity: string, id: string) => {
+        await this.execute(`DELETE FROM ${entity} WHERE id = ?1`, [id]);
+      },
     };
+  }
+
+  /**
+   * Les colonnes du miroir telles que le SCHÉMA client les déclare. Sert à
+   * projeter une écriture sur les seules colonnes réelles (jamais d'invention
+   * de colonne). Lue depuis le schéma PowerSync, pas depuis une liste recopiée.
+   */
+  private mirrorColumns(entity: string): string[] {
+    // `Schema.tables` est un TABLEAU de `ResolvedTable` (mesuré sur
+    // `@powersync/common@2.3.0`), pas un dictionnaire.
+    const tables = (AuroraPowerSyncSchema as unknown as {
+      tables: { name: string; columns: { name: string }[] }[];
+    }).tables;
+    const table = tables.find((t) => t.name === entity);
+    if (!table) {
+      throw new Error(
+        `[aurora:powersync] la table "${entity}" n'est pas dans le schéma client — ` +
+          `écriture refusée (AD-15 : le schéma est la référence)`,
+      );
+    }
+    // `id` n'est JAMAIS déclaré dans le schéma : PowerSync crée la colonne
+    // `TEXT PRIMARY KEY` lui-même (règle documentée en tête de
+    // `powersync-schema.ts`). On l'ajoute donc explicitement — sans elle,
+    // l'INSERT n'aurait pas de clé.
+    return ['id', ...table.columns.map((c) => c.name)];
   }
 
   /** Map a mirror scope name to its sync-stream priority (sync-config.yaml). */

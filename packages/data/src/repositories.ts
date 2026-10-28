@@ -55,14 +55,23 @@ export class SqliteQueryRepository<T = LocalRow>
 {
   private readonly store: LocalStore;
   private readonly entity: string;
-  constructor(store: LocalStore, entity: string) {
+  /**
+   * Miroir (snake_case) → entité. OPTIONNEL mais fortement recommandé : sans
+   * lui, les lignes sont livrées TELLES QUELLES (cast). Or le miroir nomme le
+   * titre d'une tâche `subject` alors que l'entité l'appelle `title` : le
+   * cast produisait une liste de lignes au titre vide (défaut mesuré en L5).
+   */
+  private readonly mapRow?: (row: LocalRow) => T;
+
+  constructor(store: LocalStore, entity: string, mapRow?: (row: LocalRow) => T) {
     this.store = store;
     this.entity = entity;
+    this.mapRow = mapRow;
   }
 
   async getById(id: string): Promise<T | undefined> {
     const row = this.store.row(this.entity, id);
-    return row === undefined ? undefined : (row as T);
+    return row === undefined ? undefined : this.project(row);
   }
 
   async list(filter: LocalFilter<T>): Promise<T[]> {
@@ -71,13 +80,17 @@ export class SqliteQueryRepository<T = LocalRow>
     const rows = this.store
       .allRows(this.entity)
       .filter((row) => matchWhere(row, filter.where));
-    return orderAndPage(rows, filter) as T[];
+    return orderAndPage(rows, filter).map((r) => this.project(r));
+  }
+
+  private project(row: LocalRow): T {
+    return this.mapRow ? this.mapRow(row) : (row as T);
   }
 
   watch(filter: LocalFilter<T>, onChange: (rows: T[]) => void): Unsubscribe {
     const targeted: LocalFilter = { ...filter, entity: this.entity };
     const deliver = (rows: LocalRow[]): void => {
-      onChange(rows as T[]);
+      onChange(rows.map((r) => this.project(r)));
     };
     // seed with the current projection, then subscribe to changes
     // (03 S5.2.2: reactive, local-only, no network).
@@ -138,17 +151,22 @@ export class SqliteCommandRepository implements LocalCommandRepository {
           },
         };
       }
-      this.applyOne(ownerModule, c, entity);
+      await this.applyOne(ownerModule, c, entity);
       queued += 1;
     }
     return { ok: true, queuedForUpsync: queued };
   }
 
-  private applyOne(ownerModule: string, c: DomainCommand, entity: string): void {
+  private async applyOne(
+    ownerModule: string,
+    c: DomainCommand,
+    entity: string,
+  ): Promise<void> {
     // delete (03 S5.2: the server delete propagates locally too)
     if (c.op.endsWith('.delete')) {
       this.store.deleteRow(entity, c.id);
       this.queue.enqueue(entity, c.id, ownerModule, {}, true, Date.now());
+      await this.flushStore();
       return;
     }
 
@@ -199,6 +217,20 @@ export class SqliteCommandRepository implements LocalCommandRepository {
       false,
       Date.now(),
     );
+
+    await this.flushStore();
+  }
+
+  /**
+   * Point de DURABILITÉ (AD-7). Le store réel persiste en tâche de fond (son
+   * `upsert` est synchrone par contrat) ; on attend ici pour qu'`await
+   * apply()` signifie « écrit, pas seulement en mémoire ». Sans cela un
+   * reload immédiat après une capture perdait la ligne — mesuré en L5.
+   */
+  private async flushStore(): Promise<void> {
+    if (typeof this.store.flush === 'function') {
+      await this.store.flush();
+    }
   }
 
   /**

@@ -588,7 +588,9 @@ export const AuroraPowerSyncSchema = new Schema({
  * a table present in one and missing from the other is an AD-15 drift event.
  */
 export const auroraSchemaTableNames = (): string[] =>
-  Object.keys(AuroraPowerSyncSchema.tables);
+  // `tables` est un tableau : `Object.keys` renverrait les INDEX ('0','1',…)
+  // et non les noms de table — un défaut silencieux, corrigé ici.
+  AuroraPowerSyncSchema.tables.map((t) => t.name);
 
 /** Convenience: the frozen mirror table set (kept in `powersync.ts`). */
 export const POWERSYNC_MIRROR_TABLES: readonly string[] = [

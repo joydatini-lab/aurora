@@ -32,6 +32,21 @@ export interface EngineStoreAdapter {
   allRows(entity: string): Promise<Record<string, unknown>[]>;
   /** Reactively watch a mirror table (03 S3.1 `watch` / 03 S5.2.2). */
   watch(entity: string, onChange: (rows: Record<string, unknown>[]) => void): Unsubscribe;
+  /**
+   * PERSIST one row into the engine's SQLite mirror (03 S5.1.1 « immediate
+   * apply », AD-7).
+   *
+   * POURQUOI CE N'EST PAS OPTIONNEL
+   * Sans cette méthode, `upsert()` ne remplissait que le cache MÉMOIRE du
+   * bridge : la ligne disparaissait au reload, et — pire — elle n'entrait
+   * jamais dans la file CRUD native de PowerSync, donc elle n'était jamais
+   * relayée au serveur. L'upsync « fonctionnait » sans rien envoyer. C'était
+   * un faux vert silencieux, exactement la classe de défaut que le dépôt
+   * traque (aucun test ne regardait la persistance réelle).
+   */
+  upsertRow(entity: string, row: Record<string, unknown>): Promise<void>;
+  /** PERSIST one deletion into the engine's SQLite mirror (03 S5.2). */
+  deleteRow(entity: string, id: string): Promise<void>;
 }
 
 /**
@@ -46,6 +61,8 @@ export class EngineLocalStoreBridge implements LocalStore {
   private readonly pendingUpsync = new Set<string>();
   private readonly serverTs = new Map<string, number>();
   private readonly unwatches: Unsubscribe[] = [];
+  /** Écritures moteur en vol — `flush()` les attend (durabilité, AD-7). */
+  private readonly inFlight = new Set<Promise<void>>();
 
   constructor(engine: EngineStoreAdapter) {
     this.engine = engine;
@@ -68,12 +85,36 @@ export class EngineLocalStoreBridge implements LocalStore {
     this.ensureCache(entity).set(row.id, { ...row });
     this.pendingUpsync.add(row.id);
     this.notify(entity);
+    // Persistance RÉELLE (AD-7) : le cache seul ne survit pas au reload et
+    // n'alimente pas la file CRUD de PowerSync. On propage vers le moteur en
+    // tâche de fond ; une erreur est signalée, jamais avalée.
+    this.track(this.engine.upsertRow(entity, row as Record<string, unknown>), entity, row.id);
+  }
+
+  /** Attend que toutes les écritures en vol soient durables (AD-7). */
+  async flush(): Promise<void> {
+    while (this.inFlight.size > 0) {
+      await Promise.allSettled([...this.inFlight]);
+    }
+  }
+
+  private track(p: Promise<void>, entity: string, id: string): void {
+    const guarded = p.catch((err: unknown) => {
+      console.error(
+        `[aurora:bridge] persistance de ${entity}/${id} échouée — ` +
+          `la ligne reste en mémoire et sera perdue au reload`,
+        err,
+      );
+    });
+    this.inFlight.add(guarded);
+    void guarded.finally(() => this.inFlight.delete(guarded));
   }
 
   deleteRow(entity: string, id: string): void {
     if (this.ensureCache(entity).delete(id)) {
       this.pendingUpsync.delete(id);
       this.notify(entity);
+      this.track(this.engine.deleteRow(entity, id), entity, id);
     }
   }
 

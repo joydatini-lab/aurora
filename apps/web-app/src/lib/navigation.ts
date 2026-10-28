@@ -111,7 +111,8 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     ref: 'F',
     path: '/tasks',
     icon: AURORA_ICONS.CheckSquare,
-    readiness: 'shell',
+    // L5 : l'écran de capture est livré (chemin vertical réel).
+    readiness: 'ready',
     primaryTab: true,
   },
   {

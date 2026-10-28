@@ -165,6 +165,7 @@ export {
 export type {
   PowerSyncClientEngineOptions,
   AuroraSupabaseClient,
+  PowerSyncDatabaseCtor,
 } from './powersync-client';
 export {
   PowerSyncClientEngine,

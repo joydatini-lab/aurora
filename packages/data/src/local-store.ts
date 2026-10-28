@@ -43,6 +43,13 @@ export interface LocalStore {
   row(entity: string, id: string): LocalRow | undefined;
   /** Apply a single upsert (local write, 03 S5.1.1 immediate apply). */
   upsert(entity: string, row: LocalRow): void;
+  /**
+   * Attend que les écritures locales soient DURABLES (AD-7). Optionnel : le
+   * store de référence en mémoire n'a rien à attendre. Un store adossé à un
+   * moteur réel l'implémente, sinon `upsert` (synchrone par contrat) ne
+   * garantirait rien : un reload immédiat après l'écriture perdrait la ligne.
+   */
+  flush?(): Promise<void>;
   /** Delete one row. */
   deleteRow(entity: string, id: string): void;
   /**

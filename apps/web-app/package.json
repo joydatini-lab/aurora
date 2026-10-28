@@ -2,15 +2,16 @@
   "name": "@aurora/web-app",
   "version": "0.0.0",
   "private": true,
-  "description": "Aurora web shell \u2014 React pur (React Router + shadcn/ReUI, AUCUN ion-*) : la surface compl\u00e8te web-first (ADR-018 / D-018.1, OQ-10). Electron l'enveloppe (apps/desktop), ce n'est pas un 3e front.",
+  "description": "Aurora web shell — React pur (React Router + shadcn/ReUI, AUCUN ion-*) : la surface complète web-first (ADR-018 / D-018.1, OQ-10). Electron l'enveloppe (apps/desktop), ce n'est pas un 3e front.",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 5180",
     "build": "vite build",
-    "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dev": "vite --port 5180",
     "lint": "eslint src --max-warnings 0",
-    "test": "node --experimental-strip-types --no-warnings --import ./test/register-resolve-hook.mjs --test test/shell-routes.test.ts test/responsive-modes.test.ts test/layout-tokens.test.ts"
+    "preview": "vite preview",
+    "proof:l5": "node test/proof-l5.mjs",
+    "test": "node --experimental-strip-types --no-warnings --import ./test/register-resolve-hook.mjs --test test/shell-routes.test.ts test/responsive-modes.test.ts test/layout-tokens.test.ts test/capture-path.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@aurora/data": "workspace:*",

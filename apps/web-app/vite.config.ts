@@ -35,6 +35,30 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     sourcemap: true,
+    // L5 : mêmes réglages que `apps/mobile` et `apps/desktop` (R1), parce que
+    // la coquille embarque désormais le moteur PowerSync.
+    //   - `worker.format = 'es'` : le worker WASQLite de `@powersync/web` fait
+    //     du code-splitting (2 chunks) ; l'`iife` par défaut échoue en
+    //     « UMD and IIFE output formats are not supported for code-splitting
+    //     builds » (mesuré).
+    //   - `target = 'esnext'` + `minify: false` : Vite saute alors la
+    //     transpilation post-rollup par esbuild, comme le desktop.
+    target: 'esnext',
+    minify: false,
+  },
+  worker: {
+    format: 'es',
+  },
+  optimizeDeps: {
+    // Le sync engine spawn un Web Worker ; si le dep-optimizer l'inline, le
+    // worker disparaît du bundle et la base se casse à l'exécution
+    // (même exclusion que `apps/mobile` / `apps/desktop`).
+    exclude: [
+      '@powersync/web',
+      '@powersync/capacitor',
+      '@powersync/common',
+      '@powersync/shared-internals',
+    ],
   },
   server: {
     host: '0.0.0.0',

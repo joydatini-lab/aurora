@@ -18,6 +18,8 @@ import {
 import { AppShell } from './shell/AppShell';
 import { NAV_SECTIONS } from './lib/navigation';
 import { ShellState } from './routes/ShellState';
+import TasksCapture from './routes/TasksCapture';
+import { DataSessionProvider } from './lib/data-session-context';
 
 /** La coquille, alimentée par le routeur (la route courante + la navigation). */
 function Shell() {
@@ -33,7 +35,17 @@ function Shell() {
           <Route
             key={section.id}
             path={`${section.path}/*`}
-            element={<ShellState section={section} />}
+            element={
+              // L5 : « S'organiser » a son écran (capture réelle). Les autres
+              // sections gardent l'état honnête tant que leur écran n'est pas
+              // livré — la `readiness` du SSoT de navigation est la seule
+              // autorité, on ne teste pas une route en dur ici.
+              section.readiness === 'ready' ? (
+                <TasksCapture />
+              ) : (
+                <ShellState section={section} />
+              )
+            }
           />
         ))}
         {/* Un chemin inconnu ne doit pas rendre un écran blanc : il ramène à
@@ -46,8 +58,10 @@ function Shell() {
 
 export function WebApp() {
   return (
-    <BrowserRouter>
-      <Shell />
-    </BrowserRouter>
+    <DataSessionProvider>
+      <BrowserRouter>
+        <Shell />
+      </BrowserRouter>
+    </DataSessionProvider>
   );
 }
