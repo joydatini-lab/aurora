@@ -277,6 +277,146 @@ suggestion du kernel, 05 §4.5.1 l. 2380-2387) — le mark **doit** rester **sta
 > **nouveau** (le SSoT 05 §4.5.1 l. 2380-2387 + 02 §6.4 ne **précise pas** le state du
 > `Button` hors ligne).
 
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Calendrier** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `revues-*` dans la ligne « Calendrier », avec `calendrier-*` et
+`timeline-gantt`).
+
+L'écran réel est `ReviewsPage` (`apps/mobile/src/pages/reviews/index.tsx`) ; le
+mode « Jour » est un des 3 modes du `Pager` §3.4 partagé (Jour | Semaine | Mois).
+Le shell web (`apps/web-app`) **ne rend pas encore** cet écran : il n'existe
+**aucune** section `reviews` dans `apps/web-app/src/lib/navigation.ts` — l'écran
+est **inatteignable sur web** aujourd'hui (OQ-10 ci-dessous).
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : `Pager` (Jour\|Semaine\|Mois) + une `Card` posée (5 sections) | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail (`navFormForMode` → `rail`) | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : mini-agenda à gauche, la `Card` de revue à droite | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°1** : un écran n'a qu'**un** gabarit (« Calendrier ») et ne teste
+jamais la largeur lui-même. Le `Pager` §3.4 (l. 737-750) est **le même composant**
+que `revues-semaine`/`revues-mois` (05 §4.5.1 l. 2398-2402 : « les 3 modes
+partagent **le même** `Pager` ») ; seule la période bornée change.
+
+> **OQ-10** — le seuil exact de bascule 1 → 2 panneaux (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` l. 21) |
+| R2 | Ligne de catalogue | ✅ | `productivity.reviews` (`master-feature-catalog.md` L26 : « daily/weekly/monthly reviews + retro actions ; offline-capable ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Review` (`packages/productivity/src/reviews.ts`, type `ReviewPeriod` = `jour`/`semaine`/`mois`) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4(a) |
+| R6 | États §6.1 couverts | ✅ | §4(b) (N/A justifiés) + §4(c) |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 129 ; catalog L26) |
+| R8 | Événements déclarés | ✅ **aucun émis** | la revue **lit** + écrit localement (`reviews.ts`) ; aucun `event` de domaine |
+| R9 | Permissions déclarées | ✅ | aucune |
+| R10 | Entrée de nav déclarée | ⚠️ | route `/reviews` (`router.tsx` l. 146, **ungated**) — **absente de `navigation.ts` (web)** → OQ-10 |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | le miroir `reviews` **n'est pas câblé** : `reviews/index.tsx` l. 113-116 (« The local mirror (not wired yet, AD-7) — the screen ships an honest empty state ») ; les données affichées = `REVIEWS` codé en dur (l. 145) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | les OQ du §14 (enveloppe `reviews` partagée, verbatims de section) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (miroir
+`reviews` non câblé → état vide honnête) et **R13** (OQ §14).
+
+**Demande de contrat (plan §4)** — pour le câblage du miroir :
+
+```
+WS:        WS-3c (specs d'écran — Productivity)
+Chemin:    docs/features/specs/productivity.reviews.md  ·  packages/productivity/src/reviews.ts
+Besoin:    (a) le câblage du miroir `reviews` à `MobileDataProvider` (aujourd'hui
+           non branché → état vide honnête, AD-7) ;
+           (b) la spec de module `productivity.reviews` (ABSENTE de
+           docs/features/specs/ — le catalogue la cite L26 mais aucun §M1-§M6)
+Motif:     `reviews/index.tsx` l. 113-116 documente le non-câblage ; le catalogue
+           nomme `productivity.reviews` sans spec de module
+Bloque:    oui — sans câblage, la revue ne peut pas afficher de données réelles (S1)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la revue lit le store local `reviews` (AD-7) ; **interdit** : `REVIEWS` codé en dur (l. 145) |
+| S2 | 6 états prouvés | §4(a) — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4(c) — pattern global, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : la revue (lecture + écriture locale) reste utilisable |
+| S5 | Retour arrière vérifié | relance froide → période + brouillon de revue restaurés (`ui-state`, C5) |
+| S6 | Isolation utilisateur | RLS sur `reviews` (`0002:174-202`) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | la dérivation de période (`periodLabel`, `isLate`) correcte ? | Vitest ≥ 80 % sur `packages/productivity` |
+| Intégration | ✅ | vue PowerSync `reviews` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ⚠️ | aucun événement émis → n/a justifié | — |
+| E2E | ✅ | « basculer Jour → Semaine → Mois via le `Pager` » ? | Playwright web |
+| Failure | ✅ | lecture échouée → état `error` + retry ? | test failure |
+| Permission | ⚠️ | aucune → n/a justifié | — |
+| Offline | ✅ | réseau coupé → revue utilisable ? | test offline |
+| Recovery | ✅ | relance froide → période + brouillon restaurés ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.reviews` | ≥ 1 test par classe applicable | à écrire (aucune spec de module) |
+| Région « Card de revue » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `revues-jour` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — aucune story `ReviewsPage` |
+| Écran `revues-jour` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (miroir non câblé) + OQ §14
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-10** — **Nav web** : `/reviews` est une route de `router.tsx` (l. 146) mais
+  **absente** de `apps/web-app/src/lib/navigation.ts`. → **OQ** : où vivent les
+  revues dans la coquille web — sans quoi l'écran est **inatteignable** sur web.
+- **OQ-11** — Seuil de bascule 1 → 2 panneaux (§15) : `lg` (1024 px) confirmé ?
+  (cf. OQ-4 globale)
+- **OQ-12** — **Spec de module manquante** : `productivity.reviews` est citée au
+  catalogue (L26) mais **absente** de `docs/features/specs/`. → **OQ** : écrire la
+  spec de module (gabarit §M1-§M6) ?
+
 ## Références SSoT (comptage officiel)
 
 - **05 §4.5.1** : `_bmad-output/architecture/architecture-aurora-2026-09-21/dimensions/05-design-system.md` l. 2229-2409 (`revues-jour` / `revues-semaine` / `revues-mois`, doc §2.9 ; la structure 5 sections l. 2270-2297 ; le `Pager` + `SegmentedControl` l. 2248-2263 ; la `Card` posée l. 2264-2269 ; les états `pending`/`completed` l. 2251-2255 ; le `Callout warning` l. 2314-2321 ; le `EmptyState` + CTA l. 2336-2347 ; le `BottomSheet` de création pré-remplie l. 2368-2377 ; la persistance du `Pager` l. 743-745 (05 §3.4) ; la dégradation offline l. 2353-2367).
