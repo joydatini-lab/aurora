@@ -509,3 +509,27 @@ d'écran, mergées dans `rebaseline/2026-10-23`.
   pour poser la ligne de B). Ne pas en déduire que `authenticated` a INSERT ;
   sur le live les grants par défaut Supabase donnent bien INSERT/SELECT/UPDATE/
   DELETE à `authenticated` sur les 4 tables sondées.
+
+## R4 (bundle) : cause REELLE ≠ hypothese du plan (3c72e20)
+- Le plan attribuait R4 aux renderers AD-10 (mermaid/katex/three/tiptap) exportes
+  par le barrel `@aurora/ui`. **Faux.** La sourcemap du bundle d'entree web-app
+  disait : `@phosphor-icons/react` = 4539 / 5733 modules (**79 %**). Les renderers
+  n'importent RIEN de lourd ; mes premiers `grep -c mermaid` etaient des faux
+  positifs (le mot apparait dans du texte de doc/comments).
+- **Methode fiable** : `python3` sur le `.js.map` (`sources`), bucket par paquet
+  `node_modules`. C'est la seule mesure qui dit la verite.
+- **Cause** : `import * as Phosphor` + `Phosphor[nom]` (cle dynamique) → Rollup
+  ne peut pas secouer → les ~1512 icones (2,7 Mo de defs SVG) embarquees.
+- **Correctif** : registre LITTERAL `PHOSPHOR_COMPONENTS` alimente par 165
+  imports par sous-chemin `@phosphor-icons/react/dist/csr/<Nom>` (exports
+  NOMMES, pas de default ; `sideEffects: false` ; 289 o/icone). `phosphor.ts`
+  lit le registre.
+- **Mesure** : 5733 → 1526 modules ; entree 14,5 → 8,9 Mo (gz 3,07 → 2,08) ;
+  build 1m10 → 39 s. Gate : TC/TEST/BUILD = 0. CI run 40777319742 = SUCCESS.
+- **Garde** : `packages/ui/test/icons-registry.test.ts` (6). Le contrat
+  tree-shaking n'est PAS visible dans un type → verifie en injectant un
+  namespace : « expected 3045 to be less than 400 » (2 rouges). Toujours
+  verifier qu'un garde peut echouer.
+- **Nuance** : le « Perf gate » de la CI mesure `apps/mobile` (300 Ko gz,
+  02 S9.1), PAS `web-app`. Mon gain est reel mais sur l'entree web-app ; le
+  budget mobile est un autre chemin. Ne pas confondre les deux cibles.
