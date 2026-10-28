@@ -172,3 +172,126 @@
 
 
 … (truncated)
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Flux** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la matrice nomme
+`inbox` dans la ligne « Flux », avec `discovery-feed`, `agent-chat`).
+
+L'écran réel est `apps/mobile/src/pages/inbox/index.tsx` (Ionic, 1 colonne). Le shell web
+(`apps/web-app`) **ne rend pas encore** cet écran (aucune section `navigation.ts` ne
+porte `/inbox`) : `ShellState` affiche « Coquille prête ». Le tableau ci-dessous est **la
+cible** (Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : capture + triage empilés | tab bar basse | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : capture à gauche, triage/conversation à droite (le triage devient un panneau) | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle** : le CTA « Capture this » (fixe haut, §3) et le CTA « Trier vers /learn »
+(fixe bas, §3) restent visibles aux 3 paliers. La composition (éditeur + 3 destinations
+de triage) est **inchangée** ; seul l'arrangement change.
+
+> **OQ (cadre v1)** — le seuil exact de bascule 1 → 2 panneaux (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` : « Inbox \| /inbox ») |
+| R2 | Ligne de catalogue | ✅ | `productivity.inbox` (`master-feature-catalog.md` l.18 : « capture→triage→objects… offline-capable; activation: core (always on) ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Note` (`entities-productivity.ts` l.150), `Task` (l.10), `Event` (l.44) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (matrice AD-13) |
+| R6 | États §6.1 couverts | ✅ | §4 (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : **offline-capable** (AD-7, `_inventory.md` l.94) |
+| R8 | Événements déclarés | ✅ | la capture→objet produit `TaskCompleted`-family (catalog l.18) ; le triage route vers `/tasks`/`/learn`/`/settings` |
+| R9 | Permissions déclarées | ✅ | camera/mic **optionnels** (capture documentaire/voix) ; jamais au boot |
+| R10 | Entrée de nav déclarée | ✅ | `/inbox` (S-23, route adjacente — pas un tab BottomNav, EXPERIENCE.md §IA L59) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ⚠️ **partiel** | le **draft** est persisté localement (AD-7) et l'action « Ajouter » est réelle ; **mais** le **triage** (draft → task/learn) n'est **pas** câblé : l'action « Classer » **existe mais est désactivée** (honnête) — `inbox/index.tsx` en-tête + bouton `aria-disabled` |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-01…OQ-12** + **OQ-16** (§14) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 12 critères sur 13. **Le bloquant est R13** (OQ §14
+ouvertes) ; R12 est **partiel** (capture réelle, triage en attente — affordance non
+supprimée, honnête).
+
+**Demande de contrat (plan §4)** — pour lever R12 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    packages/productivity/src/** (tasks.ts)  ·  apps/mobile/src/pages/inbox/index.tsx
+Besoin:    le contrat de triage (draft → `task.create` / activité Learning / note) —
+           la « vague de triage » que le code attend explicitement
+Motif:     inbox/index.tsx : « the capture triage (draft → task/learn routing) is not
+           wired yet » ; l'affordance « Classer » est présente mais inerte (AD-7 honnête)
+Bloque:    oui — sans contrat, le triage reste une affordance inerte (S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | le draft est persisté localement (AD-7) et le triage écrit un objet réel ; **interdit** : affordance « Classer » inerte à terme |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 — route `/inbox` toujours valide (core) ; deep link invalide → 404 global |
+| S4 | Offline vérifié | §12 — réseau coupé : capture + triage local OK ; sync différée (Callout info) |
+| S5 | Retour arrière vérifié | relance froide → draft restauré (persist AD-7, pas d'écran blanc) |
+| S6 | Isolation utilisateur | RLS sur `tasks`/`notes`/`events` (user A ≠ user B) |
+| S7 | Tokens-only | §3 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | triage → objet (task/note) correct + persistance du draft ? | Vitest ≥ 80 % sur `packages/domain` / `@aurora/productivity` |
+| Intégration | ✅ | écriture locale (AD-7) + re-sync sans JOIN ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | producteur `TaskCompleted`-family (catalog l.18) via le triage | test AD-9 producer/consumer |
+| E2E | ✅ | « capturer → trier une note » ? | Playwright web |
+| Failure | ✅ | miroir corrompu / conflit de sync → `Callout warning` ? | test failure |
+| Permission | ✅ | refus camera/mic → fallback saisie manuelle (AD-1) ? | test permission |
+| Offline | ✅ | réseau coupé → capture + triage local OK ? | test offline |
+| Recovery | ✅ | relance froide → draft restauré ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.inbox` | ≥ 1 test par classe applicable | ✅ partiel — `@aurora/productivity` (capture/triage mono-table) |
+| Région « capture + triage » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `inbox` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Inbox.stories.tsx` couvre `Boite`/`CanvasDocument`/`CanvasMarkdown`, **pas** l'écran capture+triage complet |
+| Écran `inbox` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R13 (OQ) ; R12 partiel (triage non câblé)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (camera/mic optionnel)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
