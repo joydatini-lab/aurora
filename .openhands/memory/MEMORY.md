@@ -471,3 +471,24 @@ d'écran, mergées dans `rebaseline/2026-10-23`.
   non-superuser -> `reset role`, jamais `set local role supabase_admin`.
 - **Projet live** : `opagfyspdbhxthlxvlrk` (MCP Supabase donne un acces direct : `execute_sql`).
   Les 4 comptes pre-existants sont ceux de l'owner — ne pas y toucher.
+
+## OOM du step Build : RESOLU (2026-10-28, c8e67d3)
+- **Cause** : `app.tsx` → `data-session-context` → `data-session` importait
+  STATIQUEMENT `@aurora/data` + `@powersync/web` (PowerSync + wa-sqlite WASM).
+  `capture.ts` importait le BARREL `@aurora/data`, qui ré-exporte
+  `powersync-client` → `@powersync/capacitor`. Résultat : 14 685 modules,
+  ~15,8 Mo, OOM à 4 Go. **Ce n'étaient PAS les thèmes.**
+- **Correctif** : `import type` pour les types + `import()` dynamique pour les
+  valeurs (`createWebDataSession` devient `async`) ; `capture.ts` prend le
+  sous-chemin `@aurora/data/commands` (export ajouté au package.json) au lieu du
+  barrel ; alias Vite/TS/hook **sous-chemin AVANT barrel** (même préfixe, sinon
+  le barrel le capte et l'optimisation est annulée en silence).
+- **Mesure** : `pnpm -r build` EXIT=0 (1m10s) ; `pnpm -r typecheck` 0 ;
+  `pnpm -r test` 0 (web-app 28/28).
+- **Piege de mesure** : `grep -c createPowerSyncClientEngine index-*.js` renvoie
+  2 même après le correctif — ce sont les NOMS dans ma propre déstructuration.
+  Vérifier une **définition de classe**, pas un nom.
+- **Reste (R4, préexistant)** : le barrel `@aurora/ui` exporte `* from
+  "./renderers"` (mermaid, katex, three, tiptap) → entrée à 14,5 Mo (3 Mo gz).
+  Présent sur rebaseline depuis 549a8ec, PAS mon delta. Le budget 300 Ko gz
+  (02 S9.1) reste violé : à traiter en L6 via `@aurora/ui/icons`.
