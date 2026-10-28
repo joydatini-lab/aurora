@@ -171,3 +171,129 @@
 - **OQ-12** : **route** de la bibliothèque — le SSoT écran 05 §4.6.1 cite le slug `bibliotheque-ressources` **sans** route (le 05 §4.6.1 ne dit pas `/library` ni `/learn`) ; le WDS 03.4 dit `/library` (WDS OQ-2 close option A : route push lourd `/library`) ; le **router.tsx** SSoT (ssootCode keyFiles) dit `/learn` (tab « Apprendre ») ; **pas** de SSoT qui tranche (`/library` vs `/learn` vs un sous-route `/learn/bibliotheque`) ; WDS 03.4 = pont **draft** (status: draft, non-cover par le corps gelé) vs router.tsx = **frozen** → **OQ** (pas de SSoT de route ; le router.tsx frozen = `/learn` (tab) **ou** `/learn/:id` (overlay cours) ; `/library` WDS **non** dans le router → décideur = owner WDS / Frontend, ratifier la route exacte).
 - **OQ-13** : `SearchBar` (recherche **locale** AD-7, §3 row 2) — texte exact de l'état empty de la **recherche** (aucun résultat pour la requête) : la **matrice** §4a empty = « Aucune ressource pour ce rattachement » (état **répertoire** vide, 05 §4.6.1) ; un empty distinct de **recherche** (requis non satisfait, liste filtrée vide, 05 §3.2 SearchBar) **n'est pas spécifié** dans 05 §4.6.1 (pas de texte, pas de CTA sur l'état vide de recherche) → **OQ** (pas de SSoT du copy / CTA empty-search ; CTA proposé = « Effacer la recherche » (ghost, SSoT du copy absent) + état sémantique **N/A** (pas de flux en-cours/terminé/échec pour la recherche locale, AD-7 = lecture SQLite, pas de job) ; décideur = UI / Learning team).
 - **OQ-14** : `Menu` du FAB « Ajouter » (téléverser / capturer / créer une note, §3 row 5 / §9) — **killed** (relaunch cold) sur le flux **serveur** de génération agent (AD-12) **pendant** que le Menu est ouvert : la matrice §4d killed = portée **flux serveur uniquement** (synchro R2 + génération agent) = **aperçu artefact AD-10** (overlay `/artifacts/:id`) ; le Menu lui-même (sélection upload / capture / note) = **aucun flux serveur inline** (les 3 items déclenchent des jobs AD-8 en arrière-plan, 05 §4.6.1 « la synchronisation cloud est en arrière-plan ») → le killed du **Menu ouvert** = **N/A** (pas d'écran blanc : le menu reste affiché, l'item « téléverser » = désactivé offline/killed (05 §3.7 matrice Button offline = « désactivé si cloud »), items « capturer » / « créer une note » **restent** actifs (AD-7 local)) ; **pas** de SSoT écran du comportement du Menu en killed (05 §3.5 l.843–854 ne traite pas le killed du menu) → **OQ** (pas de spec killed du Menu FAB ; décideur = UI / Learning team, ratifier si le menu doit se fermer au killed ou rester ouvert avec items partiellement désactivés).
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **État spécial** (`docs/frontend/web-shell-and-responsive.md` §2.3 —
+ligne « État spécial » : `not-found`, `bibliotheque-ressources`, `slide-ascent`).
+« Hérite du parent » : le parent est le tab **Apprendre** (`/learn`), donc le layout
+suit le gabarit **Liste + détail** de son parent.
+
+L'écran réel est `apps/mobile/src/pages/learn/index.tsx` (Ionic, 1 colonne). Le shell
+web (`apps/web-app`) **ne rend pas encore** cet écran : la section `bibliotheque`
+(`navigation.ts` l.127-132) porte `readiness: 'shell'`, donc `ShellState` affiche
+« Coquille prête ». Le tableau ci-dessous est **la cible** (Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : `SearchBar` + liste de ressources groupées + `FAB` « Ajouter » | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : liste de ressources à gauche, aperçu/artefact à droite (héritage « Liste + détail » du parent) | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle** : la composition (recherche locale + liste groupée + `FAB`) est **inchangée**
+d'un palier à l'autre ; seul l'arrangement change. Le `FAB` « Ajouter » et le CTA
+« Ouvrir l'artefact » (§3) restent visibles aux 3 paliers (leur coexistence = OQ-03 §14).
+
+> **OQ-15** — le seuil exact de bascule 1 → 2 panneaux (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale). Le gabarit « État spécial » hérite du
+> parent, mais le parent exact (`/learn`) reste à confirmer (OQ-12 : route `/library` vs
+> `/learn`).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Learning** (`module-ownership-matrix.md` : « Screens \| Courses, Study Sheets… » + `productivity.library`) |
+| R2 | Ligne de catalogue | ✅ | `productivity.library` (`master-feature-catalog.md` l.28 : « resource library (courses/PDFs/images/links/exercises; R2 + metadata); offline-capable (metadata + cache) ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Resource` (`entities-productivity.ts` l.164), `Course` (`entities-learning.ts` l.7), `Artifact` (`entities-artifact.ts` l.10) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (matrice AD-13) |
+| R6 | États §6.1 couverts | ✅ | §4 (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : lecture = **miroir local AD-7** ; synchro R2 des nouveaux artefacts = **online-required** (dégradation AD-1 : téléverser désactivé) |
+| R8 | Événements déclarés | ✅ | l'écran **consomme** `ArtifactGenerated` (`events.ts` l.125) pour rafraîchir la liste (refresh auto = OQ-10 §14) ; l'import produit `CourseImported` (l.35, via `learning.import`) |
+| R9 | Permissions déclarées | ✅ | camera/mic **optionnels** (capture via `FAB` → `learning.import`) ; jamais au boot |
+| R10 | Entrée de nav déclarée | ✅ | `/learn` (tab « Apprendre », router.tsx) — la route exacte `/library` (WDS 03.4) est **OQ-12** |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | la page rend un état **figé** `{ status: 'empty' }` (`learn/index.tsx` l.90 et l.154) ; le répertoire de ressources du miroir n'est pas câblé |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-01…OQ-14** (§14) restent ouvertes (composant `SearchBar` non ancré S1, `FAB` vs CTA, route, watermark empty library) |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (état
+vide figé) et **R13** (OQ §14 ouvertes).
+
+**Demande de contrat (plan §4)** — pour lever R12 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    apps/mobile/src/lib/**  ·  packages/productivity/src/** (Resource)
+Besoin:    le contrat de lecture du répertoire de ressources (miroir SQLite AD-7 :
+           metadata `resources`/`artifacts` + cache R2) que la bibliothèque consomme
+Motif:     la page rend un état vide figé ; aucune spec de module ne décrit la
+           lecture du répertoire local (productivity.library n'a pas de §M1–§M6)
+Bloque:    oui — sans contrat, la bibliothèque reste un état vide figé (violation S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | l'écran lit le répertoire de ressources du miroir ; **interdit** : `{ status: 'empty' }` figé (aujourd'hui l.90/154) |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 — deep link invalide → état 404/feature-disabled, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : lecture du répertoire OK ; téléverser/génération désactivés |
+| S5 | Retour arrière vérifié | relance froide → re-lecture du miroir (pas d'écran blanc) |
+| S6 | Isolation utilisateur | RLS sur `resources`/`artifacts` (user A ≠ user B) |
+| S7 | Tokens-only | §3 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | groupement par type + recherche locale substring corrects ? | Vitest ≥ 80 % sur `packages/domain` |
+| Intégration | ✅ | lecture du miroir `resources`/`artifacts` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | consommateur `ArtifactGenerated` (`events.ts` l.125) → refresh liste | test AD-9 producer/consumer |
+| E2E | ✅ | « téléverser une ressource → la voir dans la liste » ? | Playwright web |
+| Failure | ✅ | téléversement échoué → `Callout` + retry ? | test failure |
+| Permission | ✅ | refus camera/mic ne casse pas la bibliothèque (AD-1 : saisie manuelle) ? | test permission |
+| Offline | ✅ | réseau coupé → répertoire lisible, upload désactivé ? | test offline |
+| Recovery | ✅ | relance froide → état intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.library` | ≥ 1 test par classe applicable | à écrire (pas de spec de module dédiée) |
+| Région « liste de ressources » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `bibliotheque-ressources` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Learn.stories.tsx` couvre `Learn`/`Progression`/`ProgressChargement`/`ProgressErreur`, **pas** la bibliothèque |
+| Écran `bibliotheque-ressources` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (état figé) + R13 (OQ)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (camera/mic optionnel)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
