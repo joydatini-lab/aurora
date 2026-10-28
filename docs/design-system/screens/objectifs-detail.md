@@ -203,3 +203,145 @@ Comportement des 3 couches sur le goal dashboard (05 §5 l. 2925-3306 ; overview
 > **OQ-15** (citation, **non** OQ de ce doc) : le OQ-15 du workflow (05 §5.2 l. 2961-2990, le Focus Mode) = le Focus Mode **atténue** les nodes secondaires à 40 % (goal-dashboard-ui S4 l. 256 : « the goal dashboard's secondary nodes are ATTENUATED (40% opacity) — only the active node + progress bar are at full contrast ») ; le `data-attribute` = `attenuated` (dashboard.tsx l. 135) — c'est une OQ de la **couche thème** (§10), **pas** une OQ locale de ce doc ; les références OQ-15 dans ce doc pointent vers le SSoT global du Focus Mode (le `attenuated`), **pas** vers une OQ du §14.
 > **OQ-16** (citation, **non** OQ de ce doc) : le OQ-16 (WDS 02.3 frontmatter l. 33, 203) = le thème **Nocturne** par défaut de Horeb (la session nocturne) ; le OQ-11 = le budget Pixel 4a (30 fps, TTI < 1.5 s, JS < 300 Ko gz, l. 203) — les deux sont des OQ de **scénario** (le frontmatter WDS 02.3), **pas** des OQ locales du §14.
 
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Formulaire / réglages** (`docs/frontend/web-shell-and-responsive.md`
+§2.3 — la matrice nomme `objectifs-detail` dans la ligne « Formulaire / réglages »,
+arrangement desktop = « 1 colonne centrée + inspecteur »).
+
+L'écran réel est `GoalDashboardPage` (`apps/mobile/src/pages/goals/index.tsx`
+l. 109-151), rendu par `GoalDashboard` (`apps/mobile/src/pages/goals/dashboard.tsx`),
+dont le layout adaptatif est calculé par `computeGoalDashboardLayout`
+(`packages/goal-engine/src/layout.ts` l. 158, 5 shapes : preparation / practice /
+curation / delivery / adaptation + custom). Le shell web (`apps/web-app`) **ne rend
+pas encore** cet écran : aucune section `goals` dans `navigation.ts` — l'écran est
+**inatteignable sur web** aujourd'hui (OQ-17 ci-dessous).
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne centrée : header band + feature workflow + context strip (1 layout par shape) | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne centrée + rail d'icônes | rail (`navFormForMode` → `rail`) | tablette |
+| **`lg+` (≥ 1024 px)** | **1 colonne centrée** + **inspecteur** (jalons / projets contributeurs, 05 §4.3.4 l. 1694-1697, doc §23.4) | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°1** : l'écran ne teste jamais la largeur lui-même — il déclare son
+gabarit (« Formulaire / réglages ») et le shell applique l'arrangement. Le **CTA
+unique et fixe** « Ouvrir le projet » (invariant AD-14, WDS 02.3 §3 l. 75) reste
+**unique** aux 3 paliers.
+
+> **OQ-17** — le seuil exact d'ouverture de l'inspecteur (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` l. 21) |
+| R2 | Ligne de catalogue | ✅ | `productivity.goals` (`master-feature-catalog.md` L23 : « short/mid/long horizons, goal→project→task hierarchy ; `GoalUpdated` producer ; offline-capable ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Goal` (`entities-productivity.ts` l. 89) ; `GoalDashboardLayout` (`goal-engine/src/layout.ts` l. 49) ; `Milestone` (`entities-productivity.ts` l. 78) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4(a) |
+| R6 | États §6.1 couverts | ✅ | §4(b) (N/A justifiés) + §4(c) 404 |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 89 ; catalog L23) |
+| R8 | Événements déclarés | ✅ **aucun émis** | l'écran **lit** ; `GoalUpdated` (`events.ts:108`) est produit par le module (création/renommage), pas ici |
+| R9 | Permissions déclarées | ✅ | aucune |
+| R10 | Entrée de nav déclarée | ⚠️ | route `/goals/:id` (`router.tsx` l. 109) — **absente de `navigation.ts` (web)** → OQ-17 |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ⚠️ **partiel** | la page lit `useGoal(id)` (`query/hooks.ts` l. 26-33 → `goals.getById`, AD-7) ; **mais** le **pattern écran 05 §4.3.4** (`KeyValueList` date/terme/progression + `ProgressBar` + `RoutineStep` jalons + `KeyValueList` projets) **n'est pas rendu** — le code rend **uniquement** le mission-control (OQ-1 §14) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-1 (pattern 05 vs mission-control), OQ-2 (rendu/position du CTA), OQ-5 (message 404), OQ-7 (form de création de jalon) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (le
+pattern écran 05 §4.3.4 — jalons + projets contributeurs — n'est pas rendu) et
+**R13** (OQ-1 : le SSoT ne tranche pas entre pattern 05 et mission-control).
+
+**Demande de contrat (plan §4)** — pour le scope du rendu :
+
+```
+WS:        WS-3c (specs d'écran — Productivity)
+Chemin:    docs/features/specs/productivity.goals.md  ·  packages/goal-engine/src/layout.ts
+Besoin:    la décision (OQ-1) : l'écran rend-il le pattern 05 §4.3.4 (KeyValueList +
+           ProgressBar + RoutineStep jalons + KeyValueList projets) EN PLUS du
+           mission-control, ou le mission-control remplace-t-il le pattern (05 à amender) ?
+Motif:     le code rend uniquement le mission-control (dashboard.tsx) ; le SSoT 05
+           §4.3.4 l. 1654-1663 mandate le pattern écran — deux SSoT divergent
+Bloque:    oui — sans arbitrage, la composition de l'écran est indéterminée
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la page lit `useGoal(id)` (AD-7) ; **interdit** : `state={{status:'empty'}}` figé |
+| S2 | 6 états prouvés | §4(a) — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4(c) — pattern global, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : objectif + jalons lisibles (miroir) ; seul le **suggestion tap** `/agent` est indisponible (AD-1) |
+| S5 | Retour arrière vérifié | relance froide → objectif re-lu du miroir (jamais d'écran blanc, AD-7) |
+| S6 | Isolation utilisateur | RLS sur `goals`/`milestones` (`0002:174-202`) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (inspecteur à `lg`+) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `computeGoalDashboardLayout` (5 shapes) + `layoutTagFor` corrects ? | Vitest ≥ 80 % sur `packages/goal-engine` |
+| Intégration | ✅ | vue PowerSync `goals`/`milestones` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | producteur `GoalUpdated` (`events.ts:108`) — **hors** de cet écran (lecture seule) | test AD-9 producer/consumer |
+| E2E | ✅ | « ouvrir un objectif → lire l'écart jalons vs indicateurs → CTA Ouvrir le projet » ? | Playwright web |
+| Failure | ✅ | objectif introuvable → état `error`/`empty` (`index.tsx` l. 122-127) ? | test failure |
+| Permission | ⚠️ | aucune → n/a justifié | — |
+| Offline | ✅ | réseau coupé → objectif + jalons OK, suggestion tap désactivé ? | test offline |
+| Recovery | ✅ | relance froide → objectif intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (5 layouts adaptatifs, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `goal-engine` (`computeGoalDashboardLayout`, `layoutTagFor`) | ≥ 1 test | à écrire |
+| `productivity.goals` | ≥ 1 test par classe applicable | ✅ partiel — `productivity.test.ts` (goals + milestones) |
+| Région « dashboard d'objectif » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `objectifs-detail` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — aucune story `GoalDashboard` |
+| Écran `objectifs-detail` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (pattern 05 non rendu) + OQ-1/OQ-2
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-17** — Seuil d'ouverture de l'inspecteur (§15) : `lg` (1024 px) confirmé ?
+  (cf. OQ-4 globale)
+- **OQ-18** — **Nav web** : `/goals/:id` est une route de `router.tsx` (l. 109) mais
+  **absente** de `apps/web-app/src/lib/navigation.ts`. → **OQ** : où vit la famille
+  `goals` dans la coquille web — sans quoi l'écran est **inatteignable** sur web.
+- **OQ-19** — **Scope du rendu** : le pattern écran 05 §4.3.4 (jalons + projets
+  contributeurs) est-il rendu **en plus** du mission-control, ou le mission-control
+  le remplace-t-il (OQ-1 §14, `05` à amender) ?
