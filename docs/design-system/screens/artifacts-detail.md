@@ -154,3 +154,131 @@
 - **OQ-06** : i18n labels shadcn Pagination (si XLSX 20–100 rows, §8) — **pas** de SSoT explicite (ssootCode paginationRefs : labels EN hardcoded, OQ i18n note ; le reste de l'écran = FR (§7)) → **OQ** (pas de rule pour FR/EN mix sur ce flux, pas de composant i18n dans la battery).
 - **OQ-07** : navigation propre au viewer PDF (pages) / PPTX (slides) — **pas** de SSoT explicite (ADR §16 « lecture paginée, zoom, recherche et navigation » mais **pas** de composant dédié ni de rule pour « navigation = chevrons lucide (S8) ou swipes (05 §3.4, mobile) » ; si shadcn Pagination = §8 (20–100 = + pagination) mais **pas** de rule pour « pages PDF = Pagination ou contrôles custom ») → **OQ** (pas de spec navigation viewer, pas de composant, pas de rule pour le mécanisme (tap zones / swipes / chevrons)).
 - **OQ-08** : Focus Mode atténuation (OQ-15 V1, ssootCode themeRefs theme-adapter.tsx FOCUS_OVERRIDES) — l'écran **consomme** l'override (atténuation animations + toasts deferred, §5/§10) mais **pas** de SSoT pour l'atténuation visuelle des CTA (pas de rule pour « atténué = quelle opacité / quel token » ; l'override Focus = `node.secondary-opacity`/`node.active-contrast`, **pas** les CTA) → **OQ** (pas de spec atténuation CTA, pas de token dédié, pas de rule pour CTA in Focus Mode ; WDS 03.5 §5 propose options A/B/C au standup, **pas** ratifié).
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **non nommé** dans la matrice normative (`docs/frontend/web-shell-and-responsive.md`
+§2.3). Ni `artifacts-detail` ni le hub `artifacts` n'y figurent. L'écran est un
+**détail/aperçu** ouvert en overlay au-dessus du tab courant (`/artifacts/:id`, 02
+§6.1 S1/S3). Le comportement attendu suit la **règle 2 de §2.3** (« le détail est un
+overlay `O` sous `lg`, un panneau à `lg`+ — même composant, conteneur différent »),
+mais le rattachement à un gabarit de la matrice reste **à ratifier** (OQ-09).
+
+L'écran réel est `apps/mobile/src/pages/artifacts/index.tsx` (Ionic). Le shell web
+(`apps/web-app`) **ne rend pas encore** cet écran (aucune section `navigation.ts` ne
+porte `/artifacts`) : `ShellState` affiche l'état honnête « Coquille prête ». Le
+tableau ci-dessous est **la cible** (Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne ; l'aperçu est un **overlay** plein écran au-dessus du tab | tab bar basse | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + l'aperçu reste un **overlay** | rail d'icônes | tablette |
+| **`lg+` (≥ 1024 px)** | **panneau** : l'aperçu par format occupe le panneau de droite, la liste/le contexte à gauche (l'overlay §9 devient un panneau) | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle** : l'aperçu par format (§3 : viewer image/vidéo/PDF/audio/texte) est **le
+composant principal** ; il s'élargit au palier desktop sans changer de contenu (doc
+§23.4 : adapter le layout, pas le contenu). Les CTA « Télécharger »/« Partager »/
+« Exporter » restent visibles aux 3 paliers.
+
+> **OQ (cadre v1)** — le gabarit de `artifacts-detail` (et du hub `artifacts`) n'est pas
+> ratifié dans la matrice §2.3 ; le seuil de bascule overlay → panneau (`lg` = 1024 px)
+> n'est pas ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Artifacts** (`module-ownership-matrix.md` : « Artifact Detail / Preview \| /artifacts/:id ») |
+| R2 | Ligne de catalogue | ✅ | `artifact.preview` (`master-feature-catalog.md` l.79) + `artifact.export` (l.80) |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Artifact` (`entities-artifact.ts` l.10), `ArtifactFile` (l.50) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (matrice AD-13) |
+| R6 | États §6.1 couverts | ✅ | §4 (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (cache préviews, `_inventory.md` l.123 « offline-capable (metadata + cache R2) ») |
+| R8 | Événements déclarés | ✅ | l'écran **consomme** `ArtifactGenerated` (`events.ts` l.125 — produit par le module Artifact **post-upload-R2**, F-06) pour afficher l'aperçu ; il n'émet rien |
+| R9 | Permissions déclarées | ✅ | aucune (aperçu = lecture ; URL R2 présignée 15/5 min TTL, AD-3) |
+| R10 | Entrée de nav déclarée | ✅ | `/artifacts/:id` = overlay sur le tab courant (02 §6.1 S1/S3) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | la page rend un état **figé** `{ status: 'empty' }` (`artifacts/index.tsx` l.46) ; le commentaire du code le reconnaît : « No artifacts mirror wired yet ». De plus `artifact_files` **n'est pas routé/synchronisé** (`artifact.canvas.md` §M2 : `ARTIFACT_UNROUTED_TABLES`) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-01…OQ-08** + **OQ-15** (§14) restent ouvertes (navigation viewer PDF/PPTX, playhead audio, i18n pagination, atténuation CTA Focus) |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (miroir
+non câblé + `artifact_files` non synchronisé) et **R13** (OQ §14 ouvertes).
+
+**Demande de contrat (plan §4)** — pour lever R12 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    packages/artifact/src/**  ·  apps/mobile/src/lib/**  ·  docs/artifacts/overview.md
+Besoin:    le contrat de lecture de l'aperçu (metadata `artifacts` miroir + cache
+           R2 présigné) et la décision sur `artifact_files` (non routé, AD-15)
+Motif:     artifact.canvas.md §M2 documente l'absence de routage ; le viewer par
+           format (ADR §16) n'a pas de source de données côté device
+Bloque:    oui — sans contrat, l'écran reste un état vide figé (violation S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | l'écran lit les métadonnées `artifacts` du miroir + le cache R2 ; **interdit** : `{ status: 'empty' }` figé (aujourd'hui l.46) |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 — artefact inconnu/supprimé → état `empty`/404, jamais un 404 brut (feature-registry) |
+| S4 | Offline vérifié | §12 — réseau coupé : les préviews/blobs cachés lisibles ; l'upload/génération KO |
+| S5 | Retour arrière vérifié | relance froide → état intact (pas d'écran blanc) |
+| S6 | Isolation utilisateur | RLS sur `artifacts` (user A ≠ user B) ; URL R2 présignée court-TTL |
+| S7 | Tokens-only | §3 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | sélection du viewer par `kind` (13 valeurs, `entities-artifact.ts`) correcte ? | Vitest ≥ 80 % sur `packages/domain` / `@aurora/artifact` |
+| Intégration | ✅ | lecture du miroir `artifacts` + cache R2 sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | consommateur `ArtifactGenerated` (`events.ts` l.125, émis post-R2, F-06) | test AD-9 producer/consumer |
+| E2E | ✅ | « générer un artefact → l'ouvrir → le télécharger » ? | Playwright web |
+| Failure | ✅ | rendu échoué → `Alert` destructive + « Réessayer » ? | test failure |
+| Permission | ⚠️ | aucune (aperçu = lecture) → n/a justifié | — |
+| Offline | ✅ | réseau coupé → préviews cachées lisibles, upload KO ? | test offline |
+| Recovery | ✅ | relance froide → état intact ? | test recovery |
+| Plateforme | ⏳ | TTL présigné (15/5 min) + budgets perf ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `artifact.canvas` | ≥ 1 test par classe applicable | ✅ partiel — `packages/artifact/test/artifact.test.ts` |
+| Région « aperçu par format » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `artifacts-detail` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — `ArtifactsView` (composite) est sans story (`ui-brick-inventory.md` §4) |
+| Écran `artifacts-detail` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (miroir non câblé) + R13 (OQ)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```

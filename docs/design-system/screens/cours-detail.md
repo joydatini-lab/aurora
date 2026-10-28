@@ -139,3 +139,129 @@
 - **OQ-07** : « Importer un cours » (empty CTA, §3 row 9) — 05 §4.6.2 cite la capture documentaire (§4.5.2, doc v1.5) mais **pas** de SSoT pour le composant d'import (pas de file picker dans la battery shadcn, pas de rule pour « import = Popover + file input ») → **OQ** (pas de spec import, pas de composant file-picker dédié, pas de rule pour capture documentaire dans l'écran cours-detail).
 - **OQ-08** : 2 panneaux desktop (Phase 2, doc §23.4) — 05 §4.6.2 dit « desktop = 2 panneaux (chapitres à gauche, concept sélectionné à droite) » mais **pas** de SSoT pour le breakpoint (pas de rule pour « desktop = quel width min », pas de pattern de split-view dans ui-libraries S1) → **OQ** (pas de spec breakpoint, pas de rule pour split-view mobile → desktop, pas de composant split dans la battery).
 - **OQ-09** : « Reconnexion… » (killed, §3 row 13 / §4a / §4d) — le texte exact du killed (Skeleton + « Reconnexion… ») est **pris de** la matrice S6 (ui-libraries §6 l.185 : « Reconnexion... + shimmer ») mais **pas** de SSoT pour le FR exact (« Reconnexion… » vs « Reconnexion... », guillemets / 3 points FR vs 3 points ASCII de la matrice) ni pour l'absence de badge d'état compagnon (05 §3.7 dit skeleton + shimmer, pas de texte dédié dans 05 §4.6.2) → **OQ** (texte exact non confirmé côté 05 ; la matrice ui-libraries §6 l.185 est EN/ASCII « Reconnexion... » — à confirmer le FR canonique + le composant visuel exact (Skeleton seul ou Skeleton + badge danger)).
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Session guidée** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `cours-detail` dans la ligne « Session guidée », avec `flashcards`,
+`qcm`, `mirror-cognitive`).
+
+L'écran réel est `LearnDetailPage` (`apps/mobile/src/pages/learn/index.tsx`), rendu en
+**overlay** au-dessus du tab `/learn` (`router.tsx` : `/learn/:id` est un enfant du
+`Shell`, `detail-over-tab`). Le shell web (`apps/web-app`) **ne rend pas encore** cet
+écran : la section `apprendre` (`navigation.ts` l.91-96) porte `readiness: 'shell'`.
+Le tableau ci-dessous est **la cible** (Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne centrée : liste hiérarchique des chapitres + nœuds concepts + CTA | tab bar basse | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne centrée (lecture max) | rail d'icônes | tablette |
+| **`lg+` (≥ 1024 px)** | **1 colonne centrée** (lecture max) ; 05 §4.6.2 évoque un **2 panneaux** (chapitres à gauche, concept sélectionné à droite) — à ratifier (OQ-08) | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°4** : « La session guidée reste à 1 colonne à tous les paliers — choix de
+concentration, pas contrainte technique. » La lecture (fiche/cours) est plafonnée par
+`aurora.layout.reading-max` (720 px). Le passage éventuel à 2 panneaux (05 §4.6.2) est
+**contradictoire** avec la matrice §2.3 et reste **OQ-08**.
+
+> **OQ (cadre v1)** — 05 §4.6.2 propose « desktop = 2 panneaux » alors que la matrice §2.3 classe
+> `cours-detail` en « Session guidée » (1 colonne à tous les paliers) : conflit non
+> résolu. Le seuil de bascule (`lg` = 1024 px) n'est pas ratifié (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Learning** (`module-ownership-matrix.md` : « Courses \| /courses/:id… ») |
+| R2 | Ligne de catalogue | ✅ | `learning.import` (ingestion, `master-feature-catalog.md` l.34) + `learning.sheet` (génération, l.35) |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Course` (`entities-learning.ts` l.7), `Subject` (l.21), `Skill` (l.33) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (matrice AD-13) |
+| R6 | États §6.1 couverts | ✅ | §4 (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : **PARTIAL** — lecture du cours = miroir local AD-7 ; génération des fiches = online (`_inventory.md` l.108 « PARTIAL (lecture offline ; génération sheets = online) ») |
+| R8 | Événements déclarés | ✅ | l'import du cours produit `CourseImported` (`events.ts` l.35, consommé par Knowledge/Discovery/Progress) ; l'écran lui-même est **lecture** |
+| R9 | Permissions déclarées | ✅ | camera/mic **optionnels** (import documentaire via CTA empty) ; jamais au boot |
+| R10 | Entrée de nav déclarée | ✅ | `/learn/:id` = overlay sur le tab courant (02 §6.1 S1/S3) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | la page rend un état **figé** `{ status: 'empty' }` (`learn/index.tsx` l.90) ; les chapitres du cours (miroir) ne sont pas câblés |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-01…OQ-09** + **OQ-15** (§14) restent ouvertes (transition sortie vers QCM/fiches, import, 2 panneaux desktop, texte killed) |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (état
+vide figé) et **R13** (OQ §14 ouvertes).
+
+**Demande de contrat (plan §4)** — pour lever R12 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    apps/mobile/src/lib/**  ·  packages/learning/src/** (Course)
+Besoin:    le contrat de lecture d'un cours + de ses chapitres/concepts (miroir
+           SQLite AD-7) que l'écran consomme
+Motif:     la page rend un état vide figé ; aucune spec de module ne décrit la
+           lecture du cours local (learning.import couvre l'ingestion, pas la lecture)
+Bloque:    oui — sans contrat, l'écran reste un état vide figé (violation S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | l'écran lit le cours + ses chapitres du miroir ; **interdit** : `{ status: 'empty' }` figé (aujourd'hui l.90) |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 — cours inconnu/supprimé → état 404/feature-disabled, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : le cours est consultable (miroir) ; la génération de fiches est différée |
+| S5 | Retour arrière vérifié | relance froide → re-lecture du miroir (pas d'écran blanc) |
+| S6 | Isolation utilisateur | RLS sur `courses` (user A ≠ user B) |
+| S7 | Tokens-only | §3 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | hiérarchie chapitres→concepts + rendu `MathBlock` corrects ? | Vitest ≥ 80 % sur `packages/domain` / `@aurora/learning` |
+| Intégration | ✅ | lecture du miroir `courses` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | producteur `CourseImported` (`events.ts` l.35) via l'import | test AD-9 producer/consumer |
+| E2E | ✅ | « importer un cours → ouvrir son détail » ? | Playwright web |
+| Failure | ✅ | chapitre corrompu → `Callout danger` sans casser le cours ? | test failure |
+| Permission | ✅ | refus camera/mic → fallback import manuel (AD-1) ? | test permission |
+| Offline | ✅ | réseau coupé → cours consultable, génération différée ? | test offline |
+| Recovery | ✅ | relance froide → état intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `learning.import` (ingestion) | ≥ 1 test par classe applicable | ✅ partiel — `packages/learning/test/learning.test.ts` + `jobs.test.ts` |
+| Région « chapitres/concepts » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `cours-detail` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Learn.stories.tsx` couvre `Learn`/`Progression`/`ProgressChargement`/`ProgressErreur`, **pas** le détail cours |
+| Écran `cours-detail` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (état figé) + R13 (OQ)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (camera/mic optionnel)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```

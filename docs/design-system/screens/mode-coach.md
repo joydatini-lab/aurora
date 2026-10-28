@@ -136,3 +136,128 @@
 - **OQ-06** : Transition sortie vers `progress-dashboard` / `settings` — 05 §4.9.1 dit « sortie vers progress-dashboard (§4.5.2) ou settings (§4.6.1) » mais **pas** de SSoT pour la transition (pas de rule slide/push, pas de pattern navigation between overlays ; ssootCode floatingSurfaces router.tsx dit « details open OVER the current tab » mais **pas** de spec transition overlay → autre écran) → **OQ** (pas de spec transition, pas de rule pour navigate entre 2 overlays, pas de composant transition dédié).
 - **OQ-07** : Deep-link OneSignal « coach check-in » (02 §6.1 Agent row : push → `/agent`, ici `/coach`) — **pas** de SSoT pour le deep-link vers `/coach` (pas de spec dans 05 §4.9.1, pas de pattern dans ui-libraries S1, pas de rule pour « push → /coach ? ») → **OQ** (pas de spec deep-link, pas de composant push, pas de rule pour la navigation OneSignal → /coach).
 - **OQ-08** : 2 panneaux desktop (Phase 2, doc §23.4) — 05 §4.9.1 dit « desktop = la conversation passe en 2 panneaux (check-ins à gauche, actions à droite) » mais **pas** de SSoT pour le breakpoint (pas de rule pour « desktop = quel width min », pas de pattern de split-view dans ui-libraries S1) → **OQ** (pas de spec breakpoint, pas de rule pour split-view mobile → desktop, pas de composant split dans la battery).
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **non nommé** dans la matrice normative (`docs/frontend/web-shell-and-responsive.md`
+§2.3). `mode-coach` n'y figure pas. L'écran est une **enveloppe overlay** (`/coach`, 02
+§6.1 S1/S3). Le comportement attendu se rapproche du gabarit **Flux** (fil de
+conversation courte + actions), mais le rattachement à un gabarit reste **à ratifier**
+(OQ (cadre v1)).
+
+L'écran réel est `apps/mobile/src/pages/learn/index.tsx` (branche coach, Ionic). Le shell
+web (`apps/web-app`) **ne rend pas encore** cet écran (section `apprendre`
+`readiness: 'shell'`). Le tableau ci-dessous est **la cible** (Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : fil de check-ins + actions proposées | tab bar basse | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail | tablette |
+| **`lg+` (≥ 1024 px)** | 05 §4.9.1 évoque **2 panneaux** (check-ins à gauche, actions à droite) — à ratifier (gabarit non ratifié) | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle** : les CTA flottants (§3 : « Désactiver le coaching pour aujourd'hui »,
+« Réglages du coaching ») restent visibles aux 3 paliers. Le passage éventuel à 2
+panneaux (05 §4.9.1) reste **OQ-08** (gabarit non ratifié).
+
+> **OQ (cadre v1)** — le gabarit de `mode-coach` n'est pas ratifié dans la matrice §2.3 ; le seuil
+> de bascule 1 → 2 panneaux (`lg` = 1024 px) n'est pas ratifié (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Learning** (`module-ownership-matrix.md` : « Coach \| /coach ») |
+| R2 | Ligne de catalogue | ✅ | `learning.coach` (`master-feature-catalog.md` l.38 : « in-app coach mode (check-ins ADR §13, cadence user-controlled); OneSignal server + local; PARTIAL (cadence-limited by design) ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `UserContext` (`entities-identity.ts` l.32 — cadence/horaires de silence, ADR §13) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (matrice AD-13) |
+| R6 | États §6.1 couverts | ✅ | §4 (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : **PARTIAL** — coaching = **100 % serveur** (kernel, AD-12/F-09) ; **pas de miroir local** ; désactivé offline |
+| R8 | Événements déclarés | ✅ | le coaching = kernel serveur (`fn-agent-run`) ; l'écran **consomme** `JobCompleted` (`events.ts` l.146) ; OneSignal = serveur (`fn-notifications`, `integrations.notifications` l.83) |
+| R9 | Permissions déclarées | ✅ | `POST_NOTIFICATIONS` au **premier usage** (check-in), jamais au boot (`integrations.notifications` l.83) |
+| R10 | Entrée de nav déclarée | ✅ | `/coach` = enveloppe overlay (02 §6.1 S1/S3 ; `_inventory.md` #37) ; deep-link OneSignal → `/coach` = **OQ-07** |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | la page rend un état **figé** (`learn/index.tsx` l.90) ; le coaching (kernel serveur + OneSignal) n'est pas câblé côté device ; `learning.coach` n'a **pas** de spec de module §M1–§M6 |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-01…OQ-08** + **OQ-15** (§14) restent ouvertes (atténuation CTA Focus, deep-link OneSignal, 2 panneaux desktop) |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (état figé,
+kernel non câblé) et **R13** (OQ §14 ouvertes).
+
+**Demande de contrat (plan §4)** — pour lever R12 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    docs/features/specs/  ·  apps/mobile/src/pages/learn/index.tsx
+Besoin:    une spec de module `learning.coach` (§M1–§M6) + le contrat de check-in
+           (kernel serveur `fn-agent-run`, cadence `UserContext`) et de notification
+           (`POST_NOTIFICATIONS` premier usage, OneSignal)
+Motif:     learning.coach n'a PAS de spec §M1–§M6 (13 specs livrées, pas celle-ci) ;
+           la page rend un état figé
+Bloque:    oui — sans contrat de module, l'écran reste un état vide figé (S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | le fil de check-ins lit le kernel (serveur) ; **interdit** : état vide figé (aujourd'hui `learn/index.tsx` l.90) |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 — feature désactivée → `data-state=feature-disabled` + CTA re-enable, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : coaching désactivé **honnêtement** (Callout info), pas de spinner infini |
+| S5 | Retour arrière vérifié | relance froide → état intact (pas d'écran blanc) |
+| S6 | Isolation utilisateur | RLS sur `agent_runs` (user A ≠ user B) |
+| S7 | Tokens-only | §3 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | cadence de check-in (ADR §13, `UserContext`) correcte ? | Vitest ≥ 80 % sur `packages/domain` / `@aurora/agent` |
+| Intégration | ✅ | flux kernel serveur (AD-12) + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | consommateur `JobCompleted` (`events.ts` l.146) + `POST_NOTIFICATIONS` premier usage | test AD-9 producer/consumer |
+| E2E | ✅ | « recevoir un check-in → agir » ? | Playwright web |
+| Failure | ✅ | kernel échoué / provider IA indisponible → `Callout danger` ? | test failure |
+| Permission | ✅ | `POST_NOTIFICATIONS` au premier usage (jamais au boot), refus géré ? | test permission |
+| Offline | ✅ | réseau coupé → coaching désactivé honnêtement ? | test offline |
+| Recovery | ✅ | relance froide → état intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf + cycle de vie notifications ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `learning.coach` | ≥ 1 test par classe applicable | à écrire (pas de spec de module §M1–§M6) |
+| Région « fil de check-ins » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `mode-coach` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Learn.stories.tsx` couvre `Learn`/`Progression`/`ProgressChargement`/`ProgressErreur`, **pas** le coach |
+| Écran `mode-coach` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (kernel non câblé + état figé) + R13 (OQ)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (POST_NOTIFICATIONS premier usage)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```

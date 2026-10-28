@@ -197,3 +197,126 @@ Comportement des 3 couches sur le `/discovery` (05 §5 l. 2925-3307 ; overview.m
 | **OQ-5** | `FAB` (footer) | Le `FAB` est **interdit** au `/discovery` (05 §3.1 l. 406-408 : « le FAB vit dans les écrans de création : inbox, tâches, fiches » ; le feed = écran de lecture, pas de création). **Mais** le CTA « Work on this » (ADR §13.9 : « create activity/project », discovery/overview §2) = **création** d'une activité Learning via `DiscoveryItemCreated` (AD-9, discovery/overview §12) — le feed **déclenche-t-il** une création ? Si oui : un `FAB` « + » (ouvrir S-40 pour créer une sheet) serait **justifié** (05 §3.1 l. 406-408 : le FAB vit dans les écrans de **création**) ; le CTA « Work on this » **par item** = **pas** un `FAB` (le `FAB` = global, pas par item) — **faut-il** un `FAB` global « Créer une sheet de découverte » **en plus** des CTA par item ? | (a) Pas de `FAB` (le feed n'a **pas** de création globale, la création = par item via « Work on this », AD-14 : CTA unique par item) (b) `FAB` « + » global (crée une sheet vide, S-40) **en plus** des CTA par item (exception à AD-14, OQ-5 du home.md : même raisonnement) | Product / AD-14 owner | 05 §3.1 l. 406-408 ; AD-14 ; discovery/overview §12 ; WDS 03.2 §1 |
 | **OQ-6** | `shadcn Pagination` (labels) | Les labels de `shadcn Pagination` sont **EN** par défaut (« Previous » / « Next » / « More pages », pagination.tsx l. 51 : « labels hardcoded EN ») — le `/discovery` est un écran **FR** (05 §2.2 : Inter, FR) — **faut-il** traduire les labels (« Précédent » / « Suivant » / « Plus de pages ») ? La règle S1 l. 37 = « `shadcn Pagination` = add pagination » — les labels ne sont **pas** spécifiés en SSoT (pas de section « labels Pagination » dans 05) — OQ pour i18n/FR | (a) Labels **FR** (« Précédent » / « Suivant » / « Plus de pages ») — cohérent avec le reste de l'app (FR, 05 §2.2) (b) Labels **EN** (par défaut shadcn, non-thématisés, OQ i18n) (c) Labels **icônes** uniquement (pas de texte : `ChevronLeft` / `ChevronRight` / `MoreHorizontal` lucide S1 l. 59) + `aria-label` FR (accessibilité, 05 §6.3) | Design System / i18n owner | ui-libraries S1 l. 37 ; pagination.tsx (packages/ui/src/components/ui/pagination.tsx l. 51) ; 05 §2.2 ; 05 §6.3 |
 | **OQ-7** | Tri par `UserContext` (OQ-1 WDS 03.2 close option A) | Le tri par `UserContext` (pertinence du profil, ADR §13.1) est **spécifié** mais **pas implementé** (DESIGNED_NOT_IMPLEMENTED, waves 2-4, discovery/overview.md) — **le feed est-il** déjà **trié** par `UserContext` au moment de l'implémentation Phase 1 (mobile, Pixel 4a) ? Si non : le tri = par **date** (les items les plus récents en haut, trigger-map trap 6 « Veille passive » = **moins** pertinent, OQ-1 WDS 03.2 : « Un tri par date serait plus 'flux de liens' (trap 6) ») — **OQ** : le tri Phase 1 = par date (temporaire, jusqu'au moteur `UserContext`) ou par `UserContext` dès Phase 1 ? | (a) Tri par `UserContext` dès Phase 1 (conforme OQ-1 WDS 03.2 close, ADR §13.1) — nécessite le moteur de découverte (AD-8, jobs, waves 2-4) (b) Tri par **date** en Phase 1 (temporaire, anti-trap 6 = moins pertinent, mais implementable sans le moteur `UserContext`) + migration vers tri par `UserContext` en wave 2 (OQ-1 WDS 03.2 : « Un tri par date serait plus 'flux de liens' (trap 6) ») | Product / Discovery owner | ADR §13.1 ; WDS 03.2 OQ-1 ; discovery/overview §2 (DESIGNED_NOT_IMPLEMENTED, waves 2-4) |
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Flux** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la matrice nomme
+`discovery-feed` dans la ligne « Flux », avec `inbox`, `agent-chat`).
+
+L'écran réel est `apps/mobile/src/pages/discovery/index.tsx` (Ionic) alimenté par
+`useVeillePrograms()` (`:36`). Le shell web (`apps/web-app`) **ne rend pas encore** cet
+écran : la section `decouvrir` (`navigation.ts` l.100-105) porte `readiness: 'shell'`,
+donc `ShellState` affiche « Coquille prête ». Le tableau ci-dessous est **la cible**
+(Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : le feed (liste d'items typés) ; la fiche `discovery-sheet` est un **overlay** (`O`) | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + le détail reste un **overlay** | rail d'icônes | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : feed à gauche, fiche (sheet) à droite (règle §2.3 n°2 : « le détail est un overlay `O` sous `lg`, un panneau à `lg`+ ») | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle** : le CTA « Work on this » par item (§3) reste visible aux 3 paliers (invariant
+AD-14 : CTA unique par item). Le badge typologie FACT/TREND/ANALYSIS/SCENARIO/UNCERTAINTY
+reste lisible sans troncature ; la colonne s'élargit au palier desktop.
+
+> **OQ (cadre v1)** — le seuil exact de bascule overlay → panneau (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Discovery** (`module-ownership-matrix.md` : « Discovery Feed \| /discovery ») |
+| R2 | Ligne de catalogue | ✅ | `discovery.research` (`master-feature-catalog.md` l.54, online-required, agent FULL) + `discovery.sheet` (l.57) |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `DiscoveryItem` (`entities-discovery.ts` l.14), `DiscoverySource` (l.82), `DiscoveryScenario` (l.82) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (matrice AD-13) |
+| R6 | États §6.1 couverts | ✅ | §4 (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : **online-required** (nouveaux items, jobs `ResearchProvider`) / **offline-capable** (lecture du feed, miroir `discovery_items`) ; dégradation `uncertain` (01 §6) |
+| R8 | Événements déclarés | ✅ | le feed **consomme** `DiscoveryItemCreated` (`events.ts` l.162, produit par Discovery) pour afficher les nouveaux items ; `Work on this` déclenche une activité Learning via le même événement |
+| R9 | Permissions déclarées | ✅ | aucune (le feed ne demande rien ; la recherche = jobs serveur) |
+| R10 | Entrée de nav déclarée | ✅ | `/discovery` (tab « Découvrir », router.tsx) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ⚠️ **partiel** | la page lit `useVeillePrograms()` (miroir local, AD-7) — la lecture est réelle ; mais le flux « nouveaux items » dépend des jobs `ResearchProvider` (serveur, non déployé : `discovery.veille.md` §M6 « surface OQ-41/OQ-42 = GAP ») |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-1…OQ-7** (§14) restent ouvertes (pagination/virtualisation, `FAB`, i18n labels, tri `UserContext`) |
+
+**Verdict : `NOT_READY`** — 12 critères sur 13. **Le bloquant est R13** (OQ §14
+ouvertes : tri Phase 1 non figé, pagination vs virtualisation).
+
+**Demande de contrat (plan §4)** — pour lever R12/R13 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    packages/discovery/src/**  ·  docs/discovery/overview.md
+Besoin:    le contrat du tri du feed en Phase 1 (par date vs par `UserContext`, OQ-7)
+           et la règle de pagination/virtualisation d'une liste > 100 items
+Motif:     discovery.veille.md §M4 classe la surface GAP (OQ-41) ; le tri `UserContext`
+           est DESIGNED_NOT_IMPLEMENTED (waves 2-4)
+Bloque:    oui — sans contrat, le tri et la pagination du feed ne sont pas figés
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | le feed lit le miroir `discovery_items` (AD-7) ; **interdit** : tableau codé en dur ou état vide figé |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 — fiche/deep link invalide → état 404/feature-disabled, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : le feed (miroir) reste lisible ; la recherche multi-source est désactivée honnêtement |
+| S5 | Retour arrière vérifié | relance froide → re-lecture du miroir (pas d'écran blanc) |
+| S6 | Isolation utilisateur | RLS sur `discovery_items` (user A ≠ user B) |
+| S7 | Tokens-only | §3 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | typologie FACT/TREND/…/UNCERTAINTY + tri corrects ? | Vitest ≥ 80 % sur `packages/domain` / `@aurora/discovery` |
+| Intégration | ✅ | lecture du miroir `discovery_items` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | consommateur `DiscoveryItemCreated` (`events.ts` l.162) | test AD-9 producer/consumer |
+| E2E | ✅ | « découvrir → travailler un item » ? | Playwright web |
+| Failure | ✅ | recherche échouée / provider absent → `uncertain` (AD-1) sans crash ? | test failure |
+| Permission | ⚠️ | aucune sur le feed → n/a justifié | — |
+| Offline | ✅ | réseau coupé → feed lisible, recherche désactivée ? | test offline |
+| Recovery | ✅ | relance froide → état intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (liste > 100 items virtualisée) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `discovery.veille` (pipeline) | ≥ 1 test par classe applicable | ✅ — `@aurora/discovery` 48/48 (`discovery.veille.md` §M6) |
+| Région « feed » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `discovery-feed` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — `DiscoveryView` (composite) est sans story (`ui-brick-inventory.md` §4) |
+| Écran `discovery-feed` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R13 (OQ-1…OQ-7)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```

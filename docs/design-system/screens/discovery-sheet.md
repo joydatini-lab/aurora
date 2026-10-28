@@ -153,3 +153,127 @@ Note : le back Android **descend** le sheet par paliers (`peek` → fermé, 05 �
 - **OQ-08** : `AgentThinkingLoader` dans la fiche (explication d'Aurora du « pourquoi maintenant » en streaming) — WDS 03.3 n'en mentionne **pas** (§13 : « aucune occurrence », le thinking vit côté feed/chat) ; si l'explication devient **streamée** dans le bloc 1 = il faudrait l'organisme §9.3 l.420–487 (prop butterfly stripped, GPU-only blobs, a11y `role=status`/`aria-live=polite`, reduced-motion = mot gelé sur le premier, wing-flap v2 **bloqué** l.467–480) ; **pas** de SSoT qui l'impose ici → **OQ** (pas de spec streaming-in-sheet ; décideur = Discovery/Agent team ; si oui = `AgentThinkingLoader` existant packages/ui, **pas** de nouveau composant maison (S1 : 1 écran = 1 système)).
 - **OQ-09** : transition sortie du CTA vers bibliothèque S-14 (03.4) ou `/learn`/`/tasks` (context-preserving, router.tsx + 02 S6.2) — **pas** de SSoT pour la transition sheet → bibliothèque (pas de rule de navigation entre un BottomSheet et la suite du flux 03.4, WDS 03.3 §4 Desired Outcome dit « l'envoie vers la bibliothèque » mais sans spec de transition ; ssootCode floatingSurfaces router.tsx : « details open OVER the current tab » = entrée **seulement**) → **OQ** (pas de spec de la sortie CTA ; décideur = Learning team, 03.4 S-14 ; pattern = PAGE_TRANSITION 200ms motion.tsx @aurora/ui **par défaut**).
 - **OQ-10** : classe offline exacte de `discovery.sheet` dans le master-feature-catalog — la ligne (docs/features/master-feature-catalog.md, Discovery family) ne porte **pas** de marqueur `offline-capable`/`online-required` (contrairement à `discovery.research` = online-required ou `productivity.*` = offline-capable) ; §12 déduit « lecture = miroir (AD-7) / nouveaux jobs = online » depuis docs/discovery/overview §16 + WDS 03.3 §7 — **pas** de SSoT explicite de la **classe** → **OQ** (pas de spec de classe dans le catalogue ; décideur = Discovery team, à marquer `offline-capable (mirror)` à la prochaine passe du catalogue).
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **hérite du parent** — la fiche est un `BottomSheet` ouvert au-dessus du
+feed `discovery-feed`, classé **Flux** (`docs/frontend/web-shell-and-responsive.md`
+§2.3). Elle n'a pas de gabarit propre (c'est une surface de détail, pas un écran de
+la matrice).
+
+L'écran réel est `apps/mobile/src/pages/discovery/card.tsx` (rendu de la fiche d'un
+`DiscoveryItem`). Le shell web (`apps/web-app`) **ne rend pas encore** cet écran
+(section `decouvrir` `readiness: 'shell'`). Le tableau ci-dessous est **la cible**
+(Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | le sheet est un **overlay** au-dessus du feed (tirette 32×4 px, §3) | tab bar basse | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | le sheet reste un **overlay** | rail d'icônes | tablette |
+| **`lg+` (≥ 1024 px)** | **panneau de droite** : la fiche remplace l'overlay (règle §2.3 n°2 : « même composant, conteneur différent ») | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle** : le CTA fixe « Work on this » (§3, bas du sheet) reste visible aux 3 paliers
+(invariant AD-14 : CTA unique par item). Les 3 blocs (SUBSTANCE / QUALIFICATION / ACTION,
+§3) gardent leur ordre ; seul le conteneur change.
+
+> **OQ (cadre v1)** — le seuil exact de bascule overlay → panneau (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Discovery** (`module-ownership-matrix.md` : « Discovery Feed \| /discovery ») |
+| R2 | Ligne de catalogue | ✅ | `discovery.sheet` (`master-feature-catalog.md` l.57 : « durable discovery objects (13.8 fields) → Learning activities via `DiscoveryItemCreated` ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `DiscoveryItem` (`entities-discovery.ts` l.14), `DiscoverySource` (l.82) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (matrice AD-13) |
+| R6 | États §6.1 couverts | ✅ | §4 (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : lecture = **miroir local** (AD-7) ; nouveaux engagements synchronisés = **online-required** (dégradation AD-1) ; la **classe exacte** de `discovery.sheet` n'est pas marquée au catalogue = **OQ-10** |
+| R8 | Événements déclarés | ✅ | le CTA « Work on this » produit une activité Learning via `DiscoveryItemCreated` (`events.ts` l.162, producteur Discovery) |
+| R9 | Permissions déclarées | ✅ | aucune (la fiche ne demande rien) |
+| R10 | Entrée de nav déclarée | ✅ | `/discovery/:id` = sheet/deep-link au-dessus du feed S-27 (ADR §13.8 ; WDS 03.3 OQ-2 close option A) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | la fiche est rendue par `discovery/card.tsx` mais la surface est classée **GAP** (`discovery.veille.md` §M4 : « surface OQ-41/OQ-42 = GAP ») ; les champs 13.8 (`recommended_actions`/`semantic_node_ids`) ne sont **pas** dans la migration (`discovery.veille.md` §M6 **DD-4**) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-01…OQ-10** (§14) restent ouvertes (copy FR du CTA, `AgentThinkingLoader`, classe offline exacte) |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (champs
+13.8 non persistés — DD-4) et **R13** (OQ §14 ouvertes).
+
+**Demande de contrat (plan §4)** — pour lever R12 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    packages/discovery/src/**  ·  supabase/migrations/0006_discovery.sql (owner Discovery)
+Besoin:    la persistance des champs 13.8 de la fiche (`recommended_actions`,
+           `semantic_node_ids`) — DD-4 : absents de la migration
+Motif:     discovery.veille.md §M6 DD-4 documente l'écart ; la fiche rend des blocs
+           (ACTION, liens arbre) que la table ne stocke pas
+Bloque:    oui — sans contrat, la fiche affiche des blocs sans données réelles (S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la fiche lit le `DiscoveryItem` du miroir (AD-7) ; **interdit** : blocs fabriqués sans données |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 — item introuvable → état `empty`/404, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : la fiche (miroir) reste lisible ; les nouveaux engagements sont différés |
+| S5 | Retour arrière vérifié | relance froide → état intact (pas d'écran blanc) |
+| S6 | Isolation utilisateur | RLS sur `discovery_items` (user A ≠ user B) |
+| S7 | Tokens-only | §3 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | composition des 3 blocs depuis un `DiscoveryItem` correcte ? | Vitest ≥ 80 % sur `packages/domain` / `@aurora/discovery` |
+| Intégration | ✅ | lecture du miroir `discovery_items` (fiche) sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | producteur `DiscoveryItemCreated` (`events.ts` l.162) via « Work on this » | test AD-9 producer/consumer |
+| E2E | ✅ | « ouvrir une fiche → travailler l'item » ? | Playwright web |
+| Failure | ✅ | miroir corrompu / conflit de sync → `Callout` error ? | test failure |
+| Permission | ⚠️ | aucune sur la fiche → n/a justifié | — |
+| Offline | ✅ | réseau coupé → fiche lisible, engagement différé ? | test offline |
+| Recovery | ✅ | relance froide → état intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (ouverture du sheet ≤ 300 ms) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `discovery.veille` (pipeline) | ≥ 1 test par classe applicable | ✅ — `@aurora/discovery` 48/48 (`discovery.veille.md` §M6) |
+| Région « fiche (3 blocs) » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `discovery-sheet` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — `DiscoveryView` (composite) est sans story (`ui-brick-inventory.md` §4) |
+| Écran `discovery-sheet` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (champs 13.8 — DD-4) + R13 (OQ)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```

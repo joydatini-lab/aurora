@@ -150,3 +150,127 @@
 - **OQ-06** : Nombre de findings typiques (3-10, AD-12/F-09) — 05 §4.9.2 dit « les lacunes, les contradictions, les erreurs » mais **pas** de SSoT pour le calcul du nombre (pas de rule pour « adaptatif = quelle logique ? » ; pas de spec pour le calcul du nombre de findings ; pas de composant dédié dans la battery shadcn) → **OQ** (pas de spec adaptatif, pas de rule pour calcul, pas de composant dédié).
 - **OQ-07** : 2 panneaux desktop (Phase 2, doc §23.4) — 05 §4.9.2 dit « desktop = la saisie (texte/voix) passe dans un **panneau latéral gauche**, le résultat de l'analyse (les Callout + MathBlock) passe dans un **panneau droit** (2 colonnes, ratio 40/60) ; la logique (saisie → analyse → résultats → prochaine action) est **inchangée** (doc §23.4 : adapter le layout, pas le contenu) » mais **pas** de SSoT pour le breakpoint (pas de rule pour « desktop = quel width min », pas de pattern de split-view dans ui-libraries S1) → **OQ** (pas de spec breakpoint, pas de rule pour split-view mobile → desktop, pas de composant split dans la battery).
 - **OQ-08** : Saisie vocale offline (AD-1, `TranscriptionProvider` optionnel) — pack 04 §5 dit « `TranscriptionProvider` optionnel, **accepte l'absence** du provider » mais **pas** de SSoT pour le comportement offline (pas de rule pour « saisie vocale offline = archive locale ? » ; pas de spec pour le stockage de l'audio dans SQLite, AD-7 ; pas de composant dédié dans la battery shadcn) → **OQ** (pas de spec saisie vocale offline, pas de rule pour stockage audio local, pas de composant dédié).
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Session guidée** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `mirror-cognitive` dans la ligne « Session guidée », avec `flashcards`,
+`qcm`, `cours-detail`). L'écran est une **enveloppe overlay** (`/mirror`, 02 §6.1 S1/S3).
+
+L'écran réel est `apps/mobile/src/pages/learn/index.tsx` (branche mirror, Ionic). Le
+shell web (`apps/web-app`) **ne rend pas encore** cet écran (section `apprendre`
+`readiness: 'shell'`). Le tableau ci-dessous est **la cible** (Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : saisie (texte/voix) au-dessus, résultats (Callout + MathBlock) en dessous | tab bar basse | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne centrée (lecture max) | rail d'icônes | tablette |
+| **`lg+` (≥ 1024 px)** | 05 §4.9.2 évoque **2 colonnes 40/60** (saisie à gauche, analyse à droite) — à ratifier (OQ-07) ; la matrice §2.3 classe l'écran en « Session guidée » (1 colonne) | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle** : la logique (saisie → analyse → résultats → prochaine action) est **inchangée**
+(doc §23.4 : adapter le layout, pas le contenu). Le passage éventuel à 2 colonnes
+(05 §4.9.2) est **contradictoire** avec la matrice §2.3 (« Session guidée » = 1 colonne) et
+reste **OQ-07**.
+
+> **OQ-07** — 05 §4.9.2 propose « desktop = 2 colonnes 40/60 » alors que la matrice §2.3
+> classe `mirror-cognitive` en « Session guidée » (1 colonne à tous les paliers) : conflit
+> non résolu. Le seuil de bascule n'est pas ratifié (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Learning** (`module-ownership-matrix.md` : « Mirror \| /mirror ») |
+| R2 | Ligne de catalogue | ✅ | `learning.mirror` (`master-feature-catalog.md` l.39 : « server `mirror-analysis` job, typed detections + AD-11 provenance, F-07 evidence path, screen = 05 additive wave 2 ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `LearningItem` (`entities-learning.ts` l.86), `Skill` (l.33) ; la validation alimente Progress (F-07) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (matrice AD-13) |
+| R6 | États §6.1 couverts | ✅ | §4 (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : **PARTIAL** — saisie = **locale** (AD-7, texte non perdu), analyse = **serveur** (AD-12/F-09) |
+| R8 | Événements déclarés | ✅ | l'analyse alimente Progress (F-07 : seul Progress émet `ProgressEvidenceCreated`, `events.ts` l.69) ; l'analyse = job `mirror-analysis` (AD-8 → `JobCompleted`, l.146) |
+| R9 | Permissions déclarées | ✅ | micro **optionnel** (saisie vocale via `TranscriptionProvider`, AD-1) ; jamais au boot |
+| R10 | Entrée de nav déclarée | ✅ | `/mirror` = enveloppe overlay (02 §6.1 S1/S3) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | la page rend un état **figé** (`learn/index.tsx` l.90) ; la saisie locale + le job d'analyse ne sont pas câblés ; `packages/progress/test/m63-mirror-evidence.test.ts` couvre la qualification M-63 mais l'écran ne l'appelle pas |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-01…OQ-08** + **OQ-15** (§14) restent ouvertes (nombre de findings, 2 colonnes desktop, saisie vocale offline) |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (état figé,
+job non câblé) et **R13** (OQ §14 ouvertes).
+
+**Demande de contrat (plan §4)** — pour lever R12 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    apps/mobile/src/pages/learn/index.tsx  ·  packages/progress/src/** (evidence)
+Besoin:    le branchement de la saisie locale (AD-7) + du job d'analyse serveur
+           (`mirror-analysis`, AD-8) + la qualification M-63 → preuve (F-07)
+Motif:     progress.mirror.md §M1 : `evidenceFromMirrorValidation` existe (evidence.ts:118)
+           mais la saisie/le job de l'écran ne sont pas câblés ; la page rend un état figé
+Bloque:    oui — sans contrat, la session Mirror n'est pas démontrable (S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la saisie est persistée localement (AD-7) et l'analyse produit des findings réels ; **interdit** : état vide figé (aujourd'hui `learn/index.tsx` l.90) |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 — deep link invalide → état 404/feature-disabled, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : saisie archivée localement (texte non perdu), analyse différée |
+| S5 | Retour arrière vérifié | relance froide → saisie restaurée (AD-7), pas d'écran blanc |
+| S6 | Isolation utilisateur | RLS sur les tables de saisie (user A ≠ user B) |
+| S7 | Tokens-only | §3 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | qualification M-63 → preuve (F-07) + typage des findings corrects ? | Vitest ≥ 80 % sur `packages/domain` / `@aurora/progress` |
+| Intégration | ✅ | saisie locale (AD-7) + job d'analyse (AD-8) + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | F-07 : seul Progress émet `ProgressEvidenceCreated` (`events.ts` l.69) via M-63 | test AD-9 producer/consumer |
+| E2E | ✅ | « écrire une explication → lancer l'analyse → voir les lacunes » ? | Playwright web |
+| Failure | ✅ | analyse échouée → `Callout` + « Réessayer » sans perdre la saisie ? | test failure |
+| Permission | ✅ | refus micro → fallback saisie texte (AD-1) ? | test permission |
+| Offline | ✅ | réseau coupé → saisie archivée, analyse différée ? | test offline |
+| Recovery | ✅ | relance froide → saisie restaurée ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `progress.mirror` (M-63) | ≥ 1 test par classe applicable | ✅ partiel — `packages/progress/test/m63-mirror-evidence.test.ts` |
+| Région « saisie + analyse » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `mirror-cognitive` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Learn.stories.tsx` couvre `Learn`/`Progression`/`ProgressChargement`/`ProgressErreur`, **pas** le Mirror |
+| Écran `mirror-cognitive` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (job non câblé + état figé) + R13 (OQ)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (micro optionnel)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```

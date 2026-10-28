@@ -140,3 +140,126 @@
 - **OQ-06** : Transition sortie vers `/progress` (fin, §4a success) — WDS 01.4 dit « auto-redirect événementiel » mais **pas** de SSoT pour la transition (pas de rule slide/push, pas de pattern navigation entre overlays ; ssootCode floatingSurfaces router.tsx dit « details open OVER the current tab » mais **pas** de spec transition overlay → autre route) → **OQ** (pas de spec transition, pas de rule pour navigate entre 2 overlays, pas de composant transition dédié).
 - **OQ-07** : Nombre de questions (5-15 typiques, AD-12/F-09) — WDS 01.4 dit « QCM = 5-15 questions typiques » mais **pas** de SSoT pour l'implémentation (pas de rule pour « adaptatif = quelle logique ? » ; pas de spec pour le calcul du nombre ; pas de composant dédié dans la battery shadcn) → **OQ** (pas de spec adaptatif, pas de rule pour calcul, pas de composant dédié).
 - **OQ-08** : 2 panneaux desktop (Phase 2, doc §23.4) — WDS 01.4 dit « desktop = le QCM passe en 2 panneaux (questions à gauche, réponses à droite) ; la barre de progression passe en haut ; la logique séquentielle (une question à la fois, validation avant suivante) est **inchangée** (doc §23.4 : adapter le layout, pas le contenu) » mais **pas** de SSoT pour le breakpoint (pas de rule pour « desktop = quel width min », pas de pattern de split-view dans ui-libraries S1) → **OQ** (pas de spec breakpoint, pas de rule pour split-view mobile → desktop, pas de composant split dans la battery).
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Session guidée** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `qcm` dans la ligne « Session guidée », avec `flashcards`, `cours-detail`,
+`mirror-cognitive`).
+
+L'écran est un **overlay** au-dessus du tab courant (`/learn/:id`, 02 §6.1 S1/S3). Le
+shell web (`apps/web-app`) **ne rend pas encore** cet écran (section `apprendre`
+`readiness: 'shell'`). Le tableau ci-dessous est **la cible** (Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne centrée : question + groupe RadioButton + barre d'actions | tab bar basse | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne centrée (lecture max) | rail d'icônes | tablette |
+| **`lg+` (≥ 1024 px)** | **1 colonne centrée** (lecture max) — la séquence reste centrée à tous les paliers ; WDS 01.4 évoque un **2 panneaux** (questions à gauche, réponses à droite) — à ratifier (gabarit non ratifié) | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°4** : « La session guidée reste à 1 colonne à tous les paliers — choix de
+concentration. » La logique séquentielle (une question à la fois, validation avant
+suivante) est **inchangée** (doc §23.4). Le passage éventuel à 2 panneaux (WDS 01.4) est
+**contradictoire** avec la matrice §2.3 et reste **OQ (cadre v1)**.
+
+> **OQ (cadre v1)** — WDS 01.4 propose « desktop = 2 panneaux » alors que la matrice §2.3 classe
+> `qcm` en « Session guidée » (1 colonne à tous les paliers) : conflit non résolu. Le seuil
+> de bascule n'est pas ratifié (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Learning** (`module-ownership-matrix.md` : « QCM \| /qcm/:id ») |
+| R2 | Ligne de catalogue | ✅ | `learning.qcm` (`master-feature-catalog.md` l.37 : « QCM generation + progressive exercises + error analysis (recurring errors); online generation; PARTIAL offline ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `LearningItem` (`entities-learning.ts` l.86), `Skill` (l.33) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (matrice AD-13) |
+| R6 | États §6.1 couverts | ✅ | §4 (`en-cours`/`terminé`/`échec` = états de session) |
+| R7 | Classe offline déclarée | ✅ | §12 : **PARTIAL offline** (génération online ; QCM existant exécutable depuis SQLite) |
+| R8 | Événements déclarés | ✅ | la fin de QCM alimente Progress (F-07 : seul Progress émet `ProgressEvidenceCreated`, `events.ts` l.69) ; la génération = job (AD-8 → `JobCompleted`, l.146) |
+| R9 | Permissions déclarées | ✅ | aucune (génération = job serveur) |
+| R10 | Entrée de nav déclarée | ✅ | `/learn/:id` = overlay sur le tab courant (02 §6.1 S1/S3) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | la page rend un état **figé** (`learn/index.tsx` l.90) ; la génération serveur (AD-12/F-09) et la lecture du QCM existant (SQLite) ne sont pas câblées |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-01…OQ-09** + **OQ-15/OQ-16** (§14) restent ouvertes (atténuation CTA Focus, transition sortie, nombre de questions, 2 panneaux) |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (état figé)
+et **R13** (OQ §14 ouvertes).
+
+**Demande de contrat (plan §4)** — pour lever R12 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    apps/mobile/src/pages/learn/index.tsx  ·  packages/learning/src/** (QCM)
+Besoin:    le contrat de lecture du QCM existant (miroir SQLite, AD-7) + le contrat de
+           génération serveur (job AD-12/F-09 → `JobCompleted`) + la fin de session → preuve
+Motif:     la page rend un état vide figé ; learning.qcm n'a pas de spec de module §M1–§M6
+Bloque:    oui — sans contrat, la session QCM n'est pas démontrable (S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | l'écran lit le QCM existant du miroir + le retour de génération ; **interdit** : état vide figé (aujourd'hui `learn/index.tsx` l.90) |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 — QCM inconnu → état 404/feature-disabled, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : QCM existant exécutable (SQLite) ; génération différée |
+| S5 | Retour arrière vérifié | relance froide → état intact (pas d'écran blanc) |
+| S6 | Isolation utilisateur | RLS sur les tables QCM (user A ≠ user B) |
+| S7 | Tokens-only | §3 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | calcul du score + analyse des erreurs récurrentes corrects ? | Vitest ≥ 80 % sur `packages/domain` / `@aurora/learning` |
+| Intégration | ✅ | lecture du QCM (miroir) + job de génération (AD-8) + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | fin de QCM → preuve Progress (F-07) ; `JobCompleted` (`events.ts` l.146) | test AD-9 producer/consumer |
+| E2E | ✅ | « lancer un QCM → répondre → voir le score » ? | Playwright web |
+| Failure | ✅ | génération échouée → état `error` + retry (jobId) ? | test failure |
+| Permission | ⚠️ | aucune sur le QCM → n/a justifié | — |
+| Offline | ✅ | réseau coupé → QCM existant exécutable, génération différée ? | test offline |
+| Recovery | ✅ | relance froide → état intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `learning.qcm` | ≥ 1 test par classe applicable | à écrire (pas de spec de module §M1–§M6) |
+| Région « session QCM » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `qcm` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Learn.stories.tsx` couvre `Learn`/`Progression`/`ProgressChargement`/`ProgressErreur`, **pas** la session QCM |
+| Écran `qcm` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (état figé) + R13 (OQ)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```

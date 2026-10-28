@@ -135,3 +135,125 @@
 - **OQ-10** : ~~SSoT fictif~~ — **CORRIGÉ et consolidé en OQ-07 (vérification 2026-09-29)** : l'ancienne OQ-10 présumait que la matrice §9.1 l.387 interdisait le logo monochrome centré pour le 404 ; l'examen exact de la ligne l.387 montre l'inverse — elle **prescrit** « COLORED without-background, CENTERED » pour « 404 / not-found / feature-disabled (page center) » (living empty state), confirmé par §6.1 l.202 et les interdits l.390–392 (monochrome interdit dans les états vivants). Les lignes du spec (« monochrome » dans §4c/§3/§10) ont été corrigées en « COLORED sans fond, centrée » ; plus de conflit interne, plus de SSoT fictif — cette OQ est conservée uniquement pour traçabilité et pointe vers OQ-07 pour le tranchement final par l'owner. SSoT refs = ui-libraries §9.1 l.387–392 + §6.1 l.202 (vérifié).
 - **OQ-11** : Texte exact de l'état killed (skeleton + « Reconnexion... », §4a/§4d) = pas de SSoT pour le texte exact de l'état killed (ui-libraries §6 l.185 définit l'état, pas le copy FR exact) → texte « Reconnexion... » = OQ à trancher par l'owner (copy FR bloquant avant implémentation). SSoT refs = ui-libraries §6 l.185 + ssootCode stateRefs (ux-states.tsx).
 - **OQ-12** : Texte exact de l'état offline (badge offline, §4a) = pas de SSoT pour le label exact du badge offline (ui-libraries §6 l.184 définit l'état, pas le copy FR) → à trancher par l'owner. SSoT refs = ui-libraries §6 l.184 + ssootCode stateRefs (useOnlineStatus pattern, apps/mobile/src/pages/ascent/index.tsx).
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Liste + détail** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `fiches-*` dans la ligne « Liste + détail »).
+
+L'écran est un **overlay** au-dessus du tab courant (`/learn/:id`, 02 §6.1 S1/S3). Le
+shell web (`apps/web-app`) **ne rend pas encore** cet écran (section `apprendre`
+`readiness: 'shell'`). Le tableau ci-dessous est **la cible** (Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne ; la fiche est un **overlay** au-dessus de la liste | tab bar basse | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + la fiche reste un **overlay** | rail d'icônes | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : liste de fiches à gauche, fiche à droite (l'overlay devient un panneau) | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°2** : « Le détail est un overlay (`O`) sous `lg`, un panneau à `lg`+ —
+même composant, conteneur différent. » La lecture de la fiche est plafonnée par
+`aurora.layout.reading-max` (720 px) : « texte long (fiches, documents) ».
+
+> **OQ (cadre v1)** — le seuil exact de bascule overlay → panneau (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Learning** (`module-ownership-matrix.md` : « Study Sheets \| /sheets/:id ») |
+| R2 | Ligne de catalogue | ✅ | `learning.sheet` (`master-feature-catalog.md` l.35 : « AI study sheets (7 structures, ADR §17)… generation job + AI gateway; online-required ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `LearningItem` (`entities-learning.ts` l.86), `Skill` (l.33) ; structure de fiche = ADR §17 (7 structures) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (matrice AD-13) |
+| R6 | États §6.1 couverts | ✅ | §4 (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §9/§12 : **aucun miroir** (AD-7/AD-12 : le contenu de fiche n'est **pas** synchronisé localement) ; génération = online-required |
+| R8 | Événements déclarés | ✅ | la fiche **consomme** la preuve (F-07) ; la génération produit `ArtifactGenerated` (`events.ts` l.125, via `artifact.export`) ; l'écran ne produit rien lui-même |
+| R9 | Permissions déclarées | ✅ | aucune (lecture d'une fiche) |
+| R10 | Entrée de nav déclarée | ✅ | `/learn/:id` = overlay sur le tab courant (02 §6.1 S1/S3) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | le contenu de fiche **n'est pas synchronisé localement** (aucun miroir, §9/§12) et aucun contrat de lecture serveur n'est câblé côté device |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-01…OQ-12** (§14) restent ouvertes (badge offline, texte killed, cache/last-known-data) |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (pas de
+miroir, pas de contrat de lecture) et **R13** (OQ §14 ouvertes).
+
+**Demande de contrat (plan §4)** — pour lever R12 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    packages/learning/src/**  ·  docs/features/specs/learning.flashcards.md (voisin)
+Besoin:    le contrat de lecture d'une fiche (learning.sheet) côté device : la table
+           n'est PAS miroitée (§M2 learning.flashcards voisin : « flashcards non miroité »)
+           → décider : miroir dédié, cache, ou lecture serveur honnête (OQ-06)
+Motif:     §9/§12 : aucun miroir, aucun cache par design (AD-1) ; l'écran ne peut pas
+           lire de données hors-ligne
+Bloque:    oui — sans contrat, l'écran reste muet hors-ligne (violation S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | l'écran lit une fiche réelle (miroir ou serveur selon le contrat) ; **interdit** : contenu fabriqué |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 — fiche inconnue → CTA « Retour à l'accueil » (404 global), jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : pas de miroir → état honnête (pas de spinner infini, pas de last-known-data inventée) |
+| S5 | Retour arrière vérifié | relance froide → état intact (pas d'écran blanc) |
+| S6 | Isolation utilisateur | RLS sur la table de fiche (user A ≠ user B) |
+| S7 | Tokens-only | §3 — aucune valeur brute |
+| S8 | A11y AA | §7 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | structure de fiche (7 structures ADR §17) + rendu `MathBlock` corrects ? | Vitest ≥ 80 % sur `packages/domain` / `@aurora/learning` |
+| Intégration | ✅ | lecture de la fiche (miroir ou serveur) + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | consommateur de preuve (F-07) + producteur `ArtifactGenerated` (`events.ts` l.125) | test AD-9 producer/consumer |
+| E2E | ✅ | « ouvrir une fiche → soumettre un QCM → marquer acquis » ? | Playwright web |
+| Failure | ✅ | génération échouée → `Callout` + retry sans crash ? | test failure |
+| Permission | ⚠️ | aucune sur la fiche → n/a justifié | — |
+| Offline | ✅ | réseau coupé → état honnête (pas de miroir) ? | test offline |
+| Recovery | ✅ | relance froide → état intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `learning.sheet` | ≥ 1 test par classe applicable | à écrire (génération = jobs `packages/learning`) |
+| Région « contenu de fiche » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `fiches-detail` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Learn.stories.tsx` couvre `Learn`/`Progression`/`ProgressChargement`/`ProgressErreur`, **pas** le détail fiche |
+| Écran `fiches-detail` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (pas de miroir) + R13 (OQ)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§7)
+[ ] gate du lot vert (AI_RULES §9)
+```
