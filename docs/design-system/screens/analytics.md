@@ -151,3 +151,131 @@
 - **OQ-07** : Grille 2×3 desktop (Phase 2, 05 §4.5.2 Notes responsive) — 05 §4.5.2 dit « desktop = les 5 questions passent en grille 2×3 (pas une liste linéaire — le desktop a la largeur) ; les ChartSpec G2 s'élargissent (le contenu reste identique, seul le layout change, doc §23.4) ; les actions flottantes passent dans la TopBar » mais **pas** de SSoT pour le breakpoint (pas de rule pour « desktop = quel width min », pas de pattern de split-view dans ui-libraries S1 ; pas de composant grille 2×3 dans la battery) → **OQ** (pas de spec breakpoint, pas de rule pour split-view mobile → desktop, pas de composant grille dans la battery).
 - **OQ-08** : Re-render événementiel `ProgressEvidenceCreated` (AD-9, WDS 01.7) — 01.7 dit « le re-render du dashboard est déclenché par l'événement (AD-9 → ProgressSnapshot, ADR §18.6), **pas un CTA manuel** (garde AD-14) » mais **pas** de SSoT pour le comportement si l'événement arrive pendant le killed (pas de rule pour « re-render pendant killed = attendre la reconnexion ? » ; pas de spec pour le stockage de l'événement dans SQLite, AD-7 ; pas de composant dédié dans la battery shadcn) → **OQ** (pas de spec re-render offline, pas de rule pour stockage événement local, pas de composant dédié).
 - **OQ-09** : `SkillStateBadge` — pas de SSoT **code** vérifiable : le composant DS dédié est absent de `packages/ui` (pas de `SkillStateBadge.tsx` dans la battery §1 de docs/ui-libraries.md, ssootCode componentRefs) ; seule la spec 05 §3.6.11 (wrapper AD-10, 3 familles de couleurs + niveau 1–8) existe → **OQ** (à trancher : créer le wrapper DS `SkillStateBadge` ou composer `Badge` shadcn + token sémantique).
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Tableau de bord** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `analytics` dans la ligne « Tableau de bord », avec `home`,
+`progress-dashboard`, `design-space`).
+
+L'écran réel est `apps/mobile/src/pages/progress/index.tsx` (Ionic, 1 colonne). Le
+shell web (`apps/web-app`) **ne rend pas encore** cet écran : aucune section de
+`navigation.ts` ne porte `/progress` (les 10 sections du shell sont `accueil`,
+`projets`, `creer`, `apprendre`, `decouvrir`, `organiser`, `connaissances`,
+`bibliotheque`, `agent`, `parametres`), donc `ShellState` affiche l'état honnête
+« Coquille prête ». Le tableau ci-dessous est **la cible** (Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : les 5 questions (doc §18.1) empilées en liste linéaire | tab bar basse (5 onglets, §2) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail (`navFormForMode`) | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** (nav + contenu) ; les **5 questions passent en grille 2×3** (05 §4.5.2 Notes responsive : « pas une liste linéaire — le desktop a la largeur ») ; les `ChartSpec` G2 s'élargissent (contenu identique, seul le layout change, doc §23.4) | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle** : les 2 actions flottantes (§3 : « Partager », « Ajouter au journal »)
+restent **visibles** aux 3 paliers ; à `lg+` elles passent **dans la TopBar** (05
+§4.5.2 Notes responsive). Le contenu des blocs de preuves est identique d'un palier à
+l'autre (doc §23.4 : adapter le layout, pas le contenu).
+
+> **OQ-10** — le seuil exact de bascule liste linéaire → grille 2×3 (`lg` = 1024 px) est
+> une proposition (`layout-tokens.ts`) non ratifiée au niveau de l'écran (cf. OQ-4
+> globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` : « Analytics \| /analytics… ») |
+| R2 | Ligne de catalogue | ✅ | `productivity.analytics` (`master-feature-catalog.md` l.27) |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `ProgressTrend` (`entities-progress.ts` l.107), `ProgressEvent` (l.126), `ProgressEvidence` (l.16), `ProgressSnapshot` (l.55), `SkillState` (l.80) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (matrice AD-13) |
+| R6 | États §6.1 couverts | ✅ | §4 (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : `PARTIAL` — lecture locale (AD-7), agrégats serveur (AD-8) ; catalog l.27 « offline-capable (mirrors) » |
+| R8 | Événements déclarés | ✅ | analytics est **lecture seule** : elle **consomme** `ProgressEvidenceCreated` (`events.ts` l.69) et `SkillStateChanged` (l.92) via le re-render événementiel (§1) ; elle n'émet rien |
+| R9 | Permissions déclarées | ✅ | aucune (l'écran ne demande rien) |
+| R10 | Entrée de nav déclarée | ✅ | `/progress` = BottomNav tab 4 (02 §6.1) ; `/progress/:id` = détail preuve over tab |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») + §6 |
+| R12 | Contrat de données | ❌ **NON** | la page rend un état **figé** `{ status: 'empty' }` (`progress/index.tsx` l.73 et l.138) ; de plus le miroir lu par `progress-repo.ts` lit des colonnes **inexistantes** (`proficiency`/`updated_evidence`/`snapshot_at`) — `progress.mirror.md` §M2 **DP-1** : « le dashboard lit un miroir vide » |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-01…OQ-09** (§14) restent ouvertes (bloc « Ajouter au journal » = `decisions` non figé ; composant `SkillStateBadge` absent de `packages/ui`, OQ-09) |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (état
+vide fantôme + miroir vide DP-1) et **R13** (OQ §14 ouvertes).
+
+**Demande de contrat (plan §4)** — pour lever R12 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    packages/progress/src/**  ·  apps/mobile/src/lib/progress-repo.ts
+Besoin:    l'alignement miroir ↔ schéma (DP-1 : `proficiency`/`updated_evidence`/
+           `snapshot_at` n'existent dans aucune table) + le contrat de lecture des
+           5 questions (doc §18.1) que la page consomme
+Motif:     progress.mirror.md §M2 DP-1 documente le drift mais ne le corrige pas
+           (packages/domain + supabase/migrations interdits côté WS-3)
+Bloque:    oui — sans alignement, la page ne peut pas lire de données réelles (S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la page lit `readProgress` (`progress-repo.ts` l.136) ; **interdit** : `{ status: 'empty' }` figé (aujourd'hui l.73/138) ; **requis** : DP-1 corrigé sinon le miroir reste vide |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 (404 = pattern global `not-found`, jamais un 404 brut) |
+| S4 | Offline vérifié | §12 — réseau coupé : les analytics existantes (miroir) consultables ; le recalcul différé (AD-8) |
+| S5 | Retour arrière vérifié | relance froide → re-lecture du miroir (`useKilledDetection`) |
+| S6 | Isolation utilisateur | RLS sur `progress_snapshots`/`skill_states` (user A ≠ user B) |
+| S7 | Tokens-only | §3/§6 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `dashboard`/`todayBoard`/`trendBoard` (G2) corrects ? | Vitest ≥ 80 % sur `packages/domain` / `@aurora/progress` |
+| Intégration | ✅ | les vues PowerSync `skill_states`/`progress_snapshots` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | consommateur de `ProgressEvidenceCreated` (`events.ts` l.69) → re-render | test AD-9 producer/consumer |
+| E2E | ✅ | « terminer une session → l'agrégat se re-peint » ? | Playwright web |
+| Failure | ✅ | agrégat incalculable → `Callout warning` (non masqué, AD-11) ? | test failure |
+| Permission | ⚠️ | aucune sur cet écran → n/a justifié | — |
+| Offline | ✅ | réseau coupé → analytics existantes lisibles, recalcul différé ? | test offline |
+| Recovery | ✅ | relance froide → état intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `progress.mirror` (dashboards G2) | ≥ 1 test par classe applicable | ✅ partiel — `@aurora/progress` 20/20 (`progress.mirror.md` §M6) ; `apps/mobile` progress-wiring 10/10 |
+| Région « 5 questions » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `analytics` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — `ProgressView` (composite) est sans story dédiée (`ui-brick-inventory.md` §4) |
+| Écran `analytics` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (miroir vide DP-1 + état figé) + R13 (OQ)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
