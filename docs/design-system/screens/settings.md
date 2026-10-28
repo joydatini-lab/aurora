@@ -238,3 +238,125 @@
 ---
 
 *Écran `settings` SPECIFIED · 14 sections complètes · 4 OQs (§14) · SSoT : 05 §5 (thèmes), WDS 04.5 (bridge), ui-libraries S1/S3/S5/S6/S9, AD-7/AD-13/AD-14/AD-15/AD-17, ADR §13/§13.1*
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Formulaire** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la matrice
+nomme `settings` dans la ligne « Formulaire », avec `onboarding`, `objectifs-detail`).
+
+L'écran réel est `apps/mobile/src/pages/settings/index.tsx` (Ionic, 1 colonne). Le shell
+web (`apps/web-app`) **ne rend pas encore** cet écran : la section `parametres`
+(`navigation.ts` l.146-151) porte `readiness: 'shell'`, donc `ShellState` affiche
+« Coquille prête ». Le tableau ci-dessous est **la cible** (Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : sections empilées (Thème, Notifications, Compte) | pas un tab BottomNav (page mère) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne centrée + inspecteur | rail d'icônes | tablette |
+| **`lg+` (≥ 1024 px)** | **1 colonne centrée** + inspecteur (l'inspecteur affiche l'aperçu des 3 mini-cards, §3) ; `xl` élargit l'inspecteur | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3** : le gabarit « Formulaire » est **1 colonne centrée** à `desktop` (+
+inspecteur). L'aperçu statique (3 mini-cards Home/Focus/Calendar, §3) reste **statique**
+(ce n'est pas un écran vivant) et s'affiche dans l'inspecteur à `lg+`.
+
+> **OQ (cadre v1)** — le seuil exact de bascule inspecteur (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Settings** (`module-ownership-matrix.md` : « Settings \| /settings ») |
+| R2 | Ligne de catalogue | ✅ | `designsystem.themes` (`master-feature-catalog.md` l.85 : « neutral style × 10 themes × 3 presets × local adaptation (AD-17 candidate, 05 §5–6) ») + `identity.session` (l.84) |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `UserContext` (`entities-identity.ts` l.32 : `theme` v2 enum, silence windows) ; `AuroraTheme` (l.15) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (S6 + sémantiques §6.1 + 404 + killed) |
+| R6 | États §6.1 couverts | ✅ | §4 (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : **offline-capable** (perso UI, persist middleware AD-7/AD-15) |
+| R8 | Événements déclarés | ✅ | l'écran **écrit** `UserContext`/prefs (persist local) ; aucun événement AD-9 produit |
+| R9 | Permissions déclarées | ✅ | `POST_NOTIFICATIONS` (toggles notifications) au **premier usage** ; jamais au boot |
+| R10 | Entrée de nav déclarée | ✅ | `/settings` (page mère des réglages, pas un tab BottomNav) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») + §7 |
+| R12 | Contrat de données | ⚠️ **partiel** | la page **persiste** réellement le thème (`setTheme`, `settings/index.tsx` l.456/467), lit `useUserFeatures()` (l.151) et écrit des prefs locales optimistes (l.172) — **mais** l'application du thème aux 3 mini-cards d'aperçu et certaines prefs (OQ-47) restent locales/non prouvées bout-en-bout |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-1…OQ-4** + **OQ-11** + **OQ-15/OQ-16** + **OQ-47…OQ-50** (§14) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 12 critères sur 13. **Le bloquant est R13** (OQ §14
+ouvertes) ; R12 est **partiel** (thème persisté, prefs locales — honnête).
+
+**Demande de contrat (plan §4)** — pour lever R12 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    apps/mobile/src/pages/settings/index.tsx  ·  packages/ui/src/themes/**
+Besoin:    le contrat d'aperçu du thème (les 3 mini-cards Home/Focus/Calendar reflètent-elles
+           le thème sélectionné ?) + la persistance des prefs de notification (OQ-47)
+Motif:     la page persiste le thème mais l'aperçu n'est pas prouvé ; `designsystem.themes`
+           (catalog l.85) porte les 10+3, l'aperçu reste local
+Bloque:    oui — sans contrat, l'aperçu du thème n'est pas démontrable (S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | le thème + les prefs sont persistés localement (AD-7) et l'aperçu reflète la sélection ; **interdit** : sélecteur qui ne sauvegarde rien |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 — 404 global + feature-disabled (`useUserFeatures`, l.151) rendus par le pattern global |
+| S4 | Offline vérifié | §12 — réseau coupé : thème + prefs locales OK (persist middleware) |
+| S5 | Retour arrière vérifié | relance froide → thème + prefs restaurés (persist AD-7) |
+| S6 | Isolation utilisateur | RLS root (`identity.session`) ; prefs liées à `auth.users` |
+| S7 | Tokens-only | §3/§7 — aucune valeur brute |
+| S8 | A11y AA | §10 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | résolution des tokens de thème (`resolveThemeCSSVars`) correcte ? | Vitest ≥ 80 % sur `packages/domain` / `packages/ui` |
+| Intégration | ✅ | persistance locale (AD-7) + re-sync + RLS root ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | writer de `UserContext`/prefs (aucun événement AD-9 produit) | test AD-9 producer/consumer |
+| E2E | ✅ | « changer de thème → l'app l'applique » ? | Playwright web |
+| Failure | ✅ | échec de persistance → état honnête sans blocage ? | test failure |
+| Permission | ✅ | `POST_NOTIFICATIONS` au premier usage, refus géré ? | test permission |
+| Offline | ✅ | réseau coupé → thème + prefs locales OK ? | test offline |
+| Recovery | ✅ | relance froide → thème + prefs restaurés ? | test recovery |
+| Plateforme | ⏳ | budgets perf + WCAG par paire de thèmes (05 §7.2) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `packages/ui` (thèmes) | ≥ 1 test par classe applicable | ✅ — `theme-css-vars-naming.test.ts`, `theme-dark.test.ts`, `theme-gradient.test.ts`, `tokens-css-drift.test.ts` |
+| Région « sélecteur de thème » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `settings` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Integrations.stories.tsx` couvre `Parametres`, mais pas le sélecteur 10+3 complet |
+| Écran `settings` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R13 (OQ-47…) ; R12 partiel (aperçu non prouvé)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (POST_NOTIFICATIONS premier usage)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§10)
+[ ] gate du lot vert (AI_RULES §9)
+```
