@@ -28,7 +28,7 @@ Décision de Joy, 2026-10-28. Conséquences pour ton travail :
 |---|---|
 | **Nature** | Analyse complète du dépôt + exécution du pivot web (sprints W0/W1) |
 | **Branche** | `arena/fa2fed09-aurora` (jamais `main`) |
-| **Statut** | W0 ✅ · W1 ✅ · **W2 ✅** — reste 2 actions hors agent (rotation des comptes, bascule Render) : voir §6 |
+| **Statut** | W0 ✅ · W1 ✅ · **W2 ✅** — reste la bascule Render (action dashboard) : voir §6 |
 | **Rapports** | `docs/analysis/analyse-projet-aurora-2026-10-28.md` (diagnostic) · `docs/analysis/voie-web-2026-10-28.md` (pivot + journal d'exécution §9) |
 
 ### 3. ⚠️ Incident sécurité à connaître (corrigé, mais action de ton côté)
@@ -44,8 +44,24 @@ allowlist. **Si tu la redéploies, provisionne les 2 env vars, sinon elle renvoi
 **b) Identifiants dev en clair** (`dev.aurora@…` + mots de passe) étaient dans
 `apps/mobile/src/pages/login/index.tsx` **et** dans `docs/plans/finalisation-v1.md`,
 avec les UUID live. → Purger du code (73 lignes), caviardé dans la doc.
-**⏳ Reste à faire par toi/Joy : ROTATION des 2 comptes Supabase** (ils sont
-compromis par construction — un secret écrit dans un dépôt l'est pour toujours).
+
+**Décision de Joy (2026-10-28) : PAS de rotation.** Ces comptes servent au
+développement et seront supprimés avant la v1 ; les faire tourner maintenant
+coûterait du temps sans rien régler. C'est noté, on n'y revient plus.
+Ce qui rend cette décision tenable, en revanche, ce sont les deux corrections
+ci-dessus : les identifiants ne sont plus dans le dépôt, et l'endpoint ne répond
+plus à un appelant anonyme. La seule chose à ne pas refaire : remettre des
+identifiants en dur dans le code.
+
+**Le confort de dev est rétabli autrement** (2026-10-28, suite) :
+- `pnpm dev:auth list | set-password | signin | check` — `scripts/dev-auth.mjs`
+  parle à `fn-dev-auth` avec `x-aurora-internal`, lu depuis `.env.dev`
+  (gitignoré). C'est le seul endroit où le secret existe.
+- Écran de connexion : bouton « Remplir le compte dev », alimenté par
+  `VITE_DEV_LOGIN_EMAIL` / `VITE_DEV_LOGIN_PASSWORD` (`.env.local`), supprimé du
+  bundle de production par `import.meta.env.DEV`.
+- `set-password` était **documenté mais jamais implémenté** (il tombait dans le
+  `default` → 400). Il accepte désormais `email` OU `user_id`.
 
 **c) Le gate G2 était aveugle sur (b)** et rouge en permanence sur des faux positifs
 (`sk-progress`, `sk-capacite-portante`) → un gate toujours rouge n'est plus lu.
@@ -143,7 +159,8 @@ le build web est plus lourd que l'ancien (17 036 modules).**
 
 **Reste (bloqué, à faire hors agent) :**
 
-- [ ] **Rotation des 2 comptes Supabase dev** — priorité sécurité, cf. §3b.
+- [x] ~~Rotation des 2 comptes Supabase dev~~ — **abandonnée** (décision Joy 2026-10-28 :
+      comptes de travail, supprimés avant v1). Voir §3b.
 - [ ] Service Render existant : basculer le `publishDir` de `apps/mobile/dist` à
       `apps/web/dist` (et poser `Cross-Origin-Opener-Policy: same-origin` +
       `Cross-Origin-Embedder-Policy: require-corp`). Le blueprint `render.yaml`
@@ -355,7 +372,7 @@ vite build ....................................... OOM à 17 036 modules ici
      `deploy-web.yml` + retrait du job APK · `verify_jwt` par EF · Playwright · budget bundle.
 - [ ] **Render** : basculer `publishPath` de `apps/mobile/dist` → **`apps/web/dist`**
      et le build de `--filter @aurora/mobile` → **`--filter @aurora/web`**.
-- [ ] **Rotation des 2 comptes dev Supabase** (secrets exposés puis purgés, mais compromise).
+- [x] ~~Rotation des 2 comptes dev Supabase~~ — **abandonnée** (décision Joy, cf. §3b).
 - [ ] **Canvas wave 2** : extension `@tiptap/markdown` pour une vraie ré-sérialisation
      JSON→markdown idempotente (le fallback actuel garde le dernier markdown connu) ; e2e
      Cypress sur l'app live pour valider le flow canvas → indexation → agent.

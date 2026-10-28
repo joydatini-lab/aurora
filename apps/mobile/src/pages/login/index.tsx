@@ -13,12 +13,19 @@
  * AD-13 : loading (submit) / error (alert role) / empty (OQ-03 env absent)
  * / success (connecté ou inscription confirmée). Tokens only, tap ≥ 44 px.
  *
- * REMOVED 2026-10-28 (analysis §5.2, web pivot) : the DEV-ONLY `fn-dev-auth`
- * diagnostic block (hardcoded dev emails + passwords + the production
- * function URL) is gone. A browser bundle is public — client code must never
- * carry credentials, and it must never hold the `x-aurora-internal` secret.
- * `fn-dev-auth` is now fail-closed and server-side only (404 unless
- * `DEV_AUTH_ENABLED=true` + the internal secret matches).
+ * DEV (2026-10-28, revision) : le bloc historique embarquait des emails, des
+ * mots de passe ET l'URL de production de `fn-dev-auth` en dur — un bundle est
+ * public, donc c'etait une fuite. Il est remplace par un confort equivalent et
+ * sans secret :
+ *
+ *   - ICI, un bouton « Remplir le compte dev » qui lit
+ *     `VITE_DEV_LOGIN_EMAIL` / `VITE_DEV_LOGIN_PASSWORD` (fichier `.env.local`,
+ *     gitignore). Il ne soumet JAMAIS : le developpeur garde la main, et le
+ *     bloc est supprime des builds de production (`import.meta.env.DEV`).
+ *   - POUR LE DIAGNOSTIC (lister, remettre un mot de passe, tester une
+ *     connexion), `scripts/dev-auth.mjs` : c'est la seule piece qui detient
+ *     `x-aurora-internal`, et elle tourne dans un terminal, pas dans le
+ *     navigateur. `pnpm dev:auth --help`.
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
 import { AURORA_ICONS } from '@aurora/ui';
@@ -27,6 +34,19 @@ const Loader2 = AURORA_ICONS.Loader2;
 const LogOut = AURORA_ICONS.LogOut;
 const MailCheck = AURORA_ICONS.MailCheck;
 const UserPlus = AURORA_ICONS.UserPlus;
+
+/**
+ * Remplissage du formulaire pour le developpement.
+ *
+ * `import.meta.env.DEV` vaut `false` dans tout build de production : Vite
+ * remplace la valeur puis elimine la branche au tree-shaking. Les identifiants
+ * ne sont donc ni dans le bundle de prod, ni dans le depot (`.env.local` est
+ * gitignore) — contrairement au bloc historique qui les avait en dur.
+ */
+const DEV_FILL_EMAIL = import.meta.env.VITE_DEV_LOGIN_EMAIL as string | undefined;
+const DEV_FILL_PASSWORD = import.meta.env.VITE_DEV_LOGIN_PASSWORD as string | undefined;
+const CAN_DEV_FILL =
+  import.meta.env.DEV && Boolean(DEV_FILL_EMAIL) && Boolean(DEV_FILL_PASSWORD);
 
 import { useEffect, useState } from 'react';
 import {
@@ -204,6 +224,21 @@ export function LoginPage() {
                         {busy ? <Loader2 aria-hidden className="is-spinning" /> : <KeyRound aria-hidden />}
                         {busy ? 'Connexion…' : 'Se connecter'}
                       </Button>
+
+                      {CAN_DEV_FILL ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="auth-full"
+                          onClick={() => {
+                            // Remplit, ne soumet pas : on veut voir ce qui part.
+                            setEmail(DEV_FILL_EMAIL ?? '');
+                            setPassword(DEV_FILL_PASSWORD ?? '');
+                          }}
+                        >
+                          <UserPlus aria-hidden /> Remplir le compte dev
+                        </Button>
+                      ) : null}
 
                     </form>
                   </TabsContent>

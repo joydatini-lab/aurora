@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 /**
@@ -53,9 +53,36 @@ function updaterPreferencesShim() {
   };
 }
 
+/**
+ * Garde-fou : un build de production ne doit JAMAIS contenir les identifiants
+ * de remplissage du formulaire de connexion (`VITE_DEV_LOGIN_*`).
+ *
+ * Le bloc de `login/index.tsx` est deja supprime par `import.meta.env.DEV`,
+ * mais Vite INLINE les variables d'environnement avant le tree-shaking : si un
+ * jour ces deux valeurs se retrouvent dans les secrets CI, la chaine serait
+ * ecrite dans le bundle avant d'etre eliminee — et une elimination qui echoue
+ * ne se voit pas. On refuse le build, ce qui se voit tout de suite.
+ */
+function forbidDevCredentialsInProd() {
+  return {
+    name: 'aurora-forbid-dev-credentials-in-prod',
+    config(_config: unknown, { mode, command }: { mode: string; command: string }) {
+      if (command !== 'build' || mode !== 'production') return;
+      const env = loadEnv(mode, here, 'VITE_');
+      const leaked = ['VITE_DEV_LOGIN_EMAIL', 'VITE_DEV_LOGIN_PASSWORD'].filter((k) => env[k]);
+      if (leaked.length > 0) {
+        throw new Error(
+          `[aurora/web] ${leaked.join(', ')} ne doit pas etre defini en build de production ` +
+            '(identifiants de dev). Retire-les de l\'environnement de build.',
+        );
+      }
+    },
+  };
+}
+
 export default defineConfig({
   root: here,
-  plugins: [updaterPreferencesShim(), react()],
+  plugins: [updaterPreferencesShim(), forbidDevCredentialsInProd(), react()],
   resolve: {
     alias: [
       // Subpath AVANT le préfixe générique (l'ordre compte).

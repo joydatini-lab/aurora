@@ -16,7 +16,8 @@
 //
 // Actions (POST JSON, internal-only):
 //   { "action": "list-users" }                      → users dev.* (id/email/confirmé/hash présent)
-//   { "action": "set-password", user_id, password }  → PATCH admin /auth/v1/admin/users/{id}
+//   { "action": "set-password", user_id | email, password }
+//                                                     → PUT admin /auth/v1/admin/users/{id} (+ email_confirm)
 //   { "action": "test-signin", email, password }     → POST /auth/v1/token?grant_type=password
 //
 // ⚠️ Never hardcode this function's URL in client code (removed from
@@ -151,6 +152,68 @@ serve(async (req) => {
             status: res.status,
             user_email: json?.user?.email ?? null,
             user_aud: json?.user?.aud ?? null,
+            raw_body: res.ok ? undefined : raw.slice(0, 300),
+          },
+          { headers: corsHeaders },
+        );
+      }
+
+      case "set-password": {
+        // Documente dans l'en-tete depuis l'origine... mais JAMAIS implemente :
+        // l'action tombait dans `default` -> 400 "unknown action". C'est
+        // pourtant la seule action qui sert vraiment au quotidien (remettre un
+        // mot de passe connu sur un compte dev). Accepte `user_id` OU `email`
+        // (l'email est resolu via la liste admin, ce qui evite d'avoir a
+        // recopier des UUID).
+        const password = String(body["password"] ?? "");
+        let userId = String(body["user_id"] ?? "");
+        const email = String(body["email"] ?? "").trim();
+
+        if (!password || (!userId && !email)) {
+          return Response.json(
+            { ok: false, error: "password + (user_id | email) required" },
+            { status: 400, headers: corsHeaders },
+          );
+        }
+
+        if (!userId) {
+          const listRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=200`, {
+            headers: { Authorization: `Bearer ${SERVICE_ROLE}`, apikey: SERVICE_ROLE },
+          });
+          const listJson = safeJson(await listRes.text()) as
+            | { users?: Array<Record<string, unknown>> }
+            | null;
+          const match = (listJson?.users ?? []).find(
+            (u) => String(u["email"] ?? "").toLowerCase() === email.toLowerCase(),
+          );
+          if (!match) {
+            console.log("[fn-dev-auth] set-password", { email, status: "user_not_found" });
+            return Response.json(
+              { ok: false, error: `user not found: ${email}` },
+              { status: 404, headers: corsHeaders },
+            );
+          }
+          userId = String(match["id"]);
+        }
+
+        // `email_confirm: true` : un compte dev doit pouvoir se connecter
+        // immediatement, sans passer par la boite mail.
+        const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${SERVICE_ROLE}`,
+            apikey: SERVICE_ROLE,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ password, email_confirm: true }),
+        });
+        const raw = await res.text();
+        console.log("[fn-dev-auth] set-password", { userId, status: res.status });
+        return Response.json(
+          {
+            ok: res.ok,
+            status: res.status,
+            user_id: userId,
             raw_body: res.ok ? undefined : raw.slice(0, 300),
           },
           { headers: corsHeaders },
