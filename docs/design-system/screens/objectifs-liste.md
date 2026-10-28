@@ -191,3 +191,145 @@ Comportement des 3 couches sur `/goals` (05 §5 l. 2925-3307 ; overview §3 l. 2
 | **OQ-9** | `/goals` | Logo **monochrome** affiché dans la bannière fine `killed` « Reconnexion... » (§4a / §12) : la matrice §9.1 l. 383 mandate le monochrome pour les états `killed` / disabled, mais la bannière fine DS (05 §3.7 l. 1296-1300) ne mentionne **aucun** logo (le pattern §12.3 de `projets-liste` = OQ-9 identique, **à trancher**). Que contient la bannière ? | (a) Texte seul « Reconnexion... », **pas de logo** (b) logo `vs_monochrome_en_svg.svg` (copy §9.2 stripped) 16-24px à gauche du texte (c) le logo monochrome n'apparaît que sur les **surfaces killed complètes** (pas sur une bannière fine) | Design System team ; 05 §3.7 owner | ui-libraries §9.1 l. 383 ; 05 §3.7 l. 1290-1301 ; écran `projets-liste` §14 OQ-9 (même question) |
 | **OQ-10** | `/goals` | Verbatim exact de la bannière `killed` : « **Reconnexion...** » (3 points U+002E — S6 l. 185 ui-libraries) ou « **Reconnexion…** » (caractère `…` U+2026 — ux-states.tsx l. 85, 107 `aria-label='Reconnexion…'` + motion.tsx @aurora/ui) ? | (a) 3 points (fidèle au texte S6 ui-libraries l. 185) (b) ellipsoïde `…` (fidèle au code ux-states.tsx, cohérent SR) | Design System owner (ui-libraries S6) | ui-libraries S6 l. 185 vs ux-states.tsx l. 85, 107 |
 | **OQ-11** | `/goals` | CTA secondaire **optionnel** « Consulter l'écran parent » du 404 (§4b l. 202 : optionnel, vers l'écran parent du module) : vers quel écran pointe-t-il **pour `/goals`** ? (le `not-found` global = à trancher, écran `not-found` §14 ; valeur **par écran** = ici) | (a) `/home` (l'accueil — WDS 02.2 §2 : `/goals` est **poussé depuis le bloc 7 du Home**, entrée = Home) (b) `/tasks` (le tab parent du module Productivité, 02 §6.1) (c) CTA secondaire **absent** V1 (optionnel §6.1 l. 202) | Product / Feature Registry (G-M7) ; 02 §6.1 owner | ui-libraries §6.1 l. 202 ; WDS 02.2 §2 ; écran `not-found` §14 |
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Liste + détail** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `objectifs-*` dans la ligne « Liste + détail »).
+
+L'écran réel est `GoalsPage` (`apps/mobile/src/pages/goals/index.tsx` l. 50-107) ;
+le détail (`GoalDashboardPage`, l. 109-151) est une **route push** au-dessus du
+parent. Le shell web (`apps/web-app`) **ne rend pas encore** cet écran : il n'existe
+**aucune** section `goals` dans `apps/web-app/src/lib/navigation.ts` — l'écran est
+**inatteignable sur web** aujourd'hui (OQ-12 ci-dessous).
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : liste de `Card flat` (1 par objectif) + FAB « Nouveau objectif » | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail (`navFormForMode` → `rail`) | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : liste d'objectifs à gauche, détail (`/goals/:id`) à droite | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°2** : le détail est un **overlay/push** sous `lg`, un **panneau** à
+`lg`+ — même composant, conteneur différent. Le FAB « Nouveau objectif »
+(mobile-only, `05 §4.3.4`) devient, à `lg`+, une action de `PageHeader`.
+
+> **OQ-12** — le seuil exact de bascule 1 → 2 panneaux (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` l. 21) |
+| R2 | Ligne de catalogue | ✅ | `productivity.goals` (`master-feature-catalog.md` L23 : « short/mid/long horizons, goal→project→task hierarchy ; `GoalUpdated` producer ; offline-capable ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Goal` (`entities-productivity.ts` l. 89) — **mais** drift `horizon` (`medium` domaine vs `mid` SQL) et `status` (`achieved/abandoned` vs `completed/archived`) non gardé (`productivity.goals.md` §M2) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4(a) |
+| R6 | États §6.1 couverts | ✅ | §4(b) (N/A justifiés) + §4(b) 404 |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 88 ; catalog L23) |
+| R8 | Événements déclarés | ✅ **aucun émis** | la liste **lit** ; le producteur `GoalUpdated` (`events.ts:108`) appartient au module (création/renommage), pas à cet écran |
+| R9 | Permissions déclarées | ✅ | aucune |
+| R10 | Entrée de nav déclarée | ⚠️ | route `/goals` (`router.tsx` l. 108) — **absente de `navigation.ts` (web)** → OQ-12 |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ✅ | la liste lit le store local via `useGoals()` (`query/hooks.ts` l. 15-24 → `goals.list`), AD-7 ; états `loading/empty/error/success` réels (`index.tsx` l. 55-61) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-1 (virtualisation), OQ-2 (recherche), OQ-3 (badge de statut), OQ-5 (tri persisté) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 12 critères sur 13. **Le seul bloquant est R13**
+(OQ-1/2/3/5 : virtualisation, recherche, badge de statut, tri persisté — dont
+OQ-3, un écart SSoT 05 §4.3.4 vs WDS 02.2 sur le badge de statut).
+
+**Note** — R12 est **satisfait** : contrairement à d'autres écrans, `GoalsPage` lit
+de **vraies** données (`useGoals()`), sans `state={{status:'empty'}}` figé.
+
+**Demande de contrat (plan §4)** — pour le badge de statut :
+
+```
+WS:        WS-3c (specs d'écran — Productivity)
+Chemin:    docs/features/specs/productivity.goals.md  ·  docs/design-system/screens/objectifs-liste.md
+Besoin:    la décision (OQ-3) : le badge de STATUT (`active`/`atteinte`/`en retard`,
+           WDS 02.2 §6) est-il ajouté au SSoT 05 §4.3.4 (qui ne liste que le badge de
+           TERME court/moyen/long) ?
+Motif:     le SSoT 05 §4.3.4 l. 1649-1650 ne porte que le badge de terme ; le statut
+           est un élément WDS additif (comme `eisenhower` G-L5)
+Bloque:    non (l'écran peut rendre 1 badge) — mais la Card perd le signal d'écart
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la liste lit le store local via `useGoals()` (AD-7) ; **interdit** : `state={{status:'empty'}}` figé |
+| S2 | 6 états prouvés | §4(a) — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4(b) — pattern global, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : liste lisible (miroir) ; seule la capture par agent est indisponible |
+| S5 | Retour arrière vérifié | relance froide → objectifs re-lus du miroir (jamais d'écran blanc, AD-7) |
+| S6 | Isolation utilisateur | RLS sur `goals` (`0002:174-202`, policy `goals_user_isolation`) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `layoutTagFor` (forme de la Card) + tri par priorité corrects ? | Vitest ≥ 80 % sur `packages/goal-engine` |
+| Intégration | ✅ | vue PowerSync `goals` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | producteur `GoalUpdated` (`events.ts:108`) — **hors** de cet écran (lecture seule) | test AD-9 producer/consumer |
+| E2E | ✅ | « ouvrir la liste → tap objectif → détail » ? | Playwright web |
+| Failure | ✅ | lecture échouée → état `error` + retry (`index.tsx` l. 55-61) ? | test failure |
+| Permission | ⚠️ | aucune → n/a justifié | — |
+| Offline | ✅ | réseau coupé → liste lisible, capture agent indisponible ? | test offline |
+| Recovery | ✅ | relance froide → liste intacte ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.goals` | ≥ 1 test par classe applicable | ✅ partiel — `productivity.test.ts` « goals: create emits GoalUpdated » (l. 171) + 2 tests `renameGoal` (l. 238/259) |
+| Région « liste d'objectifs » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `objectifs-liste` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — aucune story `GoalsPage` |
+| Écran `objectifs-liste` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R13 (OQ-1/2/3/5)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-12** — Seuil de bascule 1 → 2 panneaux (§15) : `lg` (1024 px) confirmé ?
+  (cf. OQ-4 globale)
+- **OQ-13** — **Nav web** : `/goals` est une route de `router.tsx` (l. 108) mais
+  **absente** de `apps/web-app/src/lib/navigation.ts`. → **OQ** : où vit la famille
+  `goals` dans la coquille web — sans quoi l'écran est **inatteignable** sur web.
+- **OQ-14** — **Drift d'énumération `goals.horizon`/`goals.status`** (domaine vs
+  SQL, `productivity.goals.md` §M2 MG-1/MG-2) : la liste peut afficher un badge de
+  terme dérivé de `horizon` ; si `medium` (domaine) ≠ `mid` (SQL), le mapping est
+  faux. → **OQ** : aligner les énumérations (décision AD-15) ?
