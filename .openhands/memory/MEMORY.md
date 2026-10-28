@@ -533,3 +533,45 @@ d'écran, mergées dans `rebaseline/2026-10-23`.
 - **Nuance** : le « Perf gate » de la CI mesure `apps/mobile` (300 Ko gz,
   02 S9.1), PAS `web-app`. Mon gain est reel mais sur l'entree web-app ; le
   budget mobile est un autre chemin. Ne pas confondre les deux cibles.
+
+## Perf bundle : 3 gains mesures + 2 defauts de garde (3c72e20, 8501777, 82b1fd0)
+- **web-app entree : 14,5 -> 1,04 Mo** (gz 3,07 -> 0,23). Deux causes, dans cet
+  ordre : (1) `import * as Phosphor` + cle dynamique dans `phosphor.ts` ;
+  (2) `packages/ui` SANS `sideEffects` -> Rollup garde tout le barrel
+  (assistant-ui, reui, mermaid, ag-grid, leaflet) meme pour Button/Card/Input.
+  Correctifs : registre LITTERAL + 165 imports `@phosphor-icons/react/dist/csr/*`
+  (exports NOMMES, pas de default) ; `"sideEffects": ["**/*.css"]` (les 6 seuls
+  vrais effets de bord sont des imports CSS).
+- **mobile : `build:web` faisait OOM (EXIT=134) au baseline, passe avec le
+  sideEffects.** Meme cause que le OOM de `capture.ts` : le barrel tirait le
+  graphe entier de packages/ui.
+- **mobile entree : 1,55 -> 0,885 Mo gz** via AD-10 lazy par route (37 pages en
+  `React.lazy`, `Suspense` autour de l'`Outlet` dans Shell). Le commentaire du
+  router disait « Each is a lazy boundary » mais il y avait **0 `lazy()`**.
+  Premier chargement reel : 864 Ko gz (budget 300 Ko — **toujours depasse**).
+- **Restant structurel** : `AURORA_ICONS` = un objet bati au runtime par lookup
+  dynamique (`PHOSPHOR_COMPONENTS[phosphorName]`) -> les 165 icones restent dans
+  TOUTE entree qui importe le SSoT (332 sources dans les 2 entrees). Le seul
+  fix propre = exports nommes par icone + migration des importeurs (196 fichiers,
+  deliberement evite a l'epoque). Non fait.
+
+## DEUX GARDES VACUANTES trouvees (meme classe que le RLS negatif seul)
+1. **`Perf gate` CI (02 S9.1)** : le CI ne construit JAMAIS `apps/mobile`, donc
+   `dist` absent -> `viteBundleGzBytes()` renvoie 0 -> repli sur `0.35 * raw`
+   d'une surface quasi vide -> **le gate passe toujours**. Prouve : dist absente
+   = 3 pass / 0 fail ; dist presente = 1 pass / 2 fail. En plus, il **somme les
+   82 chunks** alors que le SLO borne le TTI (premier chargement) : la mesure et
+   la cible ne coincident pas. NON CORRIGE (decision de budget/spec, pas un bug
+   de code — corriger rendrait le CI rouge sans correctif disponible).
+2. Le RLS negatif seul (corrige, cf. section RLS positive plus haut).
+- **Lecon** : avant de faire confiance a un gate vert, verifier qu'il PEUT
+  echouer. Deux fois sur deux, dans ce repo, le gate vert ne mesurait rien.
+
+## Verif de rendu (methode qui marche ici)
+- `playwright` est a la RACINE du projet (`node_modules/playwright/cli.js install
+  chromium`) ; le cache `~/.cache/ms-playwright` est EPHEMERAL (reinstaller).
+- Un serveur statique nu renvoie 404 sur les routes profondes (pas de fallback
+  SPA) -> un `SimpleHTTPRequestHandler` avec repli sur `index.html` est requis
+  pour tester `/tasks` etc. Sinon on croit a tort que le lazy est casse.
+- `waitUntil: 'networkidle'` ne survient JAMAIS (polling PowerSync) ->
+  `domcontentloaded` + `waitForTimeout`.
