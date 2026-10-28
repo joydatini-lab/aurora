@@ -179,10 +179,26 @@ jobs:
         if: ${{ hashFiles('scripts/check-rls.sh') != '' }}
         run: sh scripts/check-rls.sh
         # Ce gate est STATIQUE (il lit les migrations). La preuve live
-        # d'isolation (user A ne lit pas user B, sur CHAQUE table) est
-        # scripts/rls-live-check.sh — reproductible SANS credential, via
-        # Docker + supabase/postgres. Non branchee en CI pour l'instant :
-        # elle demande un runner avec Docker (~2 min de pull d'image).
+        # d'isolation est le step suivant.
+
+      - name: "RLS live (isolation A/B sur base rejouee, 01 S2.2 / S7)"
+        # La garde statique ci-dessus lit le TEXTE des migrations : elle prouve
+        # la FORME des policies, pas qu'elles isolent deux utilisateurs reels.
+        # Ce step rejoue 0001..0032 dans un supabase/postgres jetable, cree
+        # 2 users, et exige que A ne lise/modifie/supprime JAMAIS une ligne de B
+        # sur CHAQUE table portant user_id -- avec un CONTROLE NEGATIF (RLS
+        # coupee sur `tasks` doit faire ECHOUER le test).
+        #
+        # POURQUOI IL EST EN CI (2026-10-28). Il etait laisse "a la main" pour
+        # economiser ~2 min de pull d'image -- et c'est exactement ce qui a
+        # permis une regression SILENCIEUSE : vert au 2026-10-24 (28 migrations),
+        # casse le 2026-10-26 par 0029 (trigger sur `auth.identities`, table
+        # creee par GoTrue au RUNTIME, absente de l'image), et PERSONNE ne l'a
+        # vu -- le harnais n'a plus jamais tourne. `ubuntu-latest` fournit
+        # Docker : le cout est de 2 min, le cout de l'absence est une garde
+        # morte. Un gate manuel jamais relance ne garde rien.
+        if: ${{ hashFiles('scripts/rls-live-check.sh') != '' }}
+        run: sh scripts/rls-live-check.sh
 
       - name: "EF imports resolve (supabase/functions not in any tsconfig)"
         # supabase/functions/** is in NO tsconfig, so typecheck never reads it.

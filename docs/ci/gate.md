@@ -215,6 +215,32 @@ amorcées, **0 pénétration**, contrôle négatif déclenché. Le correctif ré
 fixture sur la forme **mesurée en production** (`information_schema` du projet) ;
 aucune migration n'a été dégradée.
 
+**Couverture portée à 58/58 (2026-10-28).** Les 17 tables non amorcées ne
+l'étaient pas pour une raison « structurelle insurmontable » : le seedeur ne
+lisait pas le catalogue assez loin. Deux causes, toutes deux lisibles depuis
+`pg_constraint` :
+
+1. **Clé étrangère vers un parent portant `user_id`** (13 tables) — un `uuid`
+   aléatoire ne correspond à aucune ligne parente. Corrigé en amorçant le parent
+   **à la demande, récursivement**, et en pointant l'enfant sur la ligne créée.
+   Seules les FK que le seed remplit réellement (NOT NULL, sans défaut) sont
+   résolues ; une FK nullable reste NULL, ce qui rompt au passage les cycles
+   d'auto-référence (`semantic_nodes.parent_id`).
+2. **CHECK sur un ensemble fermé** (6 tables : `artifacts.kind`, `gaps.kind`,
+   `discovery_items.kind`, `semantic_nodes.kind`, `semantic_edges.relation`,
+   `focus_profiles.method`) — plus les bornes numériques
+   (`focus_profiles.base_minutes >= 1`). Corrigé en lisant le **premier littéral
+   autorisé** (ou la borne) directement dans la définition de la contrainte, au
+   lieu d'inventer une valeur.
+
+Tout est **découvert**, jamais listé : le seedeur ne peut plus dériver quand une
+migration ajoute une table, une FK ou un CHECK. Le contrôle négatif reste
+déclenché (RLS coupée sur `tasks` ⇒ le test échoue), donc l'extension de
+couverture n'a pas rendu le test complaisant.
+
+**Résultat 2026-10-28 final : 58/58 tables contrôlées et amorcées, 0 SKIPPED,
+0 pénétration.**
+
 **Vérification live indépendante (2026-10-28, projet de production).** Le harnais
 Docker prouve l'isolation sur un schéma rejoué ; la vérification suivante l'a
 prouvée sur la **production réelle**, via `SET ROLE authenticated` +

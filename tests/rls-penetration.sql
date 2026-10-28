@@ -24,6 +24,145 @@
 --   RAISE EXCEPTION = penetration = FAIL.
 -- =============================================================================
 
+-- ---------------------------------------------------------------------------
+-- pg_temp.rls_seed(table, owner, depth) -> PK of the row it inserted.
+--
+-- WHY THIS EXISTS. The first version filled only the NOT NULL columns that
+-- have no default, with a TYPE placeholder. That covered 41 of 58 tables; 17
+-- escaped, for two reasons that are both readable from the catalog:
+--
+--   1. FOREIGN KEY to a parent that carries user_id (13 tables). A random
+--      uuid matches no parent row. Fixed by seeding the parent ON DEMAND,
+--      recursively, and pointing the child at the row that was just created.
+--      Only FK columns the seed actually fills (NOT NULL, no default) are
+--      resolved; a nullable FK is left NULL, which also breaks the
+--      self-reference cycles (semantic_nodes.parent_id).
+--
+--   2. CHECK over a CLOSED SET (6 tables: artifacts.kind, gaps.kind,
+--      discovery_items.kind, semantic_nodes.kind, semantic_edges.relation,
+--      focus_profiles.method) — plus numeric lower bounds
+--      (focus_profiles.base_minutes >= 1). Fixed by reading the FIRST allowed
+--      literal / the bound straight out of the constraint definition instead
+--      of inventing a value.
+--
+-- Everything is DISCOVERED, never listed, so it cannot drift when a migration
+-- adds a table, a FK or a CHECK.
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION pg_temp.rls_seed(
+  p_table text, p_owner uuid, p_depth int DEFAULT 0
+) RETURNS text
+LANGUAGE plpgsql
+AS $fn$
+DECLARE
+  pk_col text;
+  cols   text;
+  vals   text;
+  ov     jsonb := '{}'::jsonb;
+  fk     record;
+  en     record;
+  lit    text;
+  res    text;
+BEGIN
+  IF p_depth > 4 THEN
+    RAISE EXCEPTION 'fk depth exceeded (cycle?)';
+  END IF;
+
+  SELECT a.attname INTO pk_col
+    FROM pg_index i
+    JOIN pg_class cl ON cl.oid = i.indrelid
+    JOIN pg_attribute a ON a.attrelid = cl.oid AND a.attnum = ANY(i.indkey)
+   WHERE cl.relname = p_table AND i.indisprimary
+   LIMIT 1;
+
+  -- (1) Foreign keys whose parent carries user_id.
+  FOR fk IN
+    SELECT (SELECT a.attname FROM pg_attribute a
+             WHERE a.attrelid = con.conrelid AND a.attnum = con.conkey[1]) AS local_col,
+           con.confrelid::regclass::text AS ref_table,
+           (SELECT a.attname FROM pg_attribute a
+             WHERE a.attrelid = con.confrelid AND a.attnum = con.confkey[1]) AS ref_col
+      FROM pg_constraint con
+     WHERE con.contype = 'f'
+       AND con.connamespace = 'public'::regnamespace
+       AND con.conrelid::regclass::text = p_table
+  LOOP
+    -- Skip unless the seed actually fills this column.
+    CONTINUE WHEN NOT EXISTS (
+      SELECT 1 FROM information_schema.columns c
+       WHERE c.table_schema='public' AND c.table_name=p_table
+         AND c.column_name=fk.local_col
+         AND c.is_nullable='NO' AND c.column_default IS NULL AND c.is_identity='NO');
+    -- user_id is always the owner itself, never a resolved parent.
+    CONTINUE WHEN fk.local_col = 'user_id';
+    -- A parent without user_id cannot be shared safely across owners.
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns c
+       WHERE c.table_schema='public' AND c.table_name=fk.ref_table
+         AND c.column_name='user_id') THEN
+      RAISE EXCEPTION 'fk parent % carries no user_id', fk.ref_table;
+    END IF;
+    -- Seed the parent on demand, ONCE (re-seeding would add a second row).
+    EXECUTE format('SELECT 1 FROM %I WHERE user_id = %L LIMIT 1', fk.ref_table, p_owner)
+      INTO res;
+    IF res IS NULL THEN
+      PERFORM pg_temp.rls_seed(fk.ref_table, p_owner, p_depth + 1);
+    END IF;
+    ov := ov || jsonb_build_object(fk.local_col,
+            format('(SELECT %I FROM %I WHERE user_id = %L ORDER BY 1 LIMIT 1)',
+                   fk.ref_col, fk.ref_table, p_owner));
+  END LOOP;
+
+  -- (2) CHECK over a closed set, or a numeric lower bound.
+  FOR en IN
+    SELECT c.column_name AS col, pg_get_constraintdef(con.oid) AS def
+      FROM information_schema.columns c
+      JOIN pg_constraint con
+        ON con.connamespace = 'public'::regnamespace
+       AND con.contype = 'c'
+       AND con.conrelid::regclass::text = p_table
+     WHERE c.table_schema='public' AND c.table_name=p_table
+       AND c.is_nullable='NO' AND c.column_default IS NULL AND c.is_identity='NO'
+       AND pg_get_constraintdef(con.oid) LIKE format('CHECK ((%s%%', c.column_name)
+  LOOP
+    lit := (regexp_match(en.def, 'ARRAY\[(''[^'']*'')'))[1];         -- 'first'
+    IF lit IS NULL THEN
+      lit := (regexp_match(en.def, format('\(\(%s >= (-?[0-9]+)\)', en.col)))[1];
+    END IF;
+    IF lit IS NULL THEN
+      lit := (regexp_match(en.def, format('\(\(%s > (-?[0-9]+)\)', en.col)))[1];
+      IF lit IS NOT NULL THEN lit := (lit::bigint + 1)::text; END IF;
+    END IF;
+    IF lit IS NOT NULL THEN
+      ov := ov || jsonb_build_object(en.col, lit);
+    END IF;
+  END LOOP;
+
+  SELECT string_agg(quote_ident(c.column_name), ', '),
+         string_agg(
+           CASE
+             WHEN c.column_name = 'user_id' THEN quote_literal(p_owner)
+             WHEN ov ? c.column_name THEN ov ->> c.column_name
+             WHEN c.data_type = 'uuid' THEN 'gen_random_uuid()'
+             WHEN c.data_type IN ('integer','bigint','smallint','numeric','real','double precision') THEN '0'
+             WHEN c.data_type = 'boolean' THEN 'false'
+             WHEN c.data_type LIKE 'timestamp%' THEN 'now()'
+             WHEN c.data_type = 'date' THEN 'current_date'
+             WHEN c.data_type = 'jsonb' THEN quote_literal('{}') || '::jsonb'
+             WHEN c.data_type = 'ARRAY' THEN quote_literal('{}')
+             ELSE quote_literal('rls-probe')
+           END, ', ')
+    INTO cols, vals
+    FROM information_schema.columns c
+   WHERE c.table_schema = 'public' AND c.table_name = p_table
+     AND c.is_nullable = 'NO' AND c.column_default IS NULL AND c.is_identity = 'NO';
+
+  SET LOCAL ROLE service_role;
+  EXECUTE format('INSERT INTO %I (%s) VALUES (%s) RETURNING %I::text',
+                 p_table, cols, vals, pk_col) INTO res;
+  RETURN res;
+END;
+$fn$;
+
 DO $$
 DECLARE
   user_a   uuid := '00000000-0000-0000-0000-00000000000a';
@@ -65,33 +204,11 @@ BEGIN
       CONTINUE;
     END IF;
 
-    -- Seed a row owned by B as service_role (the only role allowed to bypass
-    -- its own RLS). Every other NOT NULL column without a default is filled
-    -- with a type-appropriate placeholder, so the seed works on any table.
-    SELECT string_agg(quote_ident(c.column_name), ', '),
-           string_agg(
-             CASE
-               WHEN c.column_name = 'user_id' THEN quote_literal(user_b)
-               WHEN c.data_type = 'uuid' THEN 'gen_random_uuid()'
-               WHEN c.data_type IN ('integer','bigint','smallint','numeric','real','double precision') THEN '0'
-               WHEN c.data_type = 'boolean' THEN 'false'
-               WHEN c.data_type LIKE 'timestamp%' THEN 'now()'
-               WHEN c.data_type = 'date' THEN 'current_date'
-               WHEN c.data_type = 'jsonb' THEN quote_literal('{}') || '::jsonb'
-               WHEN c.data_type = 'ARRAY' THEN quote_literal('{}')
-               ELSE quote_literal('rls-probe')
-             END, ', ')
-      INTO cols, vals
-      FROM information_schema.columns c
-     WHERE c.table_schema = 'public'
-       AND c.table_name = t
-       AND c.is_nullable = 'NO'
-       AND c.column_default IS NULL;
-
+    -- Seed a row owned by B. `rls_seed` resolves the NOT NULL columns, the
+    -- FOREIGN KEYs (recursively) and the CHECK closed sets from the catalog.
     SET LOCAL ROLE service_role;
     BEGIN
-      EXECUTE format('INSERT INTO %I (%s) VALUES (%s) RETURNING %I::text',
-                     t, cols, vals, pk_col) INTO sentinel;
+      sentinel := pg_temp.rls_seed(t, user_b);
       seeded := seeded + 1;
     EXCEPTION WHEN others THEN
       -- The seed needs a value we cannot synthesise (FK, CHECK, enum).
