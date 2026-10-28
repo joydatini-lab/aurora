@@ -307,3 +307,126 @@ la référence). L'**OQ-13** = texte exact du `Toast success` (ligne `success` �
 du bandeau + CTA sur l'état `killed` (ligne `killed` §4a) — SSoT muette sur les libellés exacts
 (05 §3.7 verbatim = « Reconnexion… » ; WDS 04.1 §7 verbatim = « Connexion instable — les données
 sont enregistrées localement »), libellés proposés non verbatim.
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Formulaire** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la matrice
+nomme `onboarding` dans la ligne « Formulaire », avec `settings`, `objectifs-detail`).
+
+L'écran réel est `apps/mobile/src/pages/onboarding/index.tsx` (Ionic, 1 colonne, carrousel
+3 slides). Le shell web (`apps/web-app`) **ne rend pas encore** cet écran : il tourne
+**avant** `/home` (boot). Le tableau ci-dessous est **la cible** (Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : carrousel 3 slides (nav gauche/droite) | pas de tab bar (boot, avant `/home`) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne centrée + inspecteur | pas de tab bar | tablette |
+| **`lg+` (≥ 1024 px)** | **1 colonne centrée** (lecture max) + inspecteur ; `xl` élargit l'inspecteur | pas de tab bar | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3** : le gabarit « Formulaire » est **1 colonne centrée** à `desktop` (+
+inspecteur). La composition des 3 slides (S1 « Qui es-tu ? » · S2 « Ton rythme de nuit » ·
+S3 « Ton thème ») est **inchangée** ; seul l'arrangement change. Jamais un 4ᵉ écran
+(AD-14, invariant §1).
+
+> **OQ (cadre v1)** — le seuil exact de bascule inspecteur (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Onboarding** (boot ; `module-ownership-matrix.md` : onboarding = identity/UserContext) |
+| R2 | Ligne de catalogue | ✅ | `identity.session` (`master-feature-catalog.md` l.84 : « Supabase Auth + `UserContext` (theme v2 enum, silence windows, preferences); RLS root ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `UserContext` (`entities-identity.ts` l.32 : 4 champs G-D14 — `region`, `disciplines`, `professional_target`, `budget_constraint`) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (6 états S6 : loading/empty/error/success/offline/killed) |
+| R6 | États §6.1 couverts | ✅ | §4 (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : **fully offline-capable** — les 4 champs `UserContext` sont persistés localement (PowerSync mirror, AD-7), aucun serveur requis pour terminer |
+| R8 | Événements déclarés | ✅ | l'onboarding **écrit** `UserContext` (persist local) ; aucun événement du vocabulaire fermé (AD-9) n'est produit |
+| R9 | Permissions déclarées | ✅ | `POST_NOTIFICATIONS` **optionnel** (toggle S2 « Notifs : seulement les alertes ») ; jamais au boot sans action |
+| R10 | Entrée de nav déclarée | ✅ | boot, avant `/home` (`/onboarding`, WDS 04.1) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ⚠️ **partiel** | la page **persiste** réellement le thème + `onboardingSeen` (localStorage via `useUiStateStore`, `onboarding/index.tsx` l.46-70) et lit la session (`currentSession()`) — mais les **4 champs `UserContext`** (region/disciplines/professional_target/budget_constraint) ne sont **pas** tous collectés/persistés par le code (S1/S2 décrits §3 mais non câblés) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-1…OQ-16** (§14) restent ouvertes (libellés exacts, Nocturne défaut, feature-registry) |
+
+**Verdict : `NOT_READY`** — 12 critères sur 13. **Le bloquant est R13** (OQ §14
+ouvertes) ; R12 est **partiel** (thème + seen persistés, 4 champs G-D14 non câblés).
+
+**Demande de contrat (plan §4)** — pour lever R12 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    apps/mobile/src/pages/onboarding/index.tsx  ·  packages/identity/src/**
+Besoin:    le contrat de persistance des 4 champs `UserContext` (G-D14) côté onboarding
+           (region/disciplines/professional_target/budget_constraint) — aujourd'hui le
+           code ne persiste que le thème + `onboardingSeen`
+Motif:     §3 décrit les 4 champs mais le code ne les collecte pas ; `identity.session`
+           porte `UserContext` mais le writer d'onboarding n'est pas câblé
+Bloque:    oui — sans contrat, les 4 champs restent non collectés (S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | l'onboarding persiste les 4 champs `UserContext` localement (AD-7) ; **interdit** : formulaire qui ne sauvegarde rien |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 — l'onboarding n'est pas désactivable (core, catalog l.84) ; deep link invalide → 404 global |
+| S4 | Offline vérifié | §12 — réseau coupé : l'onboarding se termine (aucun serveur requis) |
+| S5 | Retour arrière vérifié | relance froide → reprise/`onboardingSeen` respecté (jamais de blocage, AD-13) |
+| S6 | Isolation utilisateur | RLS root (`identity.session`) ; `UserContext` lié à `auth.users` |
+| S7 | Tokens-only | §3 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | mapping des 4 champs → `UserContext` correct ? | Vitest ≥ 80 % sur `packages/domain` / `@aurora/identity` |
+| Intégration | ✅ | persistance locale (AD-7) + re-sync + RLS root ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | writer de `UserContext` (aucun événement AD-9 produit) | test AD-9 producer/consumer |
+| E2E | ✅ | « compléter les 3 slides → arriver sur `/home` » ? | Playwright web |
+| Failure | ✅ | échec de persistance → état `error` sans blocage ? | test failure |
+| Permission | ✅ | `POST_NOTIFICATIONS` au toggle S2, refus géré ? | test permission |
+| Offline | ✅ | réseau coupé → onboarding terminable ? | test offline |
+| Recovery | ✅ | relance froide → reprise correcte, jamais de blocage ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `identity.session` | ≥ 1 test par classe applicable | ✅ partiel — `packages/identity/test/identity.test.ts` |
+| Région « carrousel 3 slides » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `onboarding` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Onboarding.stories.tsx` couvre `Connexion`/`ConnexionErreur`/`VerificationEnAttente`/`MotDePasseOublie`/`Wizard`/`Visionneuse*`, **pas** le carrousel 3 slides complet |
+| Écran `onboarding` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R13 (OQ) ; R12 partiel (4 champs G-D14 non câblés)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (POST_NOTIFICATIONS optionnel)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
