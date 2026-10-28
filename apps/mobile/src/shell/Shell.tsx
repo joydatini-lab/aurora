@@ -19,6 +19,7 @@
  * ne montent PLUS ici — le shell mobile = onglets bas + écrans.
  */
 import { IonApp, IonFooter, IonHeader } from '@ionic/react';
+import { Suspense } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AURORA_ICONS } from '@aurora/ui';
 const Settings = AURORA_ICONS.Settings;
@@ -78,7 +79,13 @@ export function Shell() {
           <Settings size={16} aria-hidden className="app-brand-settings" />
         </button>
       </IonHeader>
-      <Outlet />
+      {/* AD-10 / impl-plan §9.1 : chaque page est une frontière paresseuse.
+          Le Suspense tient le fallback pendant le chargement du chunk ; il
+          DOIT envelopper l'Outlet, sinon React lève au premier rendu d'une
+          page non encore résolue. */}
+      <Suspense fallback={null}>
+        <Outlet />
+      </Suspense>
       {/* 02 §6.1 : la barre d'onglets est permanente SAUF sur /agent*
           (M-13, plan S1 : la page Agent n'a PAS de barre — la sortie
           passe par le menu latéral de l'assistant). Un IonFooter place

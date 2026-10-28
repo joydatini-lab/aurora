@@ -22,43 +22,50 @@
  * gesture) works on every route; a route that blocks back saves first
  * (02 §6.3, local-first auto-persist).
  */
+import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { Shell } from './shell/Shell';
-import { InboxPage } from './pages/inbox';
+const InboxPage = lazy(() => import('./pages/inbox').then((m) => ({ default: m.InboxPage })));
 
 // 17 pages. Each is a lazy boundary; the tab family renders inside Shell,
 // details render over the current tab (S1 / S3 detail-over-tab rule).
 
-import { HomePage } from './pages/home';
-import { TasksPage, TaskDetailPage } from './pages/tasks';
-import { CalendarPage } from './pages/calendar';
-import { ProjectsPage } from './pages/projects';
-import { GoalsPage, GoalDashboardPage, GoalFeatureDetailPage } from './pages/goals';
-import { LearnPage, LearnDetailPage } from './pages/learn';
-import { KnowledgePage, KnowledgeNodePage } from './pages/knowledge';
-import { DiscoveryPage } from './pages/discovery';
-import { RapportDeVeillePage } from './pages/discovery/rapport';
-import { VeilleCreatePage } from './pages/discovery/creation';
-import { ProgressPage, ProgressDetailPage } from './pages/progress';
-import { FocusProfilesRoute } from './pages/focus/profiles';
-import { ArtifactPage } from './pages/artifacts';
-import { AgentPage } from './pages/agent';
-import { AgentConversationsPage } from './pages/agent/conversations';
-import { AgentCapacitesPage } from './pages/agent/capacites';
-import { AgentBibliothequePage } from './pages/agent/bibliotheque';
-import { CanvasPage } from './pages/canvas';
-import { SlideAscentPage } from './pages/ascent';
-import { SettingsPage } from './pages/settings';
-import { NotFoundPage } from './pages/not-found';
-import { SkillsPage } from './pages/skills';
-import { HabitsPage } from './pages/habits';
-import { RoutinesPage } from './pages/routines';
-import { ReviewsPage } from './pages/reviews';
-import { RetroActionsPage } from './pages/retro';
-import { CountdownsPage } from './pages/countdown';
-import { IntegrationsPage } from './pages/integrations';
-import { LoginPage } from './pages/login';
-import { OnboardingPage } from './pages/onboarding';
+const HomePage = lazy(() => import('./pages/home').then((m) => ({ default: m.HomePage })));
+const TasksPage = lazy(() => import('./pages/tasks').then((m) => ({ default: m.TasksPage })));
+const TaskDetailPage = lazy(() => import('./pages/tasks').then((m) => ({ default: m.TaskDetailPage })));
+const CalendarPage = lazy(() => import('./pages/calendar').then((m) => ({ default: m.CalendarPage })));
+const ProjectsPage = lazy(() => import('./pages/projects').then((m) => ({ default: m.ProjectsPage })));
+const GoalsPage = lazy(() => import('./pages/goals').then((m) => ({ default: m.GoalsPage })));
+const GoalDashboardPage = lazy(() => import('./pages/goals').then((m) => ({ default: m.GoalDashboardPage })));
+const GoalFeatureDetailPage = lazy(() => import('./pages/goals').then((m) => ({ default: m.GoalFeatureDetailPage })));
+const LearnPage = lazy(() => import('./pages/learn').then((m) => ({ default: m.LearnPage })));
+const LearnDetailPage = lazy(() => import('./pages/learn').then((m) => ({ default: m.LearnDetailPage })));
+const KnowledgePage = lazy(() => import('./pages/knowledge').then((m) => ({ default: m.KnowledgePage })));
+const KnowledgeNodePage = lazy(() => import('./pages/knowledge').then((m) => ({ default: m.KnowledgeNodePage })));
+const DiscoveryPage = lazy(() => import('./pages/discovery').then((m) => ({ default: m.DiscoveryPage })));
+const RapportDeVeillePage = lazy(() => import('./pages/discovery/rapport').then((m) => ({ default: m.RapportDeVeillePage })));
+const VeilleCreatePage = lazy(() => import('./pages/discovery/creation').then((m) => ({ default: m.VeilleCreatePage })));
+const ProgressPage = lazy(() => import('./pages/progress').then((m) => ({ default: m.ProgressPage })));
+const ProgressDetailPage = lazy(() => import('./pages/progress').then((m) => ({ default: m.ProgressDetailPage })));
+const FocusProfilesRoute = lazy(() => import('./pages/focus/profiles').then((m) => ({ default: m.FocusProfilesRoute })));
+const ArtifactPage = lazy(() => import('./pages/artifacts').then((m) => ({ default: m.ArtifactPage })));
+const AgentPage = lazy(() => import('./pages/agent').then((m) => ({ default: m.AgentPage })));
+const AgentConversationsPage = lazy(() => import('./pages/agent/conversations').then((m) => ({ default: m.AgentConversationsPage })));
+const AgentCapacitesPage = lazy(() => import('./pages/agent/capacites').then((m) => ({ default: m.AgentCapacitesPage })));
+const AgentBibliothequePage = lazy(() => import('./pages/agent/bibliotheque').then((m) => ({ default: m.AgentBibliothequePage })));
+const CanvasPage = lazy(() => import('./pages/canvas').then((m) => ({ default: m.CanvasPage })));
+const SlideAscentPage = lazy(() => import('./pages/ascent').then((m) => ({ default: m.SlideAscentPage })));
+const SettingsPage = lazy(() => import('./pages/settings').then((m) => ({ default: m.SettingsPage })));
+const NotFoundPage = lazy(() => import('./pages/not-found').then((m) => ({ default: m.NotFoundPage })));
+const SkillsPage = lazy(() => import('./pages/skills').then((m) => ({ default: m.SkillsPage })));
+const HabitsPage = lazy(() => import('./pages/habits').then((m) => ({ default: m.HabitsPage })));
+const RoutinesPage = lazy(() => import('./pages/routines').then((m) => ({ default: m.RoutinesPage })));
+const ReviewsPage = lazy(() => import('./pages/reviews').then((m) => ({ default: m.ReviewsPage })));
+const RetroActionsPage = lazy(() => import('./pages/retro').then((m) => ({ default: m.RetroActionsPage })));
+const CountdownsPage = lazy(() => import('./pages/countdown').then((m) => ({ default: m.CountdownsPage })));
+const IntegrationsPage = lazy(() => import('./pages/integrations').then((m) => ({ default: m.IntegrationsPage })));
+const LoginPage = lazy(() => import('./pages/login').then((m) => ({ default: m.LoginPage })));
+const OnboardingPage = lazy(() => import('./pages/onboarding').then((m) => ({ default: m.OnboardingPage })));
 import { FeatureGate } from './ux/feature-gate';
 
 // Explicit annotation (TS2742): the inferred return type of
