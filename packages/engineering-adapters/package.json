@@ -1,6 +1,7 @@
 {
   "name": "@aurora/engineering-adapters",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "Scientific engine adapters — concrete swappable solver backends behind the ScientificEngine port (AD-10)",
   "type": "module",

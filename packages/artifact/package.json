@@ -1,6 +1,7 @@
 {
   "name": "@aurora/artifact",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "Artifact module \u2014 Artifact Hub metadata, R2 keys, upload lifecycle. Sole producer of ArtifactGenerated (AD-9, after R2 upload / F-06). Pure logic: no vendor SDKs, no DOM.",
   "type": "module",

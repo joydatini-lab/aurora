@@ -1,6 +1,7 @@
 {
   "name": "@aurora/engineering-core",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "Scientific engine core — ProblemIR, Quantity, Unit, PhysicalDimension, verification rules (internal decomposition of scientific-engine; types SSoT in @aurora/domain, AD-15)",
   "type": "module",

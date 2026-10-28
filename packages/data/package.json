@@ -1,6 +1,7 @@
 {
   "name": "@aurora/data",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "PowerSync/SQLite repositories, migrations, PowerSync views/scopes, Model Registry owner (AD-16b), React-Query bridge",
   "type": "module",

@@ -1,6 +1,7 @@
 {
   "name": "@aurora/agent",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "Agent Kernel + capabilities (AD-12): device sees only AgentRunState; execution is server-side (F-09)",
   "type": "module",

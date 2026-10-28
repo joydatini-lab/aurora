@@ -1,6 +1,7 @@
 {
   "name": "@aurora/engineering-solvers",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "Scientific engine solvers — SolverDefinition/SolverResult execution over the core IR (internal decomposition of scientific-engine)",
   "type": "module",

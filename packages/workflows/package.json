@@ -1,6 +1,7 @@
 {
   "name": "@aurora/workflows",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "Composite workflows W1-W23 + self-improvement loop + error-recovery taxonomy (wave 4, HARPYS): each workflow documents Trigger -> Actors -> Modules -> Capabilities -> Data -> Events -> Jobs -> UI -> Agent -> Permissions -> Failure -> Recovery (AD-2/AD-7/AD-9/AD-12).",
   "type": "module",

@@ -1,6 +1,7 @@
 {
   "name": "@aurora/engineering-registry",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "Scientific engine registry — CodeRegistryEntry, FormulaDefinition, ProblemPattern, MethodDefinition catalog (internal decomposition of scientific-engine)",
   "type": "module",

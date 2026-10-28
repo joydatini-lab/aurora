@@ -1,6 +1,7 @@
 {
   "name": "@aurora/progress",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "Progress module (wave 2, ORION): evidence model (F-07 sole producer), SkillState recompute, trend rolling, causal analysis, conditional trajectories, G2 ChartSpec dashboards. Writes ONLY progress tables (AD-7); heavy work = persisted jobs (AD-8).",
   "type": "module",

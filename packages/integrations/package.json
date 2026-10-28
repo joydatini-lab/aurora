@@ -1,6 +1,7 @@
 {
   "name": "@aurora/integrations",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "Composio behind IntegrationProvider, notification adapters (AD-1; vendors allowed here only)",
   "type": "module",

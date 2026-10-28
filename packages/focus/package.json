@@ -1,6 +1,7 @@
 {
   "name": "@aurora/focus",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "Focus Mode contract (wave 2, HYPATIYAS): FocusControllerPort (04 S4.2 base) + v1.8 DPC additive extension (spec S10). Pure contract: no vendor, no DOM.",
   "type": "module",

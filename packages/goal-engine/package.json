@@ -1,6 +1,7 @@
 {
   "name": "@aurora/goal-engine",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "Dynamic Goal Engine (wave 3, HEPHAESTUS): GoalProject composition logic — decomposition, the 5 composition patterns as Planner hints, GoalProgress evaluation (F-07 sole producer), feature add/remove + sequencing. Pure logic, server-side; writes only its own GoalProject composition data (AD-7); GoalProgress rows + ProgressEvidence remain Progress-owned.",
   "type": "module",

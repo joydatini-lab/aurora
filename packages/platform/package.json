@@ -1,6 +1,7 @@
 {
   "name": "@aurora/platform",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "Capacitor adapters behind interfaces (04 S3.2) — the only native surface the app consumes (AD-16c owner Foundation)",
   "type": "module",

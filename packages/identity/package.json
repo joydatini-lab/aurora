@@ -1,6 +1,7 @@
 {
   "name": "@aurora/identity",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "Identity module \u2014 domain services (user_context: theme, preferences, coaching cadence). Sole writer of user_context (AD-7). Pure logic: no vendor SDKs, no DOM.",
   "type": "module",

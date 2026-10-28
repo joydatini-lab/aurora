@@ -1,6 +1,7 @@
 {
   "name": "@aurora/productivity",
   "version": "0.0.0",
+  "sideEffects": false,
   "private": true,
   "description": "Productivity module \u2014 domain services (tasks, projects, goals, habits, focus), use-cases, event emitters + observers, job registration (AD-7/AD-8/AD-9). Pure logic: no vendor SDKs, no DOM.",
   "type": "module",
