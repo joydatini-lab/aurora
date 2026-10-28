@@ -168,3 +168,126 @@
 | **OQ-06** | File de révision très longue (> 200 cartes, §8) | Nombre max de cartes par session (WDS 01.3 dit « Carte 3/12 » = 12 max ? adaptatif ?) et que faire si > 200 (pagination, chunking, AG Grid virtualisé) ? | (a) 12 cartes max/session (pattern du badge « 3/12 ») ; (b) adaptatif (serveur, job AD-8) ; (c) chunking par matière (SegmentedControl) | Owner WDS 01.3 (nombre de cartes par session) + AD-8 (job FSRS) |
 | **OQ-07** | Transition sortante vers QCM (tap « QCM du domaine », §9) | WDS 01.3 dit « CTA fixe QCM du domaine » mais **pas** de SSoT pour la transition overlay `/learn/:id` → overlay `qcm` (pas de rule slide/push, pas de pattern navigation entre 2 overlays) ? | (a) crossfade 200ms (PAGE_TRANSITION motion.tsx @aurora/ui) ; (b) slide (pas spécifié) ; (c) navigation en place (pas d'overlay imbriqué) | Owner Design System (transitions overlay, ssootCode motionRefs) |
 | **OQ-08** | i18n / copy (FR-only, app FR per ssootCode themeRefs + router.tsx context) | Pas de SSoT explicite pour la gestion i18n (pas de rule de fallback langue, pas de toggle) — tous les textes sont FR mais les labels du `shadcn Pagination` sont EN (« Previous/Next/More pages », ssootCode paginationRefs) ? | (a) FR-only (app FR, SSoT) + labels Pagination thématisés en FR ; (b) EN uniquement pour la Pagination (accepté) ; (c) i18n complet (OQ global, owner product) | Owner Design System (copy FR) + owner product (i18n) |
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Session guidée** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `flashcards` dans la ligne « Session guidée », avec `qcm`,
+`cours-detail`, `mirror-cognitive`).
+
+L'écran est un **overlay** au-dessus du tab courant (`/learn/:id`, 02 §6.1 S1/S3). Le
+shell web (`apps/web-app`) **ne rend pas encore** cet écran (section `apprendre`
+`readiness: 'shell'`). Le tableau ci-dessous est **la cible** (Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne centrée : `FlashcardCard` au centre, barre FSRS sous la carte | tab bar basse | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne centrée (lecture max) | rail d'icônes | tablette |
+| **`lg+` (≥ 1024 px)** | **1 colonne centrée** (lecture max) — la session reste centrée à tous les paliers | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°4** : « La session guidée reste à 1 colonne à tous les paliers — choix de
+concentration, pas contrainte technique. » La carte centrale reste au centre optique ;
+les 4 boutons FSRS (§3) restent groupés sous la carte.
+
+> **OQ (cadre v1)** — le seuil de largeur du conteneur centré n'est pas ratifié au niveau
+> de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Learning** (`module-ownership-matrix.md` : « Flashcards \| /flashcards/:deckId ») |
+| R2 | Ligne de catalogue | ✅ | `learning.flashcards` (`master-feature-catalog.md` l.36 : « FSRS spaced repetition (algorithm server, state mirrored local, 03 §4.2); offline-capable (review) / online (generation + tick job) ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Review` (`entities-learning.ts` l.70), `FsrsState` (l.111), `Skill` (l.33) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (matrice AD-13) |
+| R6 | États §6.1 couverts | ✅ | §4 (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : **offline-capable (review) / online (génération + tick job)** |
+| R8 | Événements déclarés | ✅ | chaque révision produit `FlashcardReviewed` (`events.ts` l.46, producteur Learning/FSRS) ; consommé par Progress |
+| R9 | Permissions déclarées | ✅ | aucune (révision locale) |
+| R10 | Entrée de nav déclarée | ✅ | `/learn/:id` = overlay sur le tab courant (02 §6.1 S1/S3 ; `router.tsx` l.97) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ⚠️ **partiel** | la page lit une liste « Due reviews » (`learn/index.tsx` l.88, « the read-only review mirror ») — lecture réelle ; **mais** le flow de revue n'est **pas** câblé à `MobileDataProvider` (`learn/index.tsx` l.10) et le bloc flashcards **pointe vers `/inbox`** (l.54) : `learning.flashcards.md` §M4 « l'écran n'est pas prouvé bout-en-bout » |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-01…OQ-08** (§14) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (flow de
+revue non câblé) et **R13** (OQ §14 ouvertes).
+
+**Demande de contrat (plan §4)** — pour lever R12 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    apps/mobile/src/pages/learn/index.tsx  ·  packages/learning/src/** (fsrs.ts)
+Besoin:    le branchement du flow de revue à `MobileDataProvider` (aujourd'hui le bloc
+           flashcards pointe vers `/inbox`, `learn/index.tsx` l.54) + le contrat de
+           lecture des revues (`reviews` miroité) vs cartes (`flashcards` NON miroité)
+Motif:     learning.flashcards.md §M4/§M5 : la carte exige le réseau (table non
+           miroitée), les revues sont locales ; le flow n'est pas prouvé bout-en-bout
+Bloque:    oui — sans branchement, la session de révision n'est pas démontrable (S1/R12)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la session lit les revues du miroir (AD-7) ; **interdit** : carte codée en dur ou état figé |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 — deck inconnu → état 404/feature-disabled, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : révision des revues locales OK ; la carte (`flashcards`, non miroitée) exige le réseau (état honnête) |
+| S5 | Retour arrière vérifié | relance froide → état intact (pas d'écran blanc) |
+| S6 | Isolation utilisateur | RLS sur `reviews`/`flashcards` (user A ≠ user B) |
+| S7 | Tokens-only | §3 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `fsrsNext` déterministe + monotonie de l'échéance ? | Vitest ≥ 80 % sur `packages/domain` / `@aurora/learning` |
+| Intégration | ✅ | lecture `reviews` (miroir) + tick FSRS idempotent (AD-8) ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | producteur `FlashcardReviewed` (`events.ts` l.46) par `FlashcardService.review` | test AD-9 producer/consumer |
+| E2E | ✅ | « réviser une carte → avancer l'état FSRS » ? | Playwright web |
+| Failure | ✅ | tick serveur échoué → état `error` + retry (jobId) ? | test failure |
+| Permission | ⚠️ | aucune sur la session → n/a justifié | — |
+| Offline | ✅ | réseau coupé → revues locales révisables, carte distante non ? | test offline |
+| Recovery | ✅ | relance froide → état intact (pas de perte de révision) ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `learning.flashcards` (FSRS) | ≥ 1 test par classe applicable | ✅ — `@aurora/learning` 31/31 (`learning.flashcards.md` §M6) : 9 tests FSRS + garde de régression |
+| Région « session de révision » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `flashcards` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Learn.stories.tsx` couvre `Learn`/`Progression`/`ProgressChargement`/`ProgressErreur`, **pas** la session flashcards |
+| Écran `flashcards` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (flow de revue non câblé) + R13 (OQ)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
