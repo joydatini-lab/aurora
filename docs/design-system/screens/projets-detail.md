@@ -222,3 +222,145 @@ Comportement des 3 couches sur le détail projet (05 §5 l. 2925-3306 ; overview
 | **OQ-19** | §7 — Form de création d'un jalon / d'une tâche **dans** le détail (non spécifié SSoT) | Le SSoT 05 §4.3.2 **mandate** les 5 tabs **lecture** (Infos/Tâches/Jalons/Documents/Notes, l. 1498-1520) **sans** spécifier de **form** de **création** (un jalon à **créer**, une tâche à **ajouter** **dans** le projet) ; le SSoT **ne dit** **jamais** « un CTA » « créer un jalon » ou « ajouter une tâche » **dans** le détail — le SSoT **ne tranche** **pas** si la **création** **est** **possible** **dans** le détail ou si elle **exige** la liste §4.3.1 | (a) La création **est** **possible** **dans** le détail (un `FAB` / un CTA **par** tab, le form = `TextField` titre + `DateField` échéance + `Select` statut — 05 §3.2 l. 412-448 ; le SSoT à **compléter**) (b) La création **n'est** **pas** **possible** **dans** le détail (le détail = **lecture** **seulement**, la **création** **vive** dans la liste §4.3.1 — le SSoT **tranche** pour la **lecture**) | Product / 05 owner | 05 §4.3.2 l. 1498-1520 (5 tabs lecture, **pas** de form) ; 05 §3.2 l. 412-448 (pattern form) |
 | **OQ-20** | §8 — Pagination par tab (seuil exact) | Le §8 cite la règle de volume (ui-libraries S8 l. 304-307 : < 20 lignes = `Table` simple, 20–100 = `Pagination`, > 100 = AG Grid) **mais** le SSoT 05 §4.3.2 **ne tranche** **pas** le **seuil** **par** **tab** (les **5** tabs **ont** des volumes **différents** : Tâches **peut** dépasser 100, Documents **peut** dépasser 100, Notes **peut** dépasser 100, Jalons = **borné** (le nombre de jalons d'un projet est **limité** par la durée), Infos = **3 valeurs** **fixes** (pas de pagination)) ; le SSoT **ne dit** **jamais** « le tab X **exige** une pagination à N lignes » | (a) Le seuil **par** **tab** = le **seuil global** (ui-libraries S8 l. 304-307 : 20/100) — le SSoT à **appliquer** le seuil global **à** chaque tab **indépendamment** (le tab Tâches = le seuil le **plus** probable, le tab Jalons = le seuil le **moins** probable) (b) Le seuil **par** **tab** = le seuil **spécifique** (le SSoT à **compléter** le seuil par tab, ex. « le tab Tâches **exige** une pagination à 50 lignes ») (c) Le SSoT à compléter (le seuil **exact** par tab) | Product / Data team | ui-libraries S8 l. 304-307 ; 05 §4.3.2 (pas de mention du seuil par tab) |
 | **OQ-21** | §4b — Libellés exacts des `Toast` de mutation locale (renommer / dupliquer / cocher un jalon) + du `Toast` statique d'erreur réseau | Les mutations **locales** du détail (pack 03, l. 1548-1549 : les jalons, tâches, notes **restent modifiables** offline — la **sync** est différée) **confirment** chacune un `Toast` transitoire (S6 `success` l. 183 : auto-dismiss, entrée `fade-in` 150 ms `anim.fast` — §4b ligne `succès`) : le CTA « Renommer » (le titre **inline** du `TopBar`, l. 1492-1493) → le libellé (ex. « Projet renommé ✓ ») ; le CTA « Dupliquer » (l. 1494-1497) → le libellé (ex. « Projet dupliqué ✓ ») ; le coché de la `Checkbox` du jalon (`RoutineStep`, l. 1513-1516 ; le `success` quand cochée, 05 §3.2 l. 446-448) → le libellé (ex. « Jalon coché ✓ » / « Jalon terminé ✓ ») ; le `Toast` **statique** d'erreur réseau (§4b ligne `erreur`, 05 §3.5 l. 838-841 : le seul toast qui **reste** tant que le réseau est down, `AppError` `cause:'network'` pack 02 §10) → le libellé (ex. « Erreur réseau — resynchronisation en attente ») ; le SSoT 05 §4.3.2 **ne donne** **aucun** libellé normatif pour ces 4 textes (les seuls libellés `Toast` du SSoT = ceux de la `Modal` de suppression, OQ-14 / OQ-15 ci-dessus) | (a) Libellés à trancher par la DS team (FR, pattern S6 success l. 183 : auto-dismiss 2–3 s ; le `Toast` d'erreur réseau = **statique** l. 838-841) (b) SSoT à compléter (libellés des 4 `Toast` de mutation + du `Toast` d'erreur réseau) | Design System team | 05 §4.3.2 l. 1492-1497, 1513-1516, 1548-1549 ; 05 §3.2 l. 446-448 ; 05 §3.5 l. 823-841 ; ui-libraries §6 l. 183, §6.1 l. 200 ; pack 02 §10 (`AppError` `cause:'network'`) |
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Liste + détail** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `projets-*` dans la ligne « Liste + détail » ; ce slug est le côté
+**détail**, une route push `/projects/:id`).
+
+**État réel — la route n'existe pas.** `apps/mobile/src/router.tsx` déclare
+`/projects` (l. 122) **mais aucune route `/projects/:id`** : le détail est
+**inatteignable** en code aujourd'hui (ni sur mobile, ni sur web). Le shell web
+(`apps/web-app`) n'a **aucune** section détail `projets`. C'est l'OQ-22 ci-dessous
+— le bloquant R10 du présent cadre.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : titre éditable inline + `Menu` + `SegmentedControl` (Liste/Kanban) + 5 tabs (Infos/Tâches/Jalons/Documents/Notes) | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail (`navFormForMode` → `rail`) | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : liste de projets à gauche, détail à droite | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°2** : le détail est un **overlay/route push** sous `lg`, un
+**panneau** à `lg`+ — même composant, conteneur différent (invariant bloquant du
+§1 l. 17 : « Drawer (desktop) ↔ route-push (mobile) », 05 §3.5 l. 815-820 + 02 §6.1).
+
+> **OQ-22** — le seuil exact de bascule et l'existence de la route `/projects/:id`
+> ne sont pas ratifiés (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` l. 21) |
+| R2 | Ligne de catalogue | ✅ | `productivity.projects` (`master-feature-catalog.md` L22 : « Gantt/Kanban/Timeline/List views + milestones + templates ; agent: project.create CONFIRMATION_REQUIRED ; offline-capable ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Project` (`entities-productivity.ts` l. 61), `Milestone` (l. 78) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4a |
+| R6 | États §6.1 couverts | ✅ | §4b (N/A justifiés) + §4c |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 76 ; catalog L22) |
+| R8 | Événements déclarés | ✅ **aucun émis** | `updateProject` retourne une commande `projects` (`goals-projects.ts:190`), aucun `event` |
+| R9 | Permissions déclarées | ⚠️ | le **scan de documents** (tab Documents) demande `CAMERA`/fichiers **au 1ᵉʳ usage** |
+| R10 | Entrée de nav déclarée | ❌ **NON** | **aucune** route `/projects/:id` dans `router.tsx` (l. 122 = `/projects` seul) — le détail est **inatteignable** → OQ-22 |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | le **repo projets n'est pas câblé** (`projects/index.tsx` l. 57-59) ; de plus `SegmentedControl` (OQ-22 §14) n'existe **pas** dans `packages/ui` |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-1 (4 slugs vs slug unique), OQ-10 (persistance `taskView`), OQ-22 (`SegmentedControl` absent), OQ-23 (5 projections vs `SegmentedControl` 2 options) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 10 critères sur 13. **Trois bloquants** : **R10**
+(route `/projects/:id` inexistante), **R12** (repo non câblé + `SegmentedControl`
+absent de `packages/ui`) et **R13** (OQ-1/10/11/12).
+
+**Demande de contrat (plan §4)** — pour la route et le switch de vue :
+
+```
+WS:        WS-3c (specs d'écran — Productivity)
+Chemin:    apps/mobile/src/router.tsx  ·  packages/ui/src/components/ui/  ·  docs/features/specs/
+Besoin:    (a) la route `/projects/:id` (absente de `router.tsx`) ;
+           (b) le `SegmentedControl` (OQ-22 §14 : absent de `packages/ui`, S1 ne le
+           liste pas) ;
+           (c) la décision OQ-1/OQ-23 : 5 projections (Liste/Kanban/Timeline/Gantt/
+           Calendrier) = 5 slugs distincts ou le slug unique `projets-detail` ;
+           le `SegmentedControl` est limité à 3 segments (05 §3.4 l. 709-710)
+Motif:     `router.tsx` l. 122 ne déclare que `/projects` ; le SSoT 05 §4.3.2 l. 1486-1487
+           cite 5 vues empotées mais ne tranche pas le conteneur
+Bloque:    oui — sans route, l'écran n'est pas atteignable (S1–S11 non testables)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | le détail lit le store local `projects` (AD-7) ; **interdit** : état vide figé |
+| S2 | 6 états prouvés | §4a — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4c — pattern global, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : Infos/Tâches/Jalons/Notes restent **modifiables** (sync différée) ; seul le **scan de documents** est désactivé (avec explicatif) |
+| S5 | Retour arrière vérifié | relance froide → détail re-lu du miroir (jamais d'écran blanc, AD-7) |
+| S6 | Isolation utilisateur | RLS sur `projects`/`milestones` (`0002:174-202`) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (route-push ↔ panneau) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `updateProject` (champs changés) + `createMilestone` corrects ? | Vitest ≥ 80 % sur `packages/productivity` |
+| Intégration | ✅ | vue PowerSync `projects`/`milestones` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ⚠️ | aucun événement émis → n/a justifié | — |
+| E2E | ✅ | « ouvrir un projet → renommer → cocher un jalon » ? | Playwright web |
+| Failure | ✅ | lecture échouée → état `error` + retry ? | test failure |
+| Permission | ✅ | refus camera/fichiers ne casse pas les tabs ? | test permission |
+| Offline | ✅ | réseau coupé → tabs lecture/écriture locale OK, scan désactivé ? | test offline |
+| Recovery | ✅ | relance froide → détail intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (5 tabs, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.projects` | ≥ 1 test par classe applicable | ✅ partiel — `productivity.test.ts` (projets) |
+| Région « détail de projet » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `projets-detail` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — aucune story `ProjectDetail` |
+| Écran `projets-detail` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R10 (route absente) + R12 + OQ-1/10/11/12
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (camera/fichiers au 1ᵉʳ usage)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-22** — **Route inexistante** : `router.tsx` (l. 122) ne déclare que
+  `/projects` — **aucune** route `/projects/:id`. → **OQ** : créer la route du
+  détail (et son slug, cf. OQ-1 du §14 : 4 slugs vs slug unique) ?
+- **OQ-23** — **Nav web** : aucune section détail `projets` dans
+  `apps/web-app/src/lib/navigation.ts` (la section `projets` porte
+  `readiness: 'shell'`). → **OQ** : où vit le détail dans la coquille web ?
+- **OQ-24** — Seuil de bascule route-push → panneau (§15) : `lg` (1024 px)
+  confirmé ? (cf. OQ-4 globale)

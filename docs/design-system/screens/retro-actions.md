@@ -268,6 +268,145 @@ AD-7/AD-14).
 > la copy. Le OQ-3 (Modal de confirmation ou non) est **bloquant** pour le flux.
 > Les OQ 1/7 sont **non bloquantes** (les 2 options sont valables dans le SSoT).
 
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Session guidée** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice ne nomme pas `retro-actions` ; le gabarit est retenu **par analogie** : 3
+`Card` compactes + **un seul CTA** (AD-14) = une surface de clôture focalisée, 1
+colonne centrée à tous les paliers. **À ratifier** → OQ-17 ci-dessous).
+
+L'écran réel est `RetroActionsPage` (`apps/mobile/src/pages/retro/index.tsx` l. 102).
+Le shell web (`apps/web-app`) **ne rend pas encore** cet écran : il n'existe
+**aucune** section `retro` dans `apps/web-app/src/lib/navigation.ts` — l'écran est
+**inatteignable sur web** aujourd'hui (OQ-18 ci-dessous).
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne centrée : 3 `Card` compactes (écarts / actions / rythme) + CTA fixe | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne centrée + rail d'icônes | rail (`navFormForMode` → `rail`) | tablette |
+| **`lg+` (≥ 1024 px)** | **1 colonne centrée** (`reading-max` ≈ 720 px) | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°4** : « la session guidée reste à 1 colonne à tous les paliers —
+choix de concentration ». Le **CTA unique et fixe** (AD-14 : « the ONLY action of
+the surface », `retro/index.tsx` l. 226-231) reste **unique** aux 3 paliers.
+
+> **OQ-17** — `retro-actions` n'est pas dans la matrice §2.3 : gabarit à ratifier
+> (Session guidée retenu — alternative : Formulaire / réglages).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` l. 21) |
+| R2 | Ligne de catalogue | ✅ | `productivity.reviews` (`master-feature-catalog.md` L26 : « daily/weekly/monthly reviews + retro actions ; offline-capable ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | la rétro-actions consomme `Review` (`packages/productivity/src/reviews.ts`) — la « décision » est un champ de la revue, pas une table neuve |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4(a) |
+| R6 | États §6.1 couverts | ✅ | §4(b) (N/A justifiés) + §4(c) |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 129 ; catalog L26) |
+| R8 | Événements déclarés | ✅ **aucun émis** | la décision = une écriture locale (AD-7), aucun `event` de domaine |
+| R9 | Permissions déclarées | ✅ | aucune |
+| R10 | Entrée de nav déclarée | ⚠️ | route `/retro` (`router.tsx` l. 147, **ungated**) — **absente de `navigation.ts` (web)** → OQ-18 |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | le miroir **n'est pas câblé** : `retro/index.tsx` l. 22 (« not wired to `MobileDataProvider` yet → the screen ships an honest empty state ») ; la source = `RETRO` codé en dur (l. 105) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | les OQ du §14 (verbatims des 3 cartes, libellé du CTA) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (miroir
+non câblé) et **R13** (OQ §14 de copy).
+
+**Demande de contrat (plan §4)** — pour le câblage du miroir :
+
+```
+WS:        WS-3c (specs d'écran — Productivity)
+Chemin:    docs/features/specs/productivity.reviews.md  ·  packages/productivity/src/reviews.ts
+Besoin:    (a) le câblage du miroir `retro-actions` à `MobileDataProvider` (aujourd'hui
+           non branché → état vide honnête, AD-7) ;
+           (b) la spec de module `productivity.reviews` (ABSENTE de docs/features/specs/)
+Motif:     `retro/index.tsx` l. 22 documente le non-câblage ; le catalogue cite
+           `productivity.reviews` sans spec de module
+Bloque:    oui — sans câblage, les écarts/actions/rythme ne sont pas réels (S1)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la surface lit le store local (AD-7) ; **interdit** : `RETRO` codé en dur (l. 105) |
+| S2 | 6 états prouvés | §4(a) — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4(c) — pattern global, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : la décision (écriture locale) reste **actionnable** (WDS 06.3 §7) |
+| S5 | Retour arrière vérifié | relance froide → décision posée restaurée (jamais d'écran blanc, AD-7) |
+| S6 | Isolation utilisateur | RLS sur `reviews` (`0002:174-202`) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (1 colonne centrée) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | la clôture de la revue (décision posée) correcte ? | Vitest ≥ 80 % sur `packages/productivity` |
+| Intégration | ✅ | vue PowerSync `reviews` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ⚠️ | aucun événement émis → n/a justifié | — |
+| E2E | ✅ | « ouvrir la rétro → poser une décision via le CTA unique » ? | Playwright web |
+| Failure | ✅ | écriture échouée → état `error` + retry ? | test failure |
+| Permission | ⚠️ | aucune → n/a justifié | — |
+| Offline | ✅ | réseau coupé → décision locale actionnable ? | test offline |
+| Recovery | ✅ | relance froide → décision restaurée ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.reviews` | ≥ 1 test par classe applicable | à écrire (aucune spec de module) |
+| Région « 3 cartes de rétro » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `retro-actions` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — aucune story `RetroActionsPage` |
+| Écran `retro-actions` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (miroir non câblé) + OQ §14
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-17** — **Gabarit** : `retro-actions` n'est pas dans la matrice §2.3 →
+  « Session guidée » retenu **par analogie** ; à ratifier (alternative :
+  Formulaire / réglages ; cf. OQ-4 globale).
+- **OQ-18** — **Nav web** : `/retro` est une route de `router.tsx` (l. 147) mais
+  **absente** de `apps/web-app/src/lib/navigation.ts`. → **OQ** : où vit la
+  rétro-actions dans la coquille web — sans quoi l'écran est **inatteignable** sur web.
+- **OQ-19** — **Spec de module manquante** : `productivity.reviews` (dont dépend
+  `retro-actions`) est citée au catalogue (L26) mais **absente** de
+  `docs/features/specs/`. → **OQ** : écrire la spec de module (gabarit §M1-§M6) ?
+
 ## Références SSoT (comptage officiel)
 
 - **WDS 06.3** : `_bmad-output/wds/C-UX-Scenarios/06-horebs-retrospective/06.3-retro-actions/06.3-retro-actions.md` (slug `retro-actions`, route `/progress`, S-13 état post-retrospective ; Option A close OQ-1, OQ-2 close ; budget OQ-11 : 30 fps, TTI < 1.5 s, JS < 300 Ko gz ; thème Nocturne OQ-16 ; AD-14 : le CTA « Planifier la semaine » = le **seul** CTA d'action).

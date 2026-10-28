@@ -201,3 +201,146 @@ Comportement des 3 couches sur le board Kanban (05 §5 l. 2925-3307 ; overview �
 | **OQ-12** | `kanban` | Libellés exacts des états du **scan de documents** (action cloud du board, pack 04 §3.2.3) — `error` / `success` / `offline` (§4a ligne scan) | Le §4a (ligne **Scan de documents**) mandate les CTA/textes du scan (seul flux serveur synchrone de l'écran) : `error` = `Callout danger` + CTA « Réessayer » ; `success` = `Toast` de confirmation du scan ; `offline` = CTA grisé + message court « Scan indisponible hors ligne » — **aucun** de ces libellés n'est dans le SSoT (pack 04 §3.2.3 spécifie le pipeline OCR/upload mais **pas** les textes de l'écran board ; AD-1 fixe le principe de dégradation = saisie manuelle, pas le texte) | (a) Libellés à trancher par la DS team (pattern : ton calme, « indisponible hors ligne » cohérent avec le `Badge Offline` S6 l. 184) (b) SSoT pack 04 à compléter (textes `error`/`success`/`offline` du scan) | Design System team / pack 04 owner | pack 04 §3.2.3 (pipeline sans textes) ; AD-1 (dégradation = saisie manuelle) ; ui-libraries S6 l. 181/183/184 (CTA standard sans libellé normatif) |
 | **OQ-13** | `kanban` | Route du 404 / not-found du board (§4c) | Le §4c mandate le rendu 404 (logo AURORA **colorée au centre**, §9.1 l. 387 ; message court + CTA « Retour à l'accueil », §6.1 l. 202 ; libellé du message = OQ-9) mais **ne tranche pas la route d'attachement** du 404 sur ce board : le SSoT `not-found` global (`apps/mobile/src/pages/not-found/index.tsx`, feature-registry S6) rend le 404 sur la **route inconnue** — est-ce la même page pour le board (slug `/projects` ou `/tasks` selon OQ-1), ou le board a-t-il son **OWN** 404 (deep link `/projects/:slug` inconnu) ? | (a) Réutiliser le `not-found` global (une seule page 404, le CTA « Retour à l'accueil » est suffisant — pattern feature-registry S6) (b) Un 404 **par board** (deep link invalide → CTA « Retour au board Kanban » + logo centré §9.1 l. 387) — le SSoT à trancher avec OQ-1 (la route parent) | Product / 05 owner | ui-libraries §6.1 l. 202 (404 sans route d'attachement) ; §9.1 l. 387 ; feature-registry S6 ; OQ-1 (parent de route non tranché) |
 | **OQ-14** | `kanban` | Logo dans le `TopBar` (header) du board — mandate SSoT ou pas ? (§13 ligne 1) | La règle S9 (ui-libraries §9 l. 363) dit « Header / empty state / page center = ALWAYS the COLORED WITHOUT-background version » — mais 05 §4.3.3 (l. 1576-1578) spécifie le `TopBar` du board = **titre + `Menu` filtre uniquement** (pas de logo mentionné) ; le §13 ligne 1 applique la règle S9 au header du board (logo 16px à gauche du titre « Kanban », S1 l. 59 « 16px in nodes, 20px in header ») — **le SSoT 05 ne mandate pas le logo du header sur ce screen** (seul §4c mandate le logo pour le 404) → le logo du header = **application de la règle S9 (l. 363) non fixée 05 §4.3.3** = OQ-14 (DS team : appliquer la règle S9 au header du board ou pas ?) | (a) Appliquer la règle S9 au header (logo coloré 16px à gauche du titre — cohérent S1 l. 59 « 20px in header » ; le board est un écran de 1ʳᵉ classe = logo de marque) (b) Pas de logo dans le header (titre seul, le logo n'apparaît que sur le 404 / `EmptyState` — 05 §4.3.3 silencieux = le SSoT à compléter si le logo du header est un mandant) | Design System team / 05 owner | 05 §4.3.3 l. 1576-1578 (header sans logo) ; ui-libraries §9 l. 363 (règle S9 header) ; S1 l. 59 (taille du logo dans le header) |
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Éditeur** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `kanban` dans la ligne « Éditeur », arrangement « plein écran dès
+`md` », avec `focus-mode`, `exercises-proof` et les écrans Design Space).
+
+L'écran réel est `KanbanView` (`apps/mobile/src/pages/projects/views/KanbanView.tsx`),
+**empoté** dans `ProjectsPage` (`apps/mobile/src/pages/projects/index.tsx` l. 355 :
+`{view === 'kanban' && <KanbanView />}`) derrière le switch `view` l. 84. Le shell
+web (`apps/web-app`) **ne rend pas encore** cet écran : la section `projets`
+(`navigation.ts` l. 73-79) porte `readiness: 'shell'`.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne scrollable horizontalement : 5 colonnes (à faire / en cours / bloqué / terminé / annulé) | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | **plein écran (toile `T`)** + rail replié | rail (`navFormForMode` → `rail`) | tablette |
+| **`lg+` (≥ 1024 px)** | **toile plein écran** : 5 colonnes côte à côte + panneau latéral repliable (filtres) | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°3** : « l'éditeur est plein écran dès `md` : il ne tient pas dans
+une colonne ». Le gabarit « Éditeur » **ignore** `content-max` (la toile prend
+tout l'espace) et n'applique que `gutter` + les panneaux (`web-shell-and-responsive.md`
+§5). Le drag (`@dnd-kit`) doit rester utilisable **au clavier et au pointeur**
+(contrat C3) : pas de geste exclusif.
+
+> **OQ-17** — le seuil exact de bascule et la route parente (`/projects` vs
+> `/tasks`, OQ-1 §14) ne sont pas ratifiés au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` l. 21) |
+| R2 | Ligne de catalogue | ✅ | `productivity.tasks` (`master-feature-catalog.md` L19 : « tasks/subtasks (statuses…) ; offline-capable ; core ») — le board est un **tri par statut** des tâches |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Task` + `TaskStatus` (`entities-productivity.ts` l. 8/10) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4a |
+| R6 | États §6.1 couverts | ✅ | §4b (N/A justifiés) + §4c |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 87 ; catalog L19) |
+| R8 | Événements déclarés | ✅ **aucun émis** | le move de statut = une écriture locale `tasks` (single-writer AD-7), aucun `event` |
+| R9 | Permissions déclarées | ⚠️ | le **scan de documents** (action cloud du board) demande `CAMERA`/fichiers **au 1ᵉʳ usage**, jamais au boot |
+| R10 | Entrée de nav déclarée | ⚠️ | vue `ui-state` (`view='kanban'`, `projects/index.tsx` l. 84) — **route parente non tranchée** (`/projects` vs `/tasks`, OQ-1 §14) → OQ-17 |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ⚠️ **partiel** | la vue rend un board ; **mais** le composant `KanbanBoard`/`KanbanColumn`/`KanbanCard` **n'existe pas** dans `packages/ui` (OQ-3 §14 : `packages/ui/src/components/ui/` = battery shadcn + wrappers AD-10, pas de `Kanban*`) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-1 (route parente), OQ-3 (`Kanban*` absents de `packages/ui`), OQ-6 (FAB absent), OQ-7 (référence SSoT factice `§3.6.4`) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R13** (OQ-3 :
+les composants `Kanban*` sont déclarés dans le SSoT mais **non implémentés** dans
+`packages/ui` ; OQ-1 : route parente non tranchée) et **R12** (le contrat de
+composant du board n'existe pas encore).
+
+**Demande de contrat (plan §4)** — pour le composant board :
+
+```
+WS:        WS-3c (specs d'écran — Productivity)
+Chemin:    packages/ui/src/components/ui/  ·  docs/design-system/screens/kanban.md
+Besoin:    la décision de composant (OQ-3) : créer `KanbanBoard`/`KanbanColumn`/
+           `KanbanCard` dans `packages/ui` (composants DS autonomes) OU composer
+           `Card` shadcn + `@dnd-kit` directement dans l'écran
+Motif:     le SSoT 05 §4.3.3 référence `KanbanColumn`/`KanbanCard` mais aucun
+           composant `Kanban*` n'existe dans `packages/ui` ; la référence §3.6.4
+           est factice (OQ-7 : §3.6.4 = `GanttRow`)
+Bloque:    oui — sans composant, le board ne peut pas être déclaré « fait »
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | le board lit le store local `tasks` (AD-7) ; **interdit** : colonnes codées en dur |
+| S2 | 6 états prouvés | §4a — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4c — pattern global, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : board + drag locaux OK ; seul le **scan de documents** est désactivé (`05 §4.3.3 l. 1605-1612`) |
+| S5 | Retour arrière vérifié | relance froide → board du miroir affiché (jamais d'écran blanc, AD-7) |
+| S6 | Isolation utilisateur | RLS sur `tasks` (`0002:174-202`, policy `tasks_user_isolation`) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, drag au clavier (C3), `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (toile plein écran dès `md`) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `quadrantOf`/tri par statut corrects ? | Vitest ≥ 80 % sur `packages/domain` |
+| Intégration | ✅ | vue PowerSync `tasks` sans JOIN + re-sync après un drag ? | test `check-view-joins` + re-sync |
+| Contrat | ⚠️ | aucun événement émis → n/a justifié (move = écriture locale) | — |
+| E2E | ✅ | « déplacer une card d'une colonne à l'autre » ? | Playwright web |
+| Failure | ✅ | move non syncé → `Badge danger` « à resync » + retry ? | test failure |
+| Permission | ✅ | refus camera/fichiers ne casse pas le board ? | test permission |
+| Offline | ✅ | réseau coupé → board + drag OK, scan désactivé ? | test offline |
+| Recovery | ✅ | relance froide → board intact ? | test recovery |
+| Plateforme | ⏳ | budget 30 fps sur le drag (WDS 05.4 §10) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.tasks` | ≥ 1 test par classe applicable | ✅ partiel — `productivity.test.ts` (statuts + commandes `tasks`) |
+| Région « board 5 colonnes » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `kanban` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Tasks.stories.tsx` couvre `KanbanColumn` (le composite), **pas** la vue `KanbanView` |
+| Écran `kanban` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R13 (Kanban* absents de packages/ui ; route OQ-1) + R12
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (camera/fichiers au 1ᵉʳ usage)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11) — dont drag au clavier (C3)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-17** — **Route parente** : le board est attaché à `/projects` (`_inventory.md`
+  l. 87) **ou** `/tasks` (WDS 05.4) — le SSoT 05 §4.3.3 ne tranche pas (OQ-1 §14).
+  Sans arbitrage, le `navigation.ts` web ne peut pas exposer le board.
+- **OQ-18** — **Nav web** : aucune section de `navigation.ts` n'expose une vue
+  Kanban ; la section `projets` porte `readiness: 'shell'`. → **OQ** : où vit le
+  board dans la coquille web ?
+- **OQ-19** — Seuil de bascule (`lg` = 1024 px) et composition plein écran (§15) :
+  à ratifier (cf. OQ-4 globale).

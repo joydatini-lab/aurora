@@ -147,3 +147,146 @@ N/A (pas de formulaire sur cet écran — la `GanttRow` est une liste de lecture
 | OQ-08 | 8 | Zone 3 (CTA) | Le **libellé exact** du CTA « Générer la fiche » (WDS 02.5 §6, OQ-2 close 09/25 option A) n'est pas tranché dans le SSoT 05 (le SSoT 05 §3.1 l.381–383 dit « CTA `lg` = 56 px » mais **pas** le libellé exact) = **OQ-08** (le libellé exact n'est pas tranché dans le SSoT 05). | A : « Générer la fiche » (WDS 02.5 §6 : le libellé est « Générer la fiche ») ; B : « Créer la fiche » (le libellé est « Créer la fiche ») ; C : « Générer » (le libellé est « Générer », plus court) | Lead UX (trancher le libellé exact du CTA) |
 | OQ-09 | 9 | Zone 2 (EmptyState) | Le **libellé exact** de l'EmptyState « projet scindé → plan vide » (WDS 02.5 §7 dit « Pas de tâche — ajoutons une tâche » mais ce n'est **pas** le libellé SSoT ; SSoT 05 §3.6.4 empty = « aucun planifié sur la période » l.942–944) n'est pas tranché dans le SSoT 05 (le SSoT 05 §3.6.4 dit « aucun planifié sur la période » mais **pas** le libellé exact pour l'état « projet scindé mais sans tâche planifiée ») = **OQ-09** (le libellé exact n'est pas tranché dans le SSoT 05). | A : « aucun planifié sur la période » (SSoT 05 §3.6.4 l.942–944 : le libellé est « aucun planifié sur la période ») ; B : « Pas de tâche — ajoutons une tâche » (WDS 02.5 §7 : le libellé est « Pas de tâche — ajoutons une tâche ») ; C : « Le plan est vide — ajoutez une tâche » (le libellé est « Le plan est vide — ajoutez une tâche ») | Lead UX (trancher le libellé exact de l'EmptyState) |
 | OQ-10 | 10 | 404 / not-found | Le **libellé exact** de la 404 (ui-libraries §6.1 : la 404 = la page de détail qui montre le travail de finition, état « vivant » avec CTA primaire = marque active) n'est pas tranché dans le SSoT 05 (le SSoT 05 §9.1 dit « la 404 = logo coloré au CENTRE » mais **pas** le libellé exact) = **OQ-10** (le libellé exact n'est pas tranché dans le SSoT 05). | A : « Page introuvable » (ui-libraries §6.1 : le libellé est « Page introuvable ») ; B : « Cette page n'existe pas » (le libellé est « Cette page n'existe pas ») ; C : « Erreur 404 » (le libellé est « Erreur 404 », plus technique) | Lead UX (trancher le libellé exact de la 404) |
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Calendrier** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `timeline-gantt` dans la ligne « Calendrier », avec `calendrier-*` et
+`revues-*`).
+
+L'écran réel est `TimelineViewGrouped`, **empoté** dans `ProjectsPage`
+(`apps/mobile/src/pages/projects/index.tsx` l. 382 : `{view === 'timeline' &&
+<TimelineViewGrouped />}`) derrière le switch `view` l. 84. La route **routée**
+WDS 02.5 `/projects/:id/timeline` **n'existe pas** dans `router.tsx` (seul
+`/projects` est déclaré, l. 122) — c'est l'OQ-01 §14 (conflit SSoT 05 §4.3.2
+« empoté » vs WDS 02.5 « écran routé S-33 »). Le shell web (`apps/web-app`) **ne
+rend pas encore** cet écran : section `projets` `readiness: 'shell'`.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : liste de `GanttRow` (44 px/ligne, barre 8 px) + CTA fixe | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail (`navFormForMode` → `rail`) | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : mini-agenda à gauche, liste chronologique à droite | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°1** : l'écran ne teste jamais la largeur lui-même — il déclare son
+gabarit (« Calendrier ») et le shell applique l'arrangement. Le **CTA unique et
+fixe** (invariant AD-14, WDS 02.5 §6) reste **unique** aux 3 paliers.
+
+> **OQ-12** — le seuil exact de bascule 1 → 2 panneaux (`lg` = 1024 px) n'est pas
+> ratifié (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` l. 21) |
+| R2 | Ligne de catalogue | ✅ | `productivity.projects` (`master-feature-catalog.md` L22 : « Gantt/Kanban/Timeline/List views + milestones + templates ; offline-capable ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Task` (`entities-productivity.ts` l. 10, `dueAt`/`priority`/`dependencies`) — la `GanttRow` est une **projection**, aucune table neuve |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4(a) |
+| R6 | États §6.1 couverts | ✅ | §4(b) (N/A justifiés) + §4(c) |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 78 ; catalog L22) |
+| R8 | Événements déclarés | ✅ **aucun émis** | l'écran **lit** (projection de `tasks`) ; le CTA « Générer la fiche » appartient au module fiches |
+| R9 | Permissions déclarées | ✅ | aucune |
+| R10 | Entrée de nav déclarée | ❌ **NON** | **aucune** route `/projects/:id/timeline` dans `router.tsx` (l. 122 = `/projects` seul) ; la vue est **empotée** (`view='timeline'`) → OQ-01 §14 |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ⚠️ **partiel** | la vue rend une liste ; **mais** le composant `GanttRow` du SSoT 05 §3.6.4 **n'existe pas** dans `packages/ui` (cf. OQ-07 §14 : §3.6.4 = `GanttRow` « factice » selon `kanban.md` OQ-7) ; le repo projets n'est pas câblé (`projects/index.tsx` l. 57-59) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-01 (écran routé vs empoté), OQ-02 (`BottomNav`), OQ-03 (`Pager` axe), OQ-05 (rendu des dépendances) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 10 critères sur 13. **Trois bloquants** : **R10** (route
+absente), **R12** (`GanttRow` absent de `packages/ui` + repo non câblé) et **R13**
+(OQ-01 : conflit SSoT 05 vs WDS 02.5 non tranché).
+
+**Demande de contrat (plan §4)** — pour la route et le composant :
+
+```
+WS:        WS-3c (specs d'écran — Productivity)
+Chemin:    apps/mobile/src/router.tsx  ·  packages/ui/src/components/ui/  ·  docs/design-system/screens/timeline-gantt.md
+Besoin:    (a) la décision OQ-01 : écran routé S-33 (WDS 02.5) ou vue empotée dans
+           `projets-detail` (05 §4.3.2) — sans quoi la route `/projects/:id/timeline`
+           n'existe pas ;
+           (b) le composant `GanttRow` (05 §3.6.4) : absent de `packages/ui`
+Motif:     `router.tsx` l. 122 ne déclare que `/projects` ; le SSoT 05 §3.6.4
+           définit `GanttRow` mais aucun composant `Gantt*` n'existe dans `packages/ui`
+Bloque:    oui — sans route ni composant, l'écran n'est pas atteignable (S1–S11)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la liste lit le store local `tasks` (AD-7) ; **interdit** : lignes codées en dur |
+| S2 | 6 états prouvés | §4(a) — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4(c) — pattern global, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : liste + barres lisibles (miroir) ; seule la sortie « Générer la fiche » (flux serveur) est dégradée (AD-1) |
+| S5 | Retour arrière vérifié | relance froide → liste re-lue du miroir (jamais d'écran blanc, AD-7) |
+| S6 | Isolation utilisateur | RLS sur `tasks` (`0002:174-202`, policy `tasks_user_isolation`) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | la projection tâche → `GanttRow` (barre proportionnelle sur l'axe) correcte ? | Vitest ≥ 80 % sur `packages/domain`/`packages/productivity` |
+| Intégration | ✅ | vue PowerSync `tasks` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ⚠️ | aucun événement émis → n/a justifié | — |
+| E2E | ✅ | « ouvrir le plan → lire la liste chronologique → CTA Générer la fiche » ? | Playwright web |
+| Failure | ✅ | lecture échouée → état `error` + retry ? | test failure |
+| Permission | ⚠️ | aucune → n/a justifié | — |
+| Offline | ✅ | réseau coupé → liste + barres OK, sortie dégradée ? | test offline |
+| Recovery | ✅ | relance froide → liste intacte ? | test recovery |
+| Plateforme | ⏳ | budgets NFR (30 fps, TTI < 1,5 s, JS < 300 Ko) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.projects` | ≥ 1 test par classe applicable | ✅ partiel — `productivity.test.ts` (projets) |
+| Région « liste de GanttRow » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `timeline-gantt` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — aucune story `TimelineViewGrouped` |
+| Écran `timeline-gantt` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R10 (route absente) + R12 (GanttRow absent) + OQ-01/02/03/05
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-12** — Seuil de bascule 1 → 2 panneaux (§15) : `lg` (1024 px) confirmé ?
+  (cf. OQ-4 globale)
+- **OQ-13** — **Route absente** : `/projects/:id/timeline` (WDS 02.5, S-33) n'existe
+  pas dans `router.tsx` (l. 122 = `/projects` seul) ; la vue est empotée
+  (`view='timeline'`). → **OQ** : confirmer OQ-01 §14 (écran routé vs empoté) et,
+  si routé, créer la route.
+- **OQ-14** — **Nav web** : aucune section `projets`/timeline dans
+  `apps/web-app/src/lib/navigation.ts` (la section `projets` porte
+  `readiness: 'shell'`). → **OQ** : où vit le plan d'ouverture dans la coquille web ?

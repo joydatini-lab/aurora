@@ -237,3 +237,146 @@ Module : Productivité · Route : `/habits` · Statut : **détaillé** · SSoT �
 - **OQ-7** — L'état sémantique **`terminé`** (journée bouclée, §4(b)) : le CTA « Marquer aujourd'hui » passe-t-il en texte « Journée bouclée » + icône `CheckCircle2` (§4(b)) ou reste-t-il inchangé (le check-in du lendemain est déjà le prochain) ? La transition CTA actif → CTA terminé n'est pas figée par 05 §4.3.5 (qui ne traite que le tap **unique**, pas l'état post-bouclage). → **à trancher**.
 - **OQ-8** — Le libellé exact de la Toast **`success` transitoire** après le tap de check-in (« Marqué », §4(b) succès) n'est pas figé par SSoT (05 §4.3.5 = « un tap unique, pas un formulaire », pas de texte de confirmation). → **à trancher**.
 - **OQ-9** — §12 « Dégradation (AD-1) » : l'**analyse d'adhérence distante** (le seul flux cloud de l'écran — le BottomSheet « Adhérence », §2/§6) n'a **pas de rendu figé** dans 05 §4.3.5 (ni le §4 de ce doc) quand son flux est indisponible (offline prolongé / killed) : la matrice AD-13 (05 §3.7) dit seulement que `Timeline`/`KeyValueList` restent en rendu **local** (les rapports syncés restent), mais **ni le message de Callout, ni le CTA, ni le libellé de dégradation** d'une section « analyse distante indisponible » ne sont spécifiés (AD-1 l.35 exige une dégradation **propre** — pas de crash —, sans figer le rendu). → **à trancher** (à quel Callout/libellé le BottomSheet « Adhérence » passe-t-il quand l'analyse distante meurt ?).
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Liste + détail** (`docs/frontend/web-shell-and-responsive.md` §2.3 —
+la matrice nomme `habitudes`/`routines` **nulle part** ; le gabarit est retenu
+**par analogie** : une liste verticale de `Card flat` (1 par habitude) + un détail
+en `BottomSheet` = le pattern liste + détail. **À ratifier** → OQ-17 ci-dessous).
+
+L'écran réel est `HabitsPage` (`apps/mobile/src/pages/habits/index.tsx`). Le shell
+web (`apps/web-app`) **ne rend pas encore** cet écran : il n'existe **aucune**
+section `habits` dans `apps/web-app/src/lib/navigation.ts` — l'écran est
+**inatteignable sur web** aujourd'hui (OQ-18 ci-dessous).
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : liste de `Card flat` (heatmap `HabitStreak` + streak + « Marquer aujourd'hui ») + FAB création | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail (`navFormForMode` → `rail`) | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : liste d'habitudes à gauche, détail/analyse à droite (le `BottomSheet` §2 devient un panneau) | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°2** : le détail est un **overlay** (`O`) sous `lg`, un **panneau** à
+`lg`+ — même composant, conteneur différent. Le FAB « + Créer une habitude »
+(mobile-only, `05 §4.3.5`) devient, à `lg`+, une action de `PageHeader`.
+
+> **OQ-17** — `habitudes` n'est pas dans la matrice §2.3 : gabarit à ratifier
+> (Liste + détail retenu par analogie) ; le seuil de bascule (`lg` = 1024 px) suit
+> la règle globale (cf. OQ-4).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` l. 21) |
+| R2 | Ligne de catalogue | ✅ | `productivity.habits` (`master-feature-catalog.md` L24 : « daily/weekly habits + routines (temporal anchors) + adherence analytics ; `HabitStreak` heatmap ; offline-capable ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Habit` (`entities-productivity.ts` l. 102) — **mais** le domaine expose `title` alors que la base a `name` (drift d'interface, `productivity.habits.md` §M2) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4(a) |
+| R6 | États §6.1 couverts | ✅ | §4(b) (N/A justifiés) + §4(c) 404 |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 95 ; catalog L24) |
+| R8 | Événements déclarés | ✅ **aucun émis** | `createHabit`/`recordHabitCompletion` retournent des `ProductivityCommand` (`habits.ts:30,59`), aucun `event` |
+| R9 | Permissions déclarées | ⚠️ | `POST_NOTIFICATIONS` au **1ᵉʳ usage** (rappel d'habitude), jamais au boot — à exercer |
+| R10 | Entrée de nav déclarée | ⚠️ | route `/habits` (`router.tsx` l. 127) — **absente de `navigation.ts` (web)** → OQ-18 |
+| R11 | Tokens identifiés | ✅ | §3 ; la heatmap consomme la rampe **figée** `--aurora-habit-weak/med/strong` (`05 §2.1.2`, G-H2 ; `habits/index.tsx` l. 156-157) |
+| R12 | Contrat de données | ❌ **NON** | le miroir `habits` **n'est pas câblé** à `MobileDataProvider` : `habits/index.tsx` l. 10-14 (« the habits mirror is not wired yet — no fake streaks, no invented check-ins ») → l'écran livre des états vides **honnêtes** ; en outre `recordHabitCompletion` écrit une colonne fantôme `habits.completions_add` absente de tout schéma (`productivity.habits.md` §M2) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-4 (message 404), OQ-5 (Badge « à resync »), OQ-6 (Toast success) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (le
+miroir `habits` n'est pas câblé + colonne fantôme `completions_add`) et **R13**
+(OQ-4/5/6 de copy).
+
+**Demande de contrat (plan §4)** — pour la persistance des coches :
+
+```
+WS:        WS-3c (specs d'écran — Productivity)
+Chemin:    docs/features/specs/productivity.habits.md  ·  packages/productivity/src/habits.ts
+Besoin:    (a) le câblage du miroir `habits` à `MobileDataProvider` (aujourd'hui
+           non branché → états vides honnêtes) ;
+           (b) la décision AD-15 sur `habits.completions_add` (colonne additive ou
+           table de complétions) — écrite par `recordHabitCompletion` (`habits.ts:71`)
+           mais absente de `0002`, `powersync-schema.ts`, `sqlite-schema.ts`
+Motif:     la spec de module §M2 documente la colonne fantôme (perdue à l'upsync) ;
+           le writer audit (`domain-schema-drift.test.ts:403-406`) n'appelle pas `recordHabitCompletion`
+Bloque:    oui — une coche écrite via `completions_add` est acceptée localement mais perdue à l'upsync
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | l'écran lit le store local `habits` (AD-7) ; **interdit** : `data-state="empty"` figé (`habits/index.tsx` l. 170) — aujourd'hui c'est le cas (miroir non câblé) |
+| S2 | 6 états prouvés | §4(a) — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4(c) — pattern global, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : liste + coche locale OK (mais non persistée tant que le drift §M2 n'est pas tranché) |
+| S5 | Retour arrière vérifié | relance froide → habitudes re-lues du miroir (jamais d'écran blanc, AD-7) |
+| S6 | Isolation utilisateur | RLS sur `habits`/`routines` (`0002:174-202`, policy `habits_user_isolation`) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute (rampe `habit-*` = tokens figés) |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `habitStreak` (série maintenue/rompue) + `habitHeatmap` (28 cellules sur 4 semaines) corrects ? | Vitest ≥ 80 % ; `productivity.test.ts` « habits: streak + heatmap » (l. 183) |
+| Intégration | ✅ | vues PowerSync `habits`/`routines` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ⚠️ | aucun événement émis → n/a justifié | — |
+| E2E | ✅ | « cocher une habitude du jour » ? | Playwright web |
+| Failure | ✅ | sync échoué → `Badge danger` « à resync » + retry ? | test failure |
+| Permission | ✅ | refus `POST_NOTIFICATIONS` ne casse pas la coche ? | test permission |
+| Offline | ✅ | réseau coupé → liste + coche locale OK ? | test offline |
+| Recovery | ✅ | relance froide → état intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (heatmap, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.habits` | ≥ 1 test par classe applicable | ✅ partiel — `productivity.test.ts` « habits: streak + heatmap » (l. 183) |
+| Région « liste d'habitudes » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `habitudes` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — aucune story `HabitsPage` |
+| Écran `habitudes` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (miroir non câblé + colonne fantôme) + OQ-4/5/6
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (`POST_NOTIFICATIONS` au 1ᵉʳ usage)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-17** — **Gabarit** : `habitudes` n'est pas dans la matrice §2.3 → « Liste +
+  détail » retenu **par analogie** ; à ratifier (cf. OQ-4 globale).
+- **OQ-18** — **Nav web** : `/habits` est une route de `router.tsx` (l. 127) mais
+  **absente** de `apps/web-app/src/lib/navigation.ts`. → **OQ** : où vit la famille
+  habitudes/routines dans la coquille web — sans quoi l'écran est **inatteignable**
+  sur web.
+- **OQ-19** — **Persistance de la coche** : `habits.completions_add` est écrite mais
+  absente de tout schéma (`productivity.habits.md` MH-1). → **OQ** : migration
+  additive ou table de complétions (décision AD-15) ?

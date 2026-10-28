@@ -179,3 +179,150 @@ Comportement des 3 couches sur `/goals/:id/features/:fid` (05 §5 l. 2925-3307 ;
 | **OQ-10** | `/goals/:id/features/:fid` | Taille du logo `TopBar` (px, §13) | La SSoT §9 l. 357-358 dit « header (top bar) » **sans** préciser la dimension ; le §9.1 l. 378-388 (matrice monochrome) **ne fixe** aucune taille ; le §13 ligne `TopBar` cite « 16px in nodes, 20px in header » (ui-libraries S1 l. 59) — **c'est** la taille des icônes **Lucide**, **pas** le logo. Le logo du header = **quelle** taille ? | (a) `20px` (la taille « in header » de S1 l. 59, **étendue** au logo — **ad hoc**, pas SSoT) (b) `16px` (la taille « in nodes » de S1 l. 59, **réduite** au logo) (c) **Proportion au titre** (ex. `24px` si le titre = `16px/600` — **pas** dans la SSoT, **à trancher**) (d) **Aucun logo** dans le `TopBar` de cet écran (le `IonTitle` seul, le logo = **réservé** à la `TopBar` du dashboard — le detail **n'en a pas**) | Design System team (ui-libraries §9 l. 357-358, §9.1 l. 378-388) ; goal-dashboard-ui S9 owner | ui-libraries §9 l. 349-360 (le logo = « header (top bar) », **pas** de px) ; S1 l. 59 (l. 59 = **icônes Lucide**, **pas** le logo) ; §9.1 l. 378-388 (matrice monochrome, **pas** de taille) ; goal-dashboard-ui S9 l. 326-338 (S9 = feature labels, **pas** la taille du logo) |
 
 **Règle de test** (05 §3.7 l. 1303-1306 ; pack 02 §11) : un composant qui implémente un état de cette matrice a un test de rendu par état ; un composant marqué « écran » a un test par écran qui compose l'état.
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Liste + détail** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `objectifs-*` dans la ligne « Liste + détail » ; ce slug est le
+**sous-détail** d'un objectif, la route est **poussée** depuis le Goal Dashboard).
+
+L'écran réel est `GoalFeatureDetailPage` (`apps/mobile/src/pages/goals/index.tsx`
+l. 153-190). Le shell web (`apps/web-app`) **ne rend pas encore** cet écran : il
+n'existe **aucune** section `goals` dans `apps/web-app/src/lib/navigation.ts` — le
+détail est **inatteignable sur web** aujourd'hui (OQ-11 ci-dessous).
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : breadcrumb + contenu feature (overlay/push au-dessus du dashboard) | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail (`navFormForMode` → `rail`) | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : dashboard de l'objectif à gauche, détail de la feature à droite | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°2** : le détail est un **overlay** (`O`) sous `lg`, un **panneau** à
+`lg`+ — même composant, conteneur différent. La route est **adjacente** au tab
+(`02 §6.1` : le retour **doit** ramener au Goal Dashboard **d'où** le tap, jamais à
+`/goals` liste, goal-dashboard-ui S6 l. 299-301).
+
+> **OQ-11** — le seuil exact de bascule overlay → panneau (`lg` = 1024 px) n'est
+> pas ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` l. 21) |
+| R2 | Ligne de catalogue | ✅ | `productivity.goals` (`master-feature-catalog.md` L23 : « short/mid/long horizons, goal→project→task hierarchy ; `GoalUpdated` producer ; offline-capable ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Goal` (`entities-productivity.ts` l. 89) ; `FeatureNode` (`packages/goal-engine/src/layout.ts` l. 20) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (couvert par le dashboard parent — `UxStates`, `index.tsx` l. 124-152) |
+| R6 | États §6.1 couverts | ✅ | §4 (sous-états `pending/active/done/skipped/blocked/error`, goal-dashboard-ui S3 l. 200-208) |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 90 ; catalog L23) |
+| R8 | Événements déclarés | ✅ **aucun émis** | l'écran **lit** ; le producteur `GoalUpdated` (`events.ts:108`) appartient au module (création/renommage), pas à cet écran |
+| R9 | Permissions déclarées | ✅ | aucune |
+| R10 | Entrée de nav déclarée | ⚠️ | route `/goals/:id/features/:fid` (`router.tsx` l. 110) — **absente de `navigation.ts` (web)** → OQ-11 |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ⚠️ **partiel** | le code lit `searchParams` (`goalId`, `subGoalId`) et affiche `featureLabel(fid)` ; **mais** le **corps feature-specific** n'est pas rendu (`<div data-feature-body>` = texte statique, `index.tsx` l. 180-183) — « Rendered by the feature module when wired » |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-1 (contenu feature-specific non spécifié), OQ-6 (titre = `featureLabel` vs `fid` brut), OQ-7 (CTA alternative de l'état `échec`) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (le
+corps feature-specific n'est pas rendu — texte statique) et **R13** (OQ-1 : le
+contenu de la feature n'est pas spécifié ; OQ-7 : CTA de l'état `échec`).
+
+**Note — OQ-6 du §14 résolue en code** : le titre n'est **plus** `{fid}` brut ; le
+code affiche `featureLabel(fid ?? '')` (`index.tsx` l. 165) — la règle
+goal-dashboard-ui S9 l. 328-330 (« jamais l'id technique ») est **respectée** dans
+le code actuel. L'OQ-6 du §14 est donc à **clore** (le fix est appliqué).
+
+**Demande de contrat (plan §4)** — pour le corps feature-specific :
+
+```
+WS:        WS-3c (specs d'écran — Productivity)
+Chemin:    docs/features/specs/productivity.goals.md  ·  packages/goal-engine/src/layout.ts
+Besoin:    la décision sur le contenu de la zone feature-specific (OQ-1) : le SSoT
+           additif ne documente QUE le breadcrumb + le sous-état ; le corps est un
+           placeholder statique (`index.tsx` l. 180-183)
+Motif:     `_inventory.md` l. 90 classe ce slug ADDITIF / GAP (OQ-13) — SSoT écran manquante
+Bloque:    oui — sans contenu, l'écran ne peut pas être déclaré « fait » (S1)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | le breadcrumb + le sous-état lisent `useGoal(id)` (AD-7, `index.tsx` l. 111) ; **interdit** : placeholder statique (aujourd'hui l. 180-183) |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | pattern global (`not-found`) ; un `fid` inconnu → état dégradé, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : breadcrumb + sous-état lisibles (miroir) |
+| S5 | Retour arrière vérifié | relance froide → le retour ramène au dashboard (goal-dashboard-ui S6 l. 299-301) |
+| S6 | Isolation utilisateur | RLS sur `goals` (`0002:174-202`, policy `goals_user_isolation`) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (overlay → panneau) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `featureLabel(fid)` mappe l'id technique vers un libellé lisible (`layout.ts` l. 112-117) ? | Vitest ≥ 80 % sur `packages/goal-engine` |
+| Intégration | ✅ | lecture locale du goal (miroir) + re-sync ? | test re-sync |
+| Contrat | ✅ | producteur `GoalUpdated` (`events.ts:108`) — **hors** de cet écran (lecture seule) | test AD-9 producer/consumer |
+| E2E | ✅ | « dashboard → tap node → détail → retour dashboard » ? | Playwright web |
+| Failure | ✅ | goal introuvable → état `error`/`empty` (`index.tsx` l. 124-152) ? | test failure |
+| Permission | ⚠️ | aucune → n/a justifié | — |
+| Offline | ✅ | réseau coupé → breadcrumb + sous-état OK ? | test offline |
+| Recovery | ✅ | relance froide → contexte (`goalId`/`subGoalId`) préservé ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `goal-engine` (`featureLabel`) | ≥ 1 test | à écrire |
+| Région « détail de feature » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `goal-feature-detail` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — aucune story de ce slug |
+| Écran `goal-feature-detail` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (corps non rendu) + OQ-1/OQ-7
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-11** — Seuil de bascule overlay → panneau (§15) : `lg` (1024 px) confirmé ?
+  (cf. OQ-4 globale)
+- **OQ-12** — **Nav web** : `/goals/:id/features/:fid` est une route de `router.tsx`
+  (l. 110) mais **absente** de `apps/web-app/src/lib/navigation.ts`. → **OQ** : où
+  vit la famille `goals` dans la coquille web — sans quoi l'écran est
+  **inatteignable** sur web.
+- **OQ-13** — **OQ-6 du §14 à clore** : le titre affiche désormais
+  `featureLabel(fid)` (`index.tsx` l. 165), plus `{fid}` brut → la règle
+  goal-dashboard-ui S9 l. 328-330 est respectée. **Confirmer la clôture.**
+- **OQ-14** — Le corps feature-specific reste un placeholder statique
+  (`index.tsx` l. 180-183) : quel module le rend (« rendered by the feature module
+  when wired ») et à quel horizon (OQ-1) ?

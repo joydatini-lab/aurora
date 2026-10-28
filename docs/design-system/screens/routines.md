@@ -235,3 +235,145 @@ Module : Productivité · Route : `/routines` · Statut : **détaillé** · SSoT
 - **OQ-8** — Le libellé exact du **Badge top-bar « Hors-ligne »** (E11, offline, §4(a)) n'est pas figé par 05 §4.3.6 (la SSoT dit « Badge top-bar », pas le texte). → **à trancher**.
 - **OQ-9** — Le libellé exact de la Toast **`success` transitoire** après le tap de check d'étape (§4(b) succès) n'est pas figé par SSoT (05 §4.3.6 = « le check est **inline**, la régularité se **voit** dans le `ProgressBar` qui avance, **pas dans un écran de confirmation** » — pas de texte de confirmation). Le `ProgressBar` qui avance **suffit-il** sans Toast, ou faut-il une Toast brève (S6 l.183) ? → **à trancher**.
 - **OQ-10** — L'animation du fill du `ProgressBar` (glissement de largeur « max 1 fois par check », §5) : aucune SSoT localisable (05 §2.6/§3.3 ne spécifient pas de glissement de largeur du fill ; `motion.tsx @aurora/ui` définit uniquement PAGE_TRANSITION/REVEAL_TRANSITION/NodePulse — pas d'animation de progress ; l'analogie réelle = `goal-card.tsx` `goal-progress-fill` width inline, sans transition CSS) → SSoT **factice remplacée** (le §5 marquait « motion.tsx @aurora/ui progress width 200 ms easeOut » qui n'existe pas). → **à trancher** (durée/courbe du glissement de largeur du fill à définir dans le DS, ou fill statique).
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Session guidée** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice ne nomme pas `routines` ; le gabarit est retenu **par analogie** : la
+routine est une **séquence ordonnée** à dérouler (doc §1 : « la routine est une
+**séquence** », pas une liste de to-do) → 1 colonne centrée à tous les paliers.
+**À ratifier** → OQ-11 ci-dessous).
+
+L'écran réel est `RoutinesPage` (`apps/mobile/src/pages/routines/index.tsx`). Le
+shell web (`apps/web-app`) **ne rend pas encore** cet écran : il n'existe **aucune**
+section `routines` dans `apps/web-app/src/lib/navigation.ts` — l'écran est
+**inatteignable sur web** aujourd'hui (OQ-12 ci-dessous).
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne centrée : `SegmentedControl` (Matin\|Soir\|Étude) + `ProgressBar` + `Callout` + liste de `RoutineStep` | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne centrée + rail d'icônes | rail (`navFormForMode` → `rail`) | tablette |
+| **`lg+` (≥ 1024 px)** | **1 colonne centrée** (lecture max, `reading-max` ≈ 720 px) + action « Créer une routine » dans le `PageHeader` | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°4** : « la session guidée reste à 1 colonne à tous les paliers —
+choix de concentration, pas contrainte technique ». Le FAB « + Créer une routine »
+(mobile-only, `05 §4.3.6`) devient, à `lg`+, une action de `PageHeader`.
+
+> **OQ-11** — `routines` n'est pas dans la matrice §2.3 : gabarit à ratifier
+> (Session guidée retenu — alternative : Liste + détail).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` l. 21) |
+| R2 | Ligne de catalogue | ✅ | `productivity.habits` (`master-feature-catalog.md` L24 : « daily/weekly habits + routines (temporal anchors) + adherence analytics ; offline-capable ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Routine` (`entities-productivity.ts` l. 117) — **mais** `attachedHabitIds` (l. 124) est un OR-Set que la base ne porte pas (drift, `productivity.habits.md` §M2) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4(a) |
+| R6 | États §6.1 couverts | ✅ | §4(b) (N/A justifiés) + §4(c) 404 |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 96 ; catalog L24) |
+| R8 | Événements déclarés | ✅ **aucun émis** | `createRoutine` retourne un `ProductivityCommand` (`habits.ts:197`), aucun `event` |
+| R9 | Permissions déclarées | ✅ | aucune (la routine ne demande rien) |
+| R10 | Entrée de nav déclarée | ⚠️ | route `/routines` (`router.tsx` l. 128) — **absente de `navigation.ts` (web)** → OQ-12 |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | le miroir `routines` **n'est pas câblé** : `routines/index.tsx` l. 10-13 (« the routines mirror is not wired to `MobileDataProvider` yet ») → l'état local est fonctionnel mais **non persistant** ; en outre `createRoutine` écrit une colonne fantôme `routines.attached_habit_ids` absente de tout schéma (`productivity.habits.md` §M2) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-5 (CTA du `Callout` « routine perturbée »), OQ-6 (libellés `EmptyState` par famille), OQ-7 (Toast success), OQ-8 (Badge « Hors-ligne ») restent ouvertes |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (miroir
+non câblé + colonne fantôme `attached_habit_ids`) et **R13** (OQ-5/6/7/8 de copy).
+
+**Demande de contrat (plan §4)** — pour la persistance des routines :
+
+```
+WS:        WS-3c (specs d'écran — Productivity)
+Chemin:    docs/features/specs/productivity.habits.md  ·  packages/productivity/src/habits.ts
+Besoin:    (a) le câblage du miroir `routines` à `MobileDataProvider` (aujourd'hui
+           non branché) ;
+           (b) la décision AD-15 sur `routines.attached_habit_ids` (colonne additive
+           ou re-modélisation) — écrite par `createRoutine` (`habits.ts:214`) mais
+           absente de `0002`, `powersync-schema.ts`, `sqlite-schema.ts`
+Motif:     la spec de module §M2 documente la colonne fantôme (perdue à l'upsync)
+Bloque:    oui — le lien routine↔habitudes n'est pas durable
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | l'écran lit le store local `routines` (AD-7) ; **interdit** : données `ROUTINES` codées en dur (`routines/index.tsx` l. 76-119 — état local, miroir non câblé) |
+| S2 | 6 états prouvés | §4(a) — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4(c) — pattern global, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : déroulé + coche locale OK (le `Callout` « perturbée » = signal **serveur**, absent offline) |
+| S5 | Retour arrière vérifié | relance froide → routines re-lues du miroir (jamais d'écran blanc, AD-7) |
+| S6 | Isolation utilisateur | RLS sur `routines` (`0002:174-202`, policy `routines_user_isolation`) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px (`Checkbox` 44 px), `aria-label` (`routine-progress` l. 101), focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (1 colonne centrée) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `createRoutine` (ancres + steps + habitudes attachées) correct ? | Vitest ≥ 80 % sur `packages/productivity` |
+| Intégration | ✅ | vue PowerSync `routines` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ⚠️ | aucun événement émis → n/a justifié | — |
+| E2E | ✅ | « dérouler une routine → cocher chaque étape » ? | Playwright web |
+| Failure | ✅ | sync échoué → `Badge danger` « à resync » + retry ? | test failure |
+| Permission | ⚠️ | aucune → n/a justifié | — |
+| Offline | ✅ | réseau coupé → déroulé + coche locale OK, `Callout` perturbée absent ? | test offline |
+| Recovery | ✅ | relance froide → état intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.habits` (`createRoutine`) | ≥ 1 test | à écrire (le writer audit n'appelle pas `createRoutine`, `domain-schema-drift.test.ts:403-406`) |
+| Région « déroulé de routine » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `routines` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — aucune story `RoutinesPage` |
+| Écran `routines` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (miroir non câblé + colonne fantôme) + OQ-5/6/7/8
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-11** — **Gabarit** : `routines` n'est pas dans la matrice §2.3 → « Session
+  guidée » retenu **par analogie** (la routine = une séquence à dérouler) ; à
+  ratifier (alternative : Liste + détail ; cf. OQ-4 globale).
+- **OQ-12** — **Nav web** : `/routines` est une route de `router.tsx` (l. 128) mais
+  **absente** de `apps/web-app/src/lib/navigation.ts`. → **OQ** : où vit la famille
+  habitudes/routines dans la coquille web — sans quoi l'écran est **inatteignable**
+  sur web.
+- **OQ-13** — **Persistance des liens** : `routines.attached_habit_ids` est écrite
+  mais absente de tout schéma (`productivity.habits.md` MH-2). → **OQ** : colonne
+  additive ou re-modélisation (décision AD-15) ?

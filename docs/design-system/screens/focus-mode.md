@@ -154,3 +154,154 @@ Le Focus est un écran **mobile-first** (05 §4.4.2 l.2044-2050 : « l'utilisate
 | **OQ-06** | Toasts déferés (fin de session) | Quels toasts/snickers s'affichent **après** le bilan ? (a) Aucun (le bilan **est** la confirmation, 05 §4.4.2 l.2169-2188) ; (b) Toast de succès (05 §3.5 l.823-840 : « success Toast green 3s ») ; (c) Toast de notifications réduites (pack 04 §3.2.5) | (a) Bilan suffisant (pas de toast redondant, 05 §3.5 l.835-838 : toasts déferés à la fin de session) ; (b) Toast de succès (confirmation explicite, 05 §3.5 l.823-840) ; (c) Toast notifications (capacité réelle, pack 04 §3.2.5) | Design System (05 §3.5) |
 | **OQ-07** | Calls expérimental (UI) | Y a-t-il une UI pour `callPolicy` (spec.md §5 : « Any UI for it requires the Foundation decision + additive ADR ») ? (a) Aucune UI V1 (calls ring as usual, spec.md §5 l.150-160 : `ring_as_usual`) ; (b) Opt-in dans settings (adjacent, pas sur le screen) ; (c) Opt-in sur le screen (avant session) | (a) Aucune UI V1 (pas de SSoT, OQ-17 = DPC uniquement, pas calls) ; (b) Settings (pas sur le screen Focus, 05 §4.4.2 : le screen = immersion, pas settings) ; (c) Screen (avant session, pack 04 §4.1 : calls = NOT_AGENT_ENABLED, G-P2) | Foundation (G-P2, spec.md §5) |
 | **OQ-08** | Partial-capability / feature-disabled (copy) | Texte exact FR du banner quand `focus.block` (DPC) est unmet mais core timer reste actif (feature-registry S6, router.tsx l.100-102 ; catalog : « activation: core timer, block = profile ») ? (a) « Régime de restriction (pas de blocage système) » (code : pages/focus/index.tsx l.52-54, **non** ratifié SSoT) ; (b) « La réduction des notifications est active » (capacité réelle, pack 04 §4.2 l.345-347) ; (c) « Blocage système indisponible » (détection `isBlockingAvailable()`, pack 04 §4.2 l.343-344) | (a) Code existant (pas de SSoT, à ratifier) ; (b) Capacité réelle (SSoT pack 04 §4.2 l.345-347) ; (c) Détection (SSoT pack 04 §4.2 l.343-344) | Feature-registry owner + Design System (pack 04 §4.2) |
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Éditeur** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `focus-mode` dans la ligne « Éditeur », arrangement « plein écran
+dès `md` », avec `kanban`, `exercises-proof` et les écrans Design Space).
+
+> **Ambiguïté SSoT (§4.1 vs §2.3)** : la classification §4.1 liste `focus-mode`
+> **deux fois** — dans « Éditeur » **et** dans « Session guidée ». La matrice §2.3
+> est **normative** (`web-shell-and-responsive.md` §4.1 : « la matrice §2.3 … est
+> la source normative ») et ne le liste **que** dans « Éditeur ». Ce doc retient
+> **Éditeur** et ouvre l'**OQ-09** ci-dessous.
+
+L'écran réel est `FocusPage` (`apps/mobile/src/pages/focus/index.tsx`) — le chrome
+est **retiré** pendant la session (pas de TopBar, BottomNav masqué, 05 §4.4.2
+l. 2051-2086, anti-distraction). Le shell web (`apps/web-app`) **ne rend pas
+encore** cet écran : il n'existe **aucune** section `focus` dans
+`apps/web-app/src/lib/navigation.ts` — l'écran est **inatteignable sur web**
+aujourd'hui (OQ-10 ci-dessous).
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : timer plein écran (ring + phase + blocklist) ; chrome retiré | tab bar masquée pendant la session | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | **plein écran (toile `T`)** + rail replié | rail (`navFormForMode` → `rail`) | tablette |
+| **`lg+` (≥ 1024 px)** | **toile plein écran** + panneau latéral repliable (blocklist) | barre latérale repliée | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°3** : « l'éditeur est plein écran dès `md` : il ne tient pas dans
+une colonne ». Le gabarit « Éditeur » **ignore** `content-max` (la toile prend
+tout l'espace) et n'applique que `gutter` + les panneaux (`web-shell-and-responsive.md`
+§5). L'immersion (chrome retiré) est un invariant de l'écran, pas une variante
+responsive : elle vaut aux 3 paliers.
+
+> **OQ-09** — le seuil exact de bascule et l'arbitrage Éditeur vs Session guidée
+> (§2.3 vs §4.1) ne sont pas ratifiés au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` l. 21) |
+| R2 | Ligne de catalogue | ✅ | `productivity.focus` (`master-feature-catalog.md` L25 : « focus sessions + Pomodoro + blocklist ; in-app = FULL ; **app blocking = PLATFORM_DEPENDENT (v1.8 DPC, OQ-17)** ; calls = NOT_AGENT_ENABLED ; offline-capable (device) ; activation: core timer, block = profile ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `FocusSession` (`entities-productivity.ts` l. 197), `FocusAppRule` (l. 213), `FocusSessionBilan` (l. 246) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4(a) |
+| R6 | États §6.1 couverts | ✅ | §4(b) (N/A justifiés) + §4(c)/§4(d) N/A |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable (device)` (`_inventory.md` l. 100 ; catalog L25) ; blocage d'apps = `PLATFORM_DEPENDENT` |
+| R8 | Événements déclarés | ✅ **aucun émis** | `startFocusSession`/`endFocusSession` retournent des `ProductivityCommand` sur `focus_sessions` (`focus.ts:49,82`), aucun `event` |
+| R9 | Permissions déclarées | ⚠️ | le blocage système (DPC) = **device owner** (`PLATFORM_DEPENDENT`, OQ-17) ; `POST_NOTIFICATIONS` pour la réduction locale — demande **au 1ᵉʳ usage** |
+| R10 | Entrée de nav déclarée | ⚠️ | route `/focus` (`router.tsx` l. 118, `FeatureGate feature="focus"`) — **absente de `navigation.ts` (web)** → OQ-10 |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ⚠️ **partiel** | la page écrit via `createAppFocusService` (`focus-service.ts`) ; **mais** le module écrit **deux colonnes fantômes** (`focus_sessions.mode`, `focus_sessions.linked_task_ids`) absentes de tout schéma (`productivity.focus.md` §M2) → acceptées localement, **perdues à l'upsync** |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-02 (calls UI), OQ-03 (texte `Callout` échec bilan), OQ-05 (hauteur du sheet), OQ-08 (copy feature-disabled) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 10 critères sur 13. **Deux bloquants** : **R12** (les
+deux colonnes fantômes `mode`/`linked_task_ids` ne sont gardées par aucun test et
+sont perdues à l'upsync, `productivity.focus.md` §M2/§M6) et **R13** (OQ-02/03/05/08).
+
+**Demande de contrat (plan §4)** — pour la persistance du mode de session :
+
+```
+WS:        WS-3c (specs d'écran — Productivity)
+Chemin:    docs/features/specs/productivity.focus.md  ·  packages/productivity/src/focus.ts
+Besoin:    la décision AD-15 sur `focus_sessions.mode` (colonne additive) et
+           `focus_sessions.linked_task_ids` (colonne OR-Set ou re-modélisation vers
+           `task_id` singulier) — aujourd'hui écrites par `startFocusSession`
+           (`focus.ts:64,70`) mais absentes de `0002`, `powersync-schema.ts`, `sqlite-schema.ts`
+Motif:     la spec de module §M2 documente le drift (2 colonnes fantômes) ; le
+           writer audit (`domain-schema-drift.test.ts:403-406`) n'appelle pas `startFocusSession`
+Bloque:    oui — le mode de session choisi n'est pas durable (perdu à l'upsync)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la session lit/écrit le store local `focus_sessions` (AD-7) ; **interdit** : `state={{status:'empty'}}` figé |
+| S2 | 6 états prouvés | §4(a) — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4(c) — N/A (écran non routé en détail) ; feature-disabled rendu par le pattern global |
+| S4 | Offline vérifié | §12 — réseau coupé : timer + machine Pomodoro + blocklist locale + DPC (device-side) OK |
+| S5 | Retour arrière vérifié | relance froide → session reprise depuis la **ligne persistée** (`focus_sessions`, AD-7) |
+| S6 | Isolation utilisateur | RLS sur `focus_sessions`/`focus_profiles` (`0002:174-202`, `0027:66`) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (toile plein écran dès `md`) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | machine Pomodoro (`tickPomodoro`) + `pomodoroDisplay` corrects ? | Vitest ≥ 80 % ; `productivity.test.ts` « focus: session start/end + pomodoro state machine » (l. 199) |
+| Intégration | ✅ | vues PowerSync `focus_sessions`/`focus_profiles` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | `FocusControllerPort` (DPC) invoqué **séparément** du module (`focus.ts:6-7`) | test d'adaptateur |
+| E2E | ✅ | « démarrer → pause → reprendre → terminer une session » (scénarios obligatoires `matrix.md` §2) ? | Playwright web |
+| Failure | ✅ | échec du bilan → `Callout danger` (§5) + timer qui **continue** (AD-7) ? | test failure |
+| Permission | ✅ | refus DPC/notifications → mode restriction, l'app reste utilisable ? | test permission |
+| Offline | ✅ | réseau coupé → timer + blocklist + DPC OK ? | test offline |
+| Recovery | ✅ | kill mid-session → ligne `interrupted` → reprise (spec §11.12) ? | test recovery |
+| Plateforme | ⏳ | budgets perf + cycle de vie natif (≥ 5 min bg, no polling) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.focus` | ≥ 1 test par classe applicable | ✅ partiel — `productivity.test.ts` « focus: session start/end + pomodoro state machine » (l. 199) |
+| Région « timer + blocklist » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `focus-mode` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — aucune story `FocusPage` |
+| Écran `focus-mode` | ≥ 1 test `play` | à écrire |
+| Scénarios obligatoires | les 13 scénarios `matrix.md` §2 (start · pause · resume · end · restore · crash · permission revoked · reboot) | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (2 colonnes fantômes) + OQ-02/03/05/08
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée (+ scénarios `matrix.md` §2)
+[ ] permission testée (DPC device owner + notifications au 1ᵉʳ usage)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-09** — **Gabarit ambigu** : `focus-mode` est classé « Éditeur » (§2.3,
+  normative) **et** « Session guidée » (§4.1). → **OQ** : lequel est normatif pour
+  cet écran (arrangement desktop plein écran vs 1 colonne centrée) ?
+- **OQ-10** — **Nav web** : `/focus` est une route de `router.tsx` (l. 118) mais
+  **absente** de `apps/web-app/src/lib/navigation.ts`. → **OQ** : où vit le Focus
+  dans la coquille web — sans quoi l'écran est **inatteignable** sur web.
+- **OQ-11** — **Persistance du mode** : `focus_sessions.mode` et `linked_task_ids`
+  sont écrites mais absentes de tout schéma (`productivity.focus.md` MF-1/MF-2).
+  → **OQ** : migration additive ou re-modélisation (décision AD-15) ?
