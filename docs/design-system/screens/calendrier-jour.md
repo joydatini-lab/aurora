@@ -244,6 +244,149 @@ Comportement par couche (05 §5 l. 2925-3306 ; overview.md §3 l. 27-54) :
 > (l. 180, « OQ-1 = la 1ʳᵉ du registre »). Les OQ 20-27 = à **additionner** dans le
 > registre global (05 §4, pack 02 §11, DoD écran-par-écran l. 1303-1306).
 
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Calendrier** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `calendrier-*` dans la ligne « Calendrier », avec `revues-*` et
+`timeline-gantt` ; arrangement desktop = mini-agenda + grille).
+
+L'écran réel est `CalendarPage` (`apps/mobile/src/pages/calendar/index.tsx`) ; la
+vue jour est `views/DayView.tsx`. Le shell web (`apps/web-app`) **ne rend pas
+encore** cet écran : il n'existe **aucune** section `calendar` dans
+`apps/web-app/src/lib/navigation.ts` (les 10 sections vont de `accueil` à
+`parametres` ; `calendrier` n'y figure pas) — l'écran est donc **inatteignable
+sur web** aujourd'hui (OQ-28 ci-dessous).
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : `Pager` (Jour\|Semaine\|Mois) + liste `RoutineStep`-like des 24 h | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail (`navFormForMode` → `rail`) | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : mini-agenda (semaine) à gauche, grille/agenda du jour à droite | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°1** : un écran n'a qu'**un** gabarit (« Calendrier ») et ne teste
+jamais la largeur lui-même — il déclare le gabarit, le shell applique
+l'arrangement. Le `Pager` §3.4 (l. 737-750) reste **le même composant** aux 3
+paliers (le mode jour/semaine/mois est un `ui-state` persistant, pack 02 §3.2).
+
+> **OQ-28** — le seuil exact de bascule 1 → 2 panneaux (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` l. 21) |
+| R2 | Ligne de catalogue | ✅ | `productivity.calendar` (`master-feature-catalog.md` L21 : « agenda/time blocking/conflict+overload detection ; agent: calendar.schedule CONFIRMATION_REQUIRED ; `POST_NOTIFICATIONS` first-use ; offline-capable ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Event` (`entities-productivity.ts` l. 44) — alias local de `calendar_events` (le serveur nomme la table `calendar_events`, `0002:153`) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4a (loading/empty/error/success/offline/killed) |
+| R6 | États §6.1 couverts | ✅ | §4b (N/A justifiés) + §4c |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 97 ; catalog L21) |
+| R8 | Événements déclarés | ✅ **aucun** | `productivity.calendar` n'émet aucun événement de domaine (`calendar.ts` retourne des `ProductivityCommand`, jamais d'`event`) — cohérent avec `events.ts` (aucun `CalendarEvent*`) |
+| R9 | Permissions déclarées | ⚠️ | `POST_NOTIFICATIONS` au **1ᵉʳ usage**, jamais au boot (catalog L21 ; `apps/mobile/src/pages/calendar/index.tsx` l. 9) — à exercer |
+| R10 | Entrée de nav déclarée | ⚠️ | route `/calendar` (`router.tsx` l. 119, `FeatureGate feature="calendar"`) — **mais absente de `navigation.ts` (web)** → OQ-28 |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | la page **ne consomme pas** les fonctions du domaine : `grep -rn "detectConflicts\|planTimeBlocks\|createEvent\|rescheduleEvent" apps/mobile/src/` → **aucun résultat** (`productivity.calendar.md` §M4) ; la détection de conflit/surcharge et le time-blocking existent dans `packages/productivity/src/calendar.ts` mais ne sont **branchés sur aucune surface** |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-20 (composant `RoutineStep` dédié vs wrapper FullCalendar), OQ-21 (7 couleurs de type), OQ-27 (lib de liste + copy `empty`) |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12**
+(capacité domaine non exposée : le calcul de conflit/surcharge et le time blocking
+ne sont consommés par aucune surface, `productivity.calendar.md` §M4) et **R13**
+(OQ-20/21/27, dont l'arbitrage du composant de liste et la copy `empty`).
+
+**Demande de contrat (plan §4)** — pour le branchement de la vue :
+
+```
+WS:        WS-3c (specs d'écran — Productivity)
+Chemin:    docs/features/specs/productivity.calendar.md  ·  packages/productivity/src/calendar.ts
+Besoin:    le branchement de `detectConflicts`/`planTimeBlocks` sur `CalendarPage`
+           (aujourd'hui aucune surface ne les consomme) + la décision de composant
+           (`RoutineStep` dédié dans packages/ui vs wrapper FullCalendar `timeGridDay`, OQ-20)
+Motif:     la spec de module §M4 documente l'écart (capacité domaine non exposée) ;
+           la page n'importe ni `detectConflicts` ni `planTimeBlocks`
+Bloque:    oui — sans branchement, le `Callout` de conflit/surcharge (§3 id. 6-7) reste muet
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la liste lit le store local `calendar_events` (AD-7) ; **interdit** : `state={{status:'empty'}}` figé |
+| S2 | 6 états prouvés | §4a — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4b — le 404 est porté par l'enveloppe `calendrier` (logo coloré centré, §9.1 l. 387) ; jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : agenda + création locale OK ; seul le **scan de documents** liés à un événement meurt (`l. 1983-1984`) |
+| S5 | Retour arrière vérifié | relance froide → agenda du miroir affiché (jamais d'écran blanc, AD-7) |
+| S6 | Isolation utilisateur | RLS sur `calendar_events` (`0002:174-202`, policy `calendar_events_user_isolation`) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (mini-agenda + grille à `lg`+) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `detectConflicts` (overlap + overload) et `planTimeBlocks` corrects ? | Vitest ≥ 80 % ; `productivity.test.ts` « calendar: conflicts, overload, time blocking » (l. 131) |
+| Intégration | ✅ | vue PowerSync `calendar_events` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ⚠️ | aucun événement émis → n/a justifié (le module émet des commandes, pas d'événement) | — |
+| E2E | ✅ | « créer → replanifier un événement » ? | Playwright web |
+| Failure | ✅ | événement non syncé → `Badge danger` « à resync » + retry (auto-resync) ? | test failure |
+| Permission | ✅ | refus `POST_NOTIFICATIONS` au 1ᵉʳ usage ne casse pas l'agenda ? | test permission |
+| Offline | ✅ | réseau coupé → agenda + création locale OK, scan désactivé ? | test offline |
+| Recovery | ✅ | relance froide → agenda intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.calendar` | ≥ 1 test par classe applicable | ✅ partiel — `productivity.test.ts` « calendar: conflicts, overload, time blocking » (l. 131) + « calendar: recurring event materialization » (l. 161) |
+| Région « liste des événements du jour » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `calendrier-jour` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — aucune story `CalendarView`/`DayView` |
+| Écran `calendrier-jour` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (capacité non exposée) + OQ-20/21/27
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (`POST_NOTIFICATIONS` au 1ᵉʳ usage)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-28** — **Nav web** : `/calendar` est une route de `router.tsx` (l. 119) mais
+  **absente** de `apps/web-app/src/lib/navigation.ts` (aucune section `calendar`).
+  → **OQ** : où vit le calendrier dans la coquille web (section nouvelle ? rattaché à
+  `organiser` ?) — sans quoi l'écran est **inatteignable** sur web.
+- **OQ-29** — Seuil de bascule 1 → 2 panneaux (§15) : `lg` (1024 px) confirmé ?
+  (cf. OQ-4 globale)
+- **OQ-30** — Le test de matérialisation de récurrence porte une assertion
+  **dégénérée** (`cmd === null || cmd.table === 'calendar_events'`,
+  `productivity.test.ts:167`, `productivity.calendar.md` §M6) — à renforcer ?
+
 ## Références SSoT (comptage officiel)
 
 - **Comptage officiel 44** : `_bmad-output/architecture/.../05-design-system.md` l. 39
