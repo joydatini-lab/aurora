@@ -41,6 +41,50 @@ until docker exec -e PGPASSWORD=postgres "$C" \
   sleep 2
 done
 
+# `auth.identities` is created by GoTrue at RUNTIME, not by the image's init
+# SQL. Migration 0029 attaches a BEFORE INSERT trigger to it, so without this
+# fixture the replay dies at 0029 with `relation "auth.identities" does not
+# exist` — a defect of THIS harness, not of the migration (0029 is applied and
+# healthy on the live project). Shape mirrors GoTrue's own table; only the
+# columns the migrations actually touch are reproduced.
+echo "[rls-live] creating the auth.identities fixture (GoTrue creates it at runtime)"
+docker exec -i -e PGPASSWORD=postgres "$C" $PSQL <<'SQL'
+create table if not exists auth.identities (
+  id               uuid primary key default gen_random_uuid(),
+  provider_id      text not null,
+  user_id          uuid not null references auth.users(id) on delete cascade,
+  identity_data    jsonb not null default '{}'::jsonb,
+  provider         text not null,
+  last_sign_in_at  timestamptz,
+  created_at       timestamptz default now(),
+  updated_at       timestamptz default now(),
+  unique (provider_id, provider)
+);
+
+-- The image ships an OLDER GoTrue `auth.users` (21 columns: `confirmed_at`,
+-- no `email_confirmed_at`). The live project runs a current GoTrue (37
+-- columns). 0029's trigger writes `email_confirmed_at`/`phone_confirmed_at`,
+-- so replaying against the stale shape fails with `column
+-- "email_confirmed_at" does not exist`. Re-align the fixture with the LIVE
+-- shape (measured: information_schema on the project) instead of degrading
+-- the migration. Idempotent.
+alter table auth.users
+  add column if not exists email_confirmed_at        timestamptz,
+  add column if not exists phone                     text,
+  add column if not exists phone_confirmed_at        timestamptz,
+  add column if not exists phone_change              text default '',
+  add column if not exists phone_change_token        text default '',
+  add column if not exists phone_change_sent_at      timestamptz,
+  add column if not exists email_change_token_new    text default '',
+  add column if not exists email_change_token_current text default '',
+  add column if not exists email_change_confirm_status smallint default 0,
+  add column if not exists reauthentication_token    text default '',
+  add column if not exists reauthentication_sent_at  timestamptz,
+  add column if not exists is_sso_user               boolean not null default false,
+  add column if not exists deleted_at                timestamptz,
+  add column if not exists is_anonymous              boolean not null default false;
+SQL
+
 echo "[rls-live] applying migrations"
 n=0
 for f in "$ROOT"/supabase/migrations/*.sql; do
