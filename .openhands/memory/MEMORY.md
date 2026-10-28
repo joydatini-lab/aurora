@@ -430,3 +430,25 @@ d'écran, mergées dans `rebaseline/2026-10-23`.
   groupe). Ce n'est PAS un defaut du script : `sudo chmod 666 /var/run/docker.sock` le rend
   conforme aux conditions d'un runner CI et le script passe alors sans `sudo`. Ne pas
   « corriger » le script pour ce symptome local.
+
+## REGRESSION CI : `Build` OOM sur la branche (2026-10-28) — CAUSE ISOLÉE
+- **Fait** : `ci-gate` est ROUGE sur `ws-themes/tweakcn-gradients` (`40738293322`). Le step
+  `Build` meurt en `FATAL ERROR: ... JavaScript heap out of memory` (~4 Go). Il est le
+  **9ᵉ step** de `ci-gate` : tout ce qui suit est **SKIPPED** — dont le harnais RLS live que
+  je venais de brancher. Un gate rouge en amont annule silencieusement les 20+ gardes d'aval.
+- **Méthode d'attribution (expérience contrôlée, pas de supposition)** :
+  1. `rebaseline/2026-10-23` (base, sans mes commits) → `Build` **SUCCESS**, chunk
+     **9 474,87 kB** (gzip 2 398). Le run vert du 26/10 n'avait **jamais** construit
+     `web-app` (créé le 27/10 01:36 par `b92c722`) — il n'est donc pas une référence.
+  2. HEAD (mes commits) → **OOM**, chunk **15 834,88 kB** (gzip 3 338).
+  3. Test isole : thèmes HEAD (45 JSON) + `apps/web-app/src` de rebaseline → **build OK**
+     (41 s), 13,85 Mo. Donc **les 32 thèmes ne suffisent pas** à faire tomber le build.
+  4. Ajouter `apps/web-app/src` de HEAD → **OOM**. Le facteur déclenchant est donc le
+     **delta L5** : `lib/data-session.ts` + `lib/capture.ts` importent `@aurora/data`
+     (PowerSync + wa-sqlite, glue WASM) dans le **bundle principal** de `web-app`.
+- **Corollaire** : le risque **R4** du plan (« bundle lourd, 9,04 Mo, import du barrel
+  `@aurora/ui` → point d'entrée `@aurora/ui/icons` à faire en L6 ») était **déjà identifié** ;
+  mon L5 l'a **aggravé** au point de franchir la limite de heap du runner.
+- **Le vrai correctif** n'est pas `NODE_OPTIONS` (masque le symptôme) : c'est de sortir
+  `@aurora/data` du chemin critique — `import()` dynamique au montage de l'écran, ou
+  entrée dédiée. Sinon le budget perf 02 S9.1 (300 Ko gz) reste violé 11×.
