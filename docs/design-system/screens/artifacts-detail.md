@@ -182,7 +182,7 @@ composant principal** ; il s'élargit au palier desktop sans changer de contenu 
 §23.4 : adapter le layout, pas le contenu). Les CTA « Télécharger »/« Partager »/
 « Exporter » restent visibles aux 3 paliers.
 
-> **OQ-09** — le gabarit de `artifacts-detail` (et du hub `artifacts`) n'est pas
+> **OQ (cadre v1)** — le gabarit de `artifacts-detail` (et du hub `artifacts`) n'est pas
 > ratifié dans la matrice §2.3 ; le seuil de bascule overlay → panneau (`lg` = 1024 px)
 > n'est pas ratifié au niveau de l'écran (cf. OQ-4 globale).
 

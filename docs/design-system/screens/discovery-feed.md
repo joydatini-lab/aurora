@@ -221,7 +221,7 @@ donc `ShellState` affiche « Coquille prête ». Le tableau ci-dessous est **la 
 AD-14 : CTA unique par item). Le badge typologie FACT/TREND/ANALYSIS/SCENARIO/UNCERTAINTY
 reste lisible sans troncature ; la colonne s'élargit au palier desktop.
 
-> **OQ-8** — le seuil exact de bascule overlay → panneau (`lg` = 1024 px) n'est pas
+> **OQ (cadre v1)** — le seuil exact de bascule overlay → panneau (`lg` = 1024 px) n'est pas
 > ratifié au niveau de l'écran (cf. OQ-4 globale).
 
 ---

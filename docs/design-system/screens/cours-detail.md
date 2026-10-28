@@ -165,7 +165,7 @@ concentration, pas contrainte technique. » La lecture (fiche/cours) est plafonn
 `aurora.layout.reading-max` (720 px). Le passage éventuel à 2 panneaux (05 §4.6.2) est
 **contradictoire** avec la matrice §2.3 et reste **OQ-08**.
 
-> **OQ-08** — 05 §4.6.2 propose « desktop = 2 panneaux » alors que la matrice §2.3 classe
+> **OQ (cadre v1)** — 05 §4.6.2 propose « desktop = 2 panneaux » alors que la matrice §2.3 classe
 > `cours-detail` en « Session guidée » (1 colonne à tous les paliers) : conflit non
 > résolu. Le seuil de bascule (`lg` = 1024 px) n'est pas ratifié (cf. OQ-4 globale).
 

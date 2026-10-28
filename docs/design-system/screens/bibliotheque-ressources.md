@@ -196,7 +196,7 @@ web (`apps/web-app`) **ne rend pas encore** cet écran : la section `bibliothequ
 d'un palier à l'autre ; seul l'arrangement change. Le `FAB` « Ajouter » et le CTA
 « Ouvrir l'artefact » (§3) restent visibles aux 3 paliers (leur coexistence = OQ-03 §14).
 
-> **OQ-15** — le seuil exact de bascule 1 → 2 panneaux (`lg` = 1024 px) n'est pas
+> **OQ (cadre v1)** — le seuil exact de bascule 1 → 2 panneaux (`lg` = 1024 px) n'est pas
 > ratifié au niveau de l'écran (cf. OQ-4 globale). Le gabarit « État spécial » hérite du
 > parent, mais le parent exact (`/learn`) reste à confirmer (OQ-12 : route `/library` vs
 > `/learn`).

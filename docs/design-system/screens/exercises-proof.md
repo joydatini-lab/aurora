@@ -160,7 +160,7 @@ shell web (`apps/web-app`) **ne rend pas encore** cet écran (section `apprendre
 tout l'espace) et n'applique que `gutter` + les panneaux. Les 3 zones (§3 : progression,
 exercice courant, validation) gardent leur ordre ; seul l'espacement change.
 
-> **OQ-09** — le seuil exact de bascule rail/panneau (`lg` = 1024 px) n'est pas ratifié au
+> **OQ (cadre v1)** — le seuil exact de bascule rail/panneau (`lg` = 1024 px) n'est pas ratifié au
 > niveau de l'écran (cf. OQ-4 globale).
 
 ---

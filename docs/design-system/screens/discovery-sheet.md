@@ -178,7 +178,7 @@ L'écran réel est `apps/mobile/src/pages/discovery/card.tsx` (rendu de la fiche
 (invariant AD-14 : CTA unique par item). Les 3 blocs (SUBSTANCE / QUALIFICATION / ACTION,
 §3) gardent leur ordre ; seul le conteneur change.
 
-> **OQ-09** — le seuil exact de bascule overlay → panneau (`lg` = 1024 px) n'est pas
+> **OQ (cadre v1)** — le seuil exact de bascule overlay → panneau (`lg` = 1024 px) n'est pas
 > ratifié au niveau de l'écran (cf. OQ-4 globale).
 
 ---

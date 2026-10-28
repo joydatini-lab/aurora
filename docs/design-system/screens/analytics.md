@@ -178,7 +178,7 @@ restent **visibles** aux 3 paliers ; à `lg+` elles passent **dans la TopBar** (
 §4.5.2 Notes responsive). Le contenu des blocs de preuves est identique d'un palier à
 l'autre (doc §23.4 : adapter le layout, pas le contenu).
 
-> **OQ-10** — le seuil exact de bascule liste linéaire → grille 2×3 (`lg` = 1024 px) est
+> **OQ (cadre v1)** — le seuil exact de bascule liste linéaire → grille 2×3 (`lg` = 1024 px) est
 > une proposition (`layout-tokens.ts`) non ratifiée au niveau de l'écran (cf. OQ-4
 > globale).
 
