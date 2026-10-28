@@ -19,30 +19,33 @@ import * as React from 'react';
 import {
   PHOSPHOR_NAME_MAP,
   PHOSPHOR_WEIGHT,
+  PHOSPHOR_COMPONENTS,
   type LucideName,
   type PhosphorWeight,
 } from './phosphor-mapping';
-import * as Phosphor from '@phosphor-icons/react';
 
 /**
  * Type commun : un composant d'icône Phosphor (forwardRef), sans le `weight`
  * appliqué (celui-ci est injecté à la création de la famille).
  */
 export type PhosphorComponent = React.ComponentType<
-  React.ComponentProps<(typeof Phosphor)['Gear']>
+  React.ComponentProps<(typeof PHOSPHOR_COMPONENTS)['Gear']>
 >;
 
 /**
  * Construit un objet famille indexé par le nom Lucide, avec le weight
  * demandé appliqué à chaque composant. Les noms non listés dans
  * `PHOSPHOR_NAME_MAP` sont exclus (le type est exhaustif, aucun trou).
+ *
+ * On lit le REGISTRE STATIQUE (`PHOSPHOR_COMPONENTS`), jamais un namespace :
+ * c'est ce qui garde l'arbre secouable (cf. phosphor-mapping.ts).
  */
 function buildFamily(weight: PhosphorWeight) {
   const out: Partial<Record<LucideName, PhosphorComponent>> = {};
   for (const [lucideName, phosphorName] of Object.entries(PHOSPHOR_NAME_MAP)) {
-    const Comp = (Phosphor as Record<string, unknown>)[phosphorName];
+    const Comp = PHOSPHOR_COMPONENTS[phosphorName as keyof typeof PHOSPHOR_COMPONENTS];
     if (!Comp) continue;
-    const C = Comp as React.ComponentType<React.ComponentProps<(typeof Phosphor)['Gear']>>;
+    const C = Comp as React.ComponentType<React.ComponentProps<(typeof PHOSPHOR_COMPONENTS)['Gear']>>;
     const effectiveWeight = PHOSPHOR_WEIGHT[lucideName as LucideName] ?? weight;
     out[lucideName as LucideName] = (props) =>
       React.createElement(C, { weight: effectiveWeight, ...props });

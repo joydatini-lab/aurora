@@ -12,12 +12,360 @@
  *    Accents (CTA, pastilles, badges) = `'fill'`. Titres / boutons = `'bold'`.
  *
  * 3. `LucideName` — l'union exhaustive des 226 noms Lucide consommés par l'app.
+ *
+ * POURQUOI LES IMPORTS PAR SOUS-CHEMIN, ET PAS `import * as Phosphor`
+ * L'API plate v2 se prêtait à `import * as Phosphor` + `Phosphor[nom]`. Ce
+ * namespace rendait le tree-shaking IMPOSSIBLE : Rollup ne peut pas prouver
+ * qu'une clé dynamique n'est jamais lue, donc il embarquait les ~1512 icônes
+ * (2,7 Mo de `defs`). Mesuré : 4539 des 5733 modules de la sourcemap du bundle
+ * d'entrée web-app venaient de `@phosphor-icons/react` — 79 % du bundle.
+ *
+ * Le paquet expose `./dist/csr/*` (une icône = un module, ~289 o + sa def) et
+ * déclare `sideEffects: false`. On importe donc les 165 icônes RÉELLEMENT
+ * mappées par leur nom, en statique : Rollup n'embarque que celles-là.
  */
 
-import * as Phosphor from '@phosphor-icons/react';
+import { AlignLeft } from '@phosphor-icons/react/dist/csr/AlignLeft';
+import { AlignTop } from '@phosphor-icons/react/dist/csr/AlignTop';
+import { AppleLogo } from '@phosphor-icons/react/dist/csr/AppleLogo';
+import { Archive } from '@phosphor-icons/react/dist/csr/Archive';
+import { ArrowDown } from '@phosphor-icons/react/dist/csr/ArrowDown';
+import { ArrowElbowLeft } from '@phosphor-icons/react/dist/csr/ArrowElbowLeft';
+import { ArrowElbowRight } from '@phosphor-icons/react/dist/csr/ArrowElbowRight';
+import { ArrowLeft } from '@phosphor-icons/react/dist/csr/ArrowLeft';
+import { ArrowRight } from '@phosphor-icons/react/dist/csr/ArrowRight';
+import { ArrowUp } from '@phosphor-icons/react/dist/csr/ArrowUp';
+import { ArrowUpRight } from '@phosphor-icons/react/dist/csr/ArrowUpRight';
+import { ArrowsClockwise } from '@phosphor-icons/react/dist/csr/ArrowsClockwise';
+import { ArrowsCounterClockwise } from '@phosphor-icons/react/dist/csr/ArrowsCounterClockwise';
+import { ArrowsVertical } from '@phosphor-icons/react/dist/csr/ArrowsVertical';
+import { Barbell } from '@phosphor-icons/react/dist/csr/Barbell';
+import { Bed } from '@phosphor-icons/react/dist/csr/Bed';
+import { Bicycle } from '@phosphor-icons/react/dist/csr/Bicycle';
+import { BookOpen } from '@phosphor-icons/react/dist/csr/BookOpen';
+import { BookOpenText } from '@phosphor-icons/react/dist/csr/BookOpenText';
+import { Bookmark } from '@phosphor-icons/react/dist/csr/Bookmark';
+import { BowlFood } from '@phosphor-icons/react/dist/csr/BowlFood';
+import { BracketsCurly } from '@phosphor-icons/react/dist/csr/BracketsCurly';
+import { Brain } from '@phosphor-icons/react/dist/csr/Brain';
+import { Calendar } from '@phosphor-icons/react/dist/csr/Calendar';
+import { CalendarCheck } from '@phosphor-icons/react/dist/csr/CalendarCheck';
+import { CalendarDot } from '@phosphor-icons/react/dist/csr/CalendarDot';
+import { CaretDown } from '@phosphor-icons/react/dist/csr/CaretDown';
+import { CaretLeft } from '@phosphor-icons/react/dist/csr/CaretLeft';
+import { CaretRight } from '@phosphor-icons/react/dist/csr/CaretRight';
+import { CaretUp } from '@phosphor-icons/react/dist/csr/CaretUp';
+import { CellSignalFull } from '@phosphor-icons/react/dist/csr/CellSignalFull';
+import { ChartBar } from '@phosphor-icons/react/dist/csr/ChartBar';
+import { Chat } from '@phosphor-icons/react/dist/csr/Chat';
+import { ChatCircle } from '@phosphor-icons/react/dist/csr/ChatCircle';
+import { Chats } from '@phosphor-icons/react/dist/csr/Chats';
+import { Check } from '@phosphor-icons/react/dist/csr/Check';
+import { CheckCircle } from '@phosphor-icons/react/dist/csr/CheckCircle';
+import { CheckSquare } from '@phosphor-icons/react/dist/csr/CheckSquare';
+import { Circle } from '@phosphor-icons/react/dist/csr/Circle';
+import { CircleDashed } from '@phosphor-icons/react/dist/csr/CircleDashed';
+import { Clipboard } from '@phosphor-icons/react/dist/csr/Clipboard';
+import { Clock } from '@phosphor-icons/react/dist/csr/Clock';
+import { ClockCounterClockwise } from '@phosphor-icons/react/dist/csr/ClockCounterClockwise';
+import { CloudArrowUp } from '@phosphor-icons/react/dist/csr/CloudArrowUp';
+import { CloudSlash } from '@phosphor-icons/react/dist/csr/CloudSlash';
+import { Code } from '@phosphor-icons/react/dist/csr/Code';
+import { Coffee } from '@phosphor-icons/react/dist/csr/Coffee';
+import { Compass } from '@phosphor-icons/react/dist/csr/Compass';
+import { Copy } from '@phosphor-icons/react/dist/csr/Copy';
+import { CornersOut } from '@phosphor-icons/react/dist/csr/CornersOut';
+import { Cpu } from '@phosphor-icons/react/dist/csr/Cpu';
+import { Crosshair } from '@phosphor-icons/react/dist/csr/Crosshair';
+import { CursorClick } from '@phosphor-icons/react/dist/csr/CursorClick';
+import { Database } from '@phosphor-icons/react/dist/csr/Database';
+import { DesktopTower } from '@phosphor-icons/react/dist/csr/DesktopTower';
+import { DotsThree } from '@phosphor-icons/react/dist/csr/DotsThree';
+import { DotsThreeCircle } from '@phosphor-icons/react/dist/csr/DotsThreeCircle';
+import { DotsThreeVertical } from '@phosphor-icons/react/dist/csr/DotsThreeVertical';
+import { Download } from '@phosphor-icons/react/dist/csr/Download';
+import { Drop } from '@phosphor-icons/react/dist/csr/Drop';
+import { Envelope } from '@phosphor-icons/react/dist/csr/Envelope';
+import { EnvelopeSimple } from '@phosphor-icons/react/dist/csr/EnvelopeSimple';
+import { Eye } from '@phosphor-icons/react/dist/csr/Eye';
+import { Eyedropper } from '@phosphor-icons/react/dist/csr/Eyedropper';
+import { File } from '@phosphor-icons/react/dist/csr/File';
+import { FileArchive } from '@phosphor-icons/react/dist/csr/FileArchive';
+import { FileImage } from '@phosphor-icons/react/dist/csr/FileImage';
+import { FileText } from '@phosphor-icons/react/dist/csr/FileText';
+import { FileXls } from '@phosphor-icons/react/dist/csr/FileXls';
+import { Files } from '@phosphor-icons/react/dist/csr/Files';
+import { Flag } from '@phosphor-icons/react/dist/csr/Flag';
+import { Flame } from '@phosphor-icons/react/dist/csr/Flame';
+import { FloppyDisk } from '@phosphor-icons/react/dist/csr/FloppyDisk';
+import { Folder } from '@phosphor-icons/react/dist/csr/Folder';
+import { FolderOpen } from '@phosphor-icons/react/dist/csr/FolderOpen';
+import { Footprints } from '@phosphor-icons/react/dist/csr/Footprints';
+import { Gear } from '@phosphor-icons/react/dist/csr/Gear';
+import { Globe } from '@phosphor-icons/react/dist/csr/Globe';
+import { GridFour } from '@phosphor-icons/react/dist/csr/GridFour';
+import { HeadCircuit } from '@phosphor-icons/react/dist/csr/HeadCircuit';
+import { Headphones } from '@phosphor-icons/react/dist/csr/Headphones';
+import { House } from '@phosphor-icons/react/dist/csr/House';
+import { Image } from '@phosphor-icons/react/dist/csr/Image';
+import { ImageBroken } from '@phosphor-icons/react/dist/csr/ImageBroken';
+import { Info } from '@phosphor-icons/react/dist/csr/Info';
+import { Key } from '@phosphor-icons/react/dist/csr/Key';
+import { Lightning } from '@phosphor-icons/react/dist/csr/Lightning';
+import { Link } from '@phosphor-icons/react/dist/csr/Link';
+import { LinkSimple } from '@phosphor-icons/react/dist/csr/LinkSimple';
+import { List } from '@phosphor-icons/react/dist/csr/List';
+import { ListBullets } from '@phosphor-icons/react/dist/csr/ListBullets';
+import { ListChecks } from '@phosphor-icons/react/dist/csr/ListChecks';
+import { ListDashes } from '@phosphor-icons/react/dist/csr/ListDashes';
+import { Lock } from '@phosphor-icons/react/dist/csr/Lock';
+import { MagnifyingGlass } from '@phosphor-icons/react/dist/csr/MagnifyingGlass';
+import { MapPin } from '@phosphor-icons/react/dist/csr/MapPin';
+import { Medal } from '@phosphor-icons/react/dist/csr/Medal';
+import { Microphone } from '@phosphor-icons/react/dist/csr/Microphone';
+import { MicrophoneSlash } from '@phosphor-icons/react/dist/csr/MicrophoneSlash';
+import { Minus } from '@phosphor-icons/react/dist/csr/Minus';
+import { MinusCircle } from '@phosphor-icons/react/dist/csr/MinusCircle';
+import { Moon } from '@phosphor-icons/react/dist/csr/Moon';
+import { MusicNotes } from '@phosphor-icons/react/dist/csr/MusicNotes';
+import { PaintBrush } from '@phosphor-icons/react/dist/csr/PaintBrush';
+import { PaperPlaneTilt } from '@phosphor-icons/react/dist/csr/PaperPlaneTilt';
+import { Paperclip } from '@phosphor-icons/react/dist/csr/Paperclip';
+import { Pause } from '@phosphor-icons/react/dist/csr/Pause';
+import { PenNib } from '@phosphor-icons/react/dist/csr/PenNib';
+import { Pencil } from '@phosphor-icons/react/dist/csr/Pencil';
+import { PencilLine } from '@phosphor-icons/react/dist/csr/PencilLine';
+import { Phone } from '@phosphor-icons/react/dist/csr/Phone';
+import { PiggyBank } from '@phosphor-icons/react/dist/csr/PiggyBank';
+import { Play } from '@phosphor-icons/react/dist/csr/Play';
+import { PlayCircle } from '@phosphor-icons/react/dist/csr/PlayCircle';
+import { Plug } from '@phosphor-icons/react/dist/csr/Plug';
+import { PlugCharging } from '@phosphor-icons/react/dist/csr/PlugCharging';
+import { Plus } from '@phosphor-icons/react/dist/csr/Plus';
+import { PlusCircle } from '@phosphor-icons/react/dist/csr/PlusCircle';
+import { Prohibit } from '@phosphor-icons/react/dist/csr/Prohibit';
+import { PushPin } from '@phosphor-icons/react/dist/csr/PushPin';
+import { Quotes } from '@phosphor-icons/react/dist/csr/Quotes';
+import { Repeat } from '@phosphor-icons/react/dist/csr/Repeat';
+import { Robot } from '@phosphor-icons/react/dist/csr/Robot';
+import { SealCheck } from '@phosphor-icons/react/dist/csr/SealCheck';
+import { Share } from '@phosphor-icons/react/dist/csr/Share';
+import { Shield } from '@phosphor-icons/react/dist/csr/Shield';
+import { ShieldCheck } from '@phosphor-icons/react/dist/csr/ShieldCheck';
+import { ShieldSlash } from '@phosphor-icons/react/dist/csr/ShieldSlash';
+import { ShieldWarning } from '@phosphor-icons/react/dist/csr/ShieldWarning';
+import { Sidebar } from '@phosphor-icons/react/dist/csr/Sidebar';
+import { SidebarSimple } from '@phosphor-icons/react/dist/csr/SidebarSimple';
+import { SignIn } from '@phosphor-icons/react/dist/csr/SignIn';
+import { SignOut } from '@phosphor-icons/react/dist/csr/SignOut';
+import { SlidersHorizontal } from '@phosphor-icons/react/dist/csr/SlidersHorizontal';
+import { Smiley } from '@phosphor-icons/react/dist/csr/Smiley';
+import { Sparkle } from '@phosphor-icons/react/dist/csr/Sparkle';
+import { SpeakerSimpleHigh } from '@phosphor-icons/react/dist/csr/SpeakerSimpleHigh';
+import { Spinner } from '@phosphor-icons/react/dist/csr/Spinner';
+import { Square } from '@phosphor-icons/react/dist/csr/Square';
+import { Stack } from '@phosphor-icons/react/dist/csr/Stack';
+import { Star } from '@phosphor-icons/react/dist/csr/Star';
+import { Sun } from '@phosphor-icons/react/dist/csr/Sun';
+import { Target } from '@phosphor-icons/react/dist/csr/Target';
+import { Terminal } from '@phosphor-icons/react/dist/csr/Terminal';
+import { TextAlignCenter } from '@phosphor-icons/react/dist/csr/TextAlignCenter';
+import { ThumbsDown } from '@phosphor-icons/react/dist/csr/ThumbsDown';
+import { ThumbsUp } from '@phosphor-icons/react/dist/csr/ThumbsUp';
+import { Timer } from '@phosphor-icons/react/dist/csr/Timer';
+import { Trash } from '@phosphor-icons/react/dist/csr/Trash';
+import { Tree } from '@phosphor-icons/react/dist/csr/Tree';
+import { TrendUp } from '@phosphor-icons/react/dist/csr/TrendUp';
+import { Upload } from '@phosphor-icons/react/dist/csr/Upload';
+import { User } from '@phosphor-icons/react/dist/csr/User';
+import { UserCircle } from '@phosphor-icons/react/dist/csr/UserCircle';
+import { UserPlus } from '@phosphor-icons/react/dist/csr/UserPlus';
+import { Users } from '@phosphor-icons/react/dist/csr/Users';
+import { Video } from '@phosphor-icons/react/dist/csr/Video';
+import { WarningCircle } from '@phosphor-icons/react/dist/csr/WarningCircle';
+import { WarningDiamond } from '@phosphor-icons/react/dist/csr/WarningDiamond';
+import { Waveform } from '@phosphor-icons/react/dist/csr/Waveform';
+import { Waves } from '@phosphor-icons/react/dist/csr/Waves';
+import { Wind } from '@phosphor-icons/react/dist/csr/Wind';
+import { Wrench } from '@phosphor-icons/react/dist/csr/Wrench';
+import { X } from '@phosphor-icons/react/dist/csr/X';
+import { XCircle } from '@phosphor-icons/react/dist/csr/XCircle';
+
+/**
+ * Le registre STATIQUE des 165 icones mappees. Un objet litteral, jamais un
+ * namespace : c'est ce qui rend l'arbre secouable. `PHOSPHOR_NAME_MAP` doit
+ * rester un sous-ensemble de ces cles (un test le garde).
+ */
+export const PHOSPHOR_COMPONENTS = {
+  AlignLeft,
+  AlignTop,
+  AppleLogo,
+  Archive,
+  ArrowDown,
+  ArrowElbowLeft,
+  ArrowElbowRight,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  ArrowUpRight,
+  ArrowsClockwise,
+  ArrowsCounterClockwise,
+  ArrowsVertical,
+  Barbell,
+  Bed,
+  Bicycle,
+  BookOpen,
+  BookOpenText,
+  Bookmark,
+  BowlFood,
+  BracketsCurly,
+  Brain,
+  Calendar,
+  CalendarCheck,
+  CalendarDot,
+  CaretDown,
+  CaretLeft,
+  CaretRight,
+  CaretUp,
+  CellSignalFull,
+  ChartBar,
+  Chat,
+  ChatCircle,
+  Chats,
+  Check,
+  CheckCircle,
+  CheckSquare,
+  Circle,
+  CircleDashed,
+  Clipboard,
+  Clock,
+  ClockCounterClockwise,
+  CloudArrowUp,
+  CloudSlash,
+  Code,
+  Coffee,
+  Compass,
+  Copy,
+  CornersOut,
+  Cpu,
+  Crosshair,
+  CursorClick,
+  Database,
+  DesktopTower,
+  DotsThree,
+  DotsThreeCircle,
+  DotsThreeVertical,
+  Download,
+  Drop,
+  Envelope,
+  EnvelopeSimple,
+  Eye,
+  Eyedropper,
+  File,
+  FileArchive,
+  FileImage,
+  FileText,
+  FileXls,
+  Files,
+  Flag,
+  Flame,
+  FloppyDisk,
+  Folder,
+  FolderOpen,
+  Footprints,
+  Gear,
+  Globe,
+  GridFour,
+  HeadCircuit,
+  Headphones,
+  House,
+  Image,
+  ImageBroken,
+  Info,
+  Key,
+  Lightning,
+  Link,
+  LinkSimple,
+  List,
+  ListBullets,
+  ListChecks,
+  ListDashes,
+  Lock,
+  MagnifyingGlass,
+  MapPin,
+  Medal,
+  Microphone,
+  MicrophoneSlash,
+  Minus,
+  MinusCircle,
+  Moon,
+  MusicNotes,
+  PaintBrush,
+  PaperPlaneTilt,
+  Paperclip,
+  Pause,
+  PenNib,
+  Pencil,
+  PencilLine,
+  Phone,
+  PiggyBank,
+  Play,
+  PlayCircle,
+  Plug,
+  PlugCharging,
+  Plus,
+  PlusCircle,
+  Prohibit,
+  PushPin,
+  Quotes,
+  Repeat,
+  Robot,
+  SealCheck,
+  Share,
+  Shield,
+  ShieldCheck,
+  ShieldSlash,
+  ShieldWarning,
+  Sidebar,
+  SidebarSimple,
+  SignIn,
+  SignOut,
+  SlidersHorizontal,
+  Smiley,
+  Sparkle,
+  SpeakerSimpleHigh,
+  Spinner,
+  Square,
+  Stack,
+  Star,
+  Sun,
+  Target,
+  Terminal,
+  TextAlignCenter,
+  ThumbsDown,
+  ThumbsUp,
+  Timer,
+  Trash,
+  Tree,
+  TrendUp,
+  Upload,
+  User,
+  UserCircle,
+  UserPlus,
+  Users,
+  Video,
+  WarningCircle,
+  WarningDiamond,
+  Waveform,
+  Waves,
+  Wind,
+  Wrench,
+  X,
+  XCircle,
+} as const;
 
 /** Le type d'un nom Phosphor valide (clé de l'export plate). */
-export type PhosphorIconName = keyof typeof Phosphor & string;
+export type PhosphorIconName = keyof typeof PHOSPHOR_COMPONENTS & string;
 
 /** Le SSoT — les noms Lucide consommés par l'app (SSoT de l'inventaire, 226 noms). */
 export type LucideName =
