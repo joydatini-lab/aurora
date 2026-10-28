@@ -106,15 +106,30 @@ objet neuf est le Brand DNA, déjà livré (L2).
 
 | Périmètre | Écrans | Spec au cadre v1 | Reste |
 |---|---|---|---|
-| Écrans existants | **44** | **6** (`taches-liste` + les 5 primaires de WS-3.1) | **38** à compléter (§15–§19) |
-| Écrans Design Space | **13** | **0** | **13** à écrire (format 14 sections + §15–§19) |
-| **Total** | **57** | **6** | **51** |
+| Écrans existants | **44** | **44** ✅ (`taches-liste` + les 5 primaires WS-3.1 + 18 WS-3c + 19 WS-3d + `brand-dna` hors décompte) | **0** |
+| Écrans Design Space | **13** | **12** ✅ (WS-3.2) | **1** (`brand-dna` — déjà au cadre, contrat L2) |
+| **Total** | **57** | **56** | **0** écran restant à spécifier |
 
+> **WS-3 est TERMINÉ (2026-10-28)** — mesuré, pas déclaré. Trois workstreams
+> parallèles à périmètres **disjoints** (0 recouvrement, mesuré par `uniq -d` sur
+> les diffs) : **WS-3.2** = 12 écrans Design Space créés ; **WS-3c** = 18 écrans
+> productivité au cadre ; **WS-3d** = 19 écrans restants au cadre. Fusion dans un
+> worktree d'intégration, sans conflit (fichiers distincts).
+>
+> Mesures reproductibles sur l'arbre fusionné :
+> - `for f in docs/design-system/screens/*.md; do grep -cE '^## §(15|16|17|18|19) ' $f; done`
+>   → **56 fichiers à 5/5** (était 6) ;
+> - `grep -rnE 'CREATE TABLE|ALTER TABLE' docs/design-system/screens/` → **0** ;
+> - substance : 279 à 432 lignes par fichier, avec des citations `fichier:ligne` ;
+> - aucun agent n'a touché cet index ni `.openhands/memory/` (mesuré).
+>
+> **G-L6 ouvert** : la vague a aussi trouvé un défaut réel vérifié
+> (`quadrantOf` dupliqué **et divergent** entre la vue Eisenhower et le domaine)
+> — enregistré dans `docs/architecture/gap-register.md`, **non corrigé** : c'est
+> un arbitrage AD-15 qui appartient au propriétaire.
+>
 > Les **5 écrans primaires** spécifiés le 2026-10-27 (vague **WS-3.1**) : `home`,
-> `taches-detail`, `cours-liste`, `progress-dashboard`, `agent-chat` — chacun avec
-> §15–§19. Mesure : `for f in *.md; do grep -cE "^## §(15|16|17|18|19) " $f; done`
-> → 6 fichiers à 5/5 (dont `taches-liste`, déjà au cadre). Aucune spec d'écran ne
-> redéfinit un contrat de donnée (vérifié : 0 `CREATE/ALTER TABLE` dans les 5).
+> `taches-detail`, `cours-liste`, `progress-dashboard`, `agent-chat`.
 >
 > `brand-dna.md` porte aussi §15–§19 mais **n'est pas un écran** : c'est le
 > contrat de la famille L2. Il ne compte pas dans la colonne « écrans ».
