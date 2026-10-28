@@ -20,6 +20,7 @@
   "dependencies": {
     "@aurora/domain": "workspace:*",
     "@capacitor/app": "^7.1.2",
+    "@capacitor/core": "^7.6.9",
     "@capacitor/network": "^7.0.4",
     "@capacitor/push-notifications": "^7.0.7"
   },

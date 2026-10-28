@@ -476,7 +476,7 @@ function createGanttStore<TData>(
       invalidate()
     }
     if (!controlled) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       ;(internal as any)[key] = value
       invalidate()
     }
@@ -867,13 +867,13 @@ function useGanttState<TData = unknown>(
   useEffect(() => {
     store.emitRangeIfChanged()
     // mount-only: onRangeChange fires once for the initial range
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [])
   return store.instance
 }
 
 const GanttContext =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   createContext<GanttInstance<any> | null>(null)
 
 /** The stable calendar instance; throws outside <Gantt>. */
@@ -1540,7 +1540,7 @@ const DEFAULT_VIEW_CONFIG: GanttViewConfig = {
 }
 
 const GanttViewConfigContext = createContext<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   GanttViewConfig<any>
 >(DEFAULT_VIEW_CONFIG)
 

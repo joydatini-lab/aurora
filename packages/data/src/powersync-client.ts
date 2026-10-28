@@ -1,5 +1,5 @@
 // =============================================================================
-// powersync-client.ts — the real `@powersync/capacitor` engine binding
+// powersync-client.ts — the real PowerSync engine binding
 // (03 S8.1 "relay operational" — the engine SWAP behind `LocalStore`).
 //
 // Production path: `PowerSyncClientEngine` wraps `PowerSyncDatabase`
@@ -18,26 +18,30 @@
 // runtime and bundlers error on it).
 // =============================================================================
 
-import { PowerSyncDatabase } from '@powersync/capacitor';
 // `PowerSyncBackendConnector` is a TypeScript-only interface: the compiled
 // `.js` in `@powersync/common` is `export {};` (no runtime binding), so a
 // VALUE import fails ESM instantiation. The engine only names it as a type
 // (the `connector` field / `buildConnector` param) → `import type`.
 //
-// Engine-agnostic injection point (03 S8.1, desktop spike §32.5): the DB
-// CONSTRUCTOR is injectable so the same `PowerSyncClientEngine` logic can be
-// backed by `@powersync/web` (WASQLite, Electron renderer) instead of the
-// hardwired `@powersync/capacitor` — without importing a second engine into
-// this file (the `PowerSyncDatabase` name collision with `@powersync/web`
-// makes a 2nd value import unsafe in one module). The default stays
-// Capacitor, so the `apps/mobile` path is untouched.
+// Engine-agnostic by construction (B2, web pivot 2026-10-28): this module NO
+// LONGER imports a vendor engine. The DB CONSTRUCTOR is a REQUIRED parameter,
+// chosen at the boot site:
+//   - mobile shell → `powersync-engine-capacitor.ts` (`@powersync/capacitor`)
+//   - web shell    → `powersync-engine-web.ts`      (`@powersync/web`)
+//
+// Rationale: a static `@powersync/capacitor` value import made the native
+// plugin unavoidable in every bundle — harmless on Android, dead weight in a
+// browser build and, crucially, useless there (no SQLite behind it → no
+// durable local mirror, AD-7 broken). Making the ctor explicit also keeps
+// each engine's *exact* options type out of this file, so both engines can be
+// injected without a name collision or a per-engine import.
 //
 // `schema` / `database` are typed as `unknown` on purpose: each vendor
 // engine (Capacitor native, Web WASQLite) wants its own *exact* schema/
 // options type — a generic `unknown` input keeps this injection point
 // assignable to both (the caller's `as PowerSyncDatabaseCtor` cast is what
 // actually narrows to the chosen engine's real option type).
-type PowerSyncDatabaseCtor = new (options: {
+export type PowerSyncDatabaseCtor = new (options: {
   schema: unknown;
   database?: { dbFilename?: string };
 }) => AbstractPowerSyncDatabase;
@@ -79,7 +83,7 @@ export class PowerSyncClientEngine {
 
   constructor(
     opts: PowerSyncClientEngineOptions,
-    dbFactory: PowerSyncDatabaseCtor = PowerSyncDatabase as unknown as PowerSyncDatabaseCtor,
+    dbFactory: PowerSyncDatabaseCtor,
   ) {
     this.opts = opts;
     this.dbFactory = dbFactory;
@@ -324,7 +328,7 @@ export class PowerSyncClientEngine {
  */
 export function createPowerSyncClientEngine(
   options: PowerSyncClientEngineOptions,
-  dbFactory?: PowerSyncDatabaseCtor,
+  dbFactory: PowerSyncDatabaseCtor,
 ): PowerSyncClientEngine {
   return new PowerSyncClientEngine(options, dbFactory);
 }
@@ -334,4 +338,3 @@ export function createPowerSyncClientEngine(
 // the Supabase session, not a static token) but exported so a shared
 // `PowerSyncEngine` union type can name it.
 export type { PowerSyncCredentials as PowerSyncClientCredentials };
-export type { PowerSyncDatabaseCtor };

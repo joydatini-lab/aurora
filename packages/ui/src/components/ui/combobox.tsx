@@ -1,20 +1,15 @@
-// @ts-nocheck — combobox: issue Radix PopoverProps/children
 import * as React from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
 import { Command as CommandPrimitive } from "cmdk"
 
 import { cn } from "../../lib/utils"
 
-const Combobox = React.forwardRef<
-  React.ElementRef<typeof PopoverPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Root>
->(function Combobox({ children, ...props }, ref) {
-  return (
-    <PopoverPrimitive.Root ref={ref} {...props}>
-      {children}
-    </PopoverPrimitive.Root>
-  )
-})
+// Popover.Root n'expose aucun noeud DOM : un forwardRef y serait sans objet
+// (et invalide, Radix ne declare pas de prop `ref` sur Root). Radix gere
+// "open"/"onOpenChange" ; les sous-composants ci-dessous gardent leur ref.
+function Combobox({ children, ...props }: React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Root>) {
+  return <PopoverPrimitive.Root {...props}>{children}</PopoverPrimitive.Root>
+}
 Combobox.displayName = "Combobox"
 
 const ComboboxTrigger = React.forwardRef<

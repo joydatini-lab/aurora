@@ -187,7 +187,7 @@ export const dataGridFeatures = tableFeatures({
     text: sortFn_text,
     textCaseSensitive: sortFn_textCaseSensitive,
   },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   columnMeta: metaHelper<DataGridColumnMeta<any>>(),
 })
 
@@ -955,7 +955,7 @@ export interface DataGridProps<
 }
 
 const DataGridContext = createContext<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   DataGridContextProps<any> | undefined
 >(undefined)
 
@@ -966,7 +966,7 @@ const DataGridContext = createContext<
  * unifies with a concrete row type the way it did on v8.
  */
 function useDataGrid<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   TData extends object = any,
 >(): DataGridContextProps<TData> {
   const context = useContext(DataGridContext) as
@@ -1045,7 +1045,7 @@ function DataGridProvider<TData extends object>({
     previousPageKeyRef.current = pageKey
     if (!cellSelectionOn || table.atoms.cellSelection == null) return
     tableRef.current.resetCellSelection(true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [pageKey, cellSelectionOn])
 
   // One autoSize coordinator per table instance so split header/body viewports
@@ -1085,16 +1085,16 @@ function DataGridProvider<TData extends object>({
       gridId,
       autoSize,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     [
       autoSize,
       props.recordCount,
       props.isLoading,
       props.loadingMode,
       props.className,
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+       
       JSON.stringify(props.tableLayout),
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+       
       JSON.stringify(props.tableClassNames),
       tableState.sorting,
       tableState.pagination,

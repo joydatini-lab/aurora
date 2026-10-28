@@ -1,0 +1,92 @@
+# Aurora — parcours E2E de la coquille WEB (W2, pivot 2026-10-28)
+#
+# 5 parcours Playwright (apps/web/e2e/), 2 profils (desktop 1280x800 et
+# Pixel 5 — le WebShell a deux chemins de chrome distincts de part et d'autre
+# de 900 px).
+#
+# Ce que ces parcours prouvent : la coquille se monte, l'isolation cross-origin
+# est active, la navigation cliente fonctionne, le SPA fallback tient en
+# chargement direct, la 404 applicative est servie, et la PWA est installable.
+#
+# Ce qu'ils ne prouvent PAS : le contenu metier des ecrans (session Supabase +
+# mirror local). Ce lot-la depend de la rotation des comptes de dev et vit
+# separement.
+#
+# POURQUOI UN WORKFLOW DEDIE : il faut telecharger des navigateurs (~150 Mo) et
+# builder l'app (~17 000 modules). Le laisser dans `ci.yml` ralentirait chaque
+# PR, y compris celles qui ne touchent pas le web — d'ou le filtre `paths`.
+
+name: E2E Web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'apps/mobile/src/**'
+      - 'packages/**'
+      - '.github/workflows/e2e-web.yml'
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'apps/mobile/src/**'
+      - 'packages/**'
+      - '.github/workflows/e2e-web.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-web-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PNPM_VERSION: "10.28.0"
+  NODE_VERSION: "22"
+
+jobs:
+  e2e-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build web (apps/web)
+        # Le suite tourne sur `vite preview`, donc sur le dist REEL : c'est lui
+        # qui porte sw.js, le manifeste et les regles de SPA fallback.
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_POWERSYNC_URL: ${{ secrets.VITE_POWERSYNC_URL }}
+        run: pnpm -F @aurora/web build
+
+      - name: Installer Chromium (+ dependances systeme)
+        run: pnpm -F @aurora/web exec playwright install --with-deps chromium
+
+      - name: 5 parcours Playwright
+        run: pnpm -F @aurora/web e2e
+        env:
+          CI: 'true'
+
+      - name: Rapport HTML (si echec)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+          retention-days: 7

@@ -1048,7 +1048,6 @@ export function OnboardingView({
           onBack={() => {
             setForgotSubmitted(false);
             setForgotEmail("");
-            data.forgotPasswordTarget;
           }}
         />
       </AuthShell>
@@ -1109,6 +1108,12 @@ export function OnboardingView({
         isSubmitting={isSubmitting}
       >
         <div className="flex flex-col gap-2.5">
+          {/* eslint-disable-next-line no-constant-binary-expression --
+              BUG PRODUIT PROBABLE, conserve tel quel : `authTab === "signup"
+              || true` est TOUJOURS vrai, donc le bloc OAuth s'affiche aussi en
+              mode "signin". Deux lectures possibles : (a) social login
+              volontaire sur les deux onglets, (b) reste de debug. Ne pas
+              trancher a la place du produit (cf. progress/claude.md). */}
           {(authTab === "signup" || true) && (
             <div className="flex flex-col gap-2">
               <OAuthProviderButton

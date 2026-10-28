@@ -17,24 +17,110 @@
         {
           "path": "/*.js",
           "headers": [
-            { "name": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+            {
+              "name": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
           ]
         },
         {
           "path": "/*.css",
           "headers": [
-            { "name": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+            {
+              "name": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
           ]
         },
         {
           "path": "/index.html",
           "headers": [
-            { "name": "Cache-Control", "value": "no-cache" }
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            }
           ]
         }
       ],
       "routes": [
-        { "source": "/(.*)", "destination": "/$1" }
+        {
+          "source": "/(.*)",
+          "destination": "/$1"
+        }
+      ]
+    },
+    {
+      "type": "staticSite",
+      "name": "aurora-web",
+      "repo": {
+        "type": "git",
+        "repo": "joynagassi-cyber/aurora",
+        "branch": "main",
+        "rootDir": "."
+      },
+      "buildCommand": "corepack enable; corepack prepare pnpm@10.28.0 --activate; pnpm install --frozen-lockfile --config.minimum-release-age=0; pnpm --filter @aurora/web build",
+      "publishDir": "apps/web/dist",
+      "envs": [],
+      "headers": [
+        {
+          "path": "/*",
+          "headers": [
+            {
+              "name": "Cross-Origin-Opener-Policy",
+              "value": "same-origin"
+            },
+            {
+              "name": "Cross-Origin-Embedder-Policy",
+              "value": "require-corp"
+            },
+            {
+              "name": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "name": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "name": "Permissions-Policy",
+              "value": "camera=(), microphone=(), geolocation=()"
+            }
+          ]
+        },
+        {
+          "path": "/assets/*",
+          "headers": [
+            {
+              "name": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "path": "/index.html",
+          "headers": [
+            {
+              "name": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "path": "/sw.js",
+          "headers": [
+            {
+              "name": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        }
+      ],
+      "routes": [
+        {
+          "type": "rewrite",
+          "source": "/*",
+          "destination": "/index.html"
+        }
       ]
     }
   ]

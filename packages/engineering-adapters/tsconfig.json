@@ -10,13 +10,5 @@
   ],
   "exclude": [
     "dist"
-  ],
-  "references": [
-    {
-      "path": "../domain"
-    },
-    {
-      "path": "../scientific-engine"
-    }
   ]
 }

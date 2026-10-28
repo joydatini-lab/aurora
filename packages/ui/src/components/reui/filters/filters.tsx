@@ -324,7 +324,7 @@ export function Filters<V = unknown, O = unknown>({
   const index = React.useMemo(
     () => buildFilterIndex<V, O>(fields, null, signature),
     // Not `fields`: its identity changes every render at every real call site.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     [signature]
   )
 

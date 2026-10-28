@@ -160,16 +160,23 @@ export {
   createSupabaseBackendConnector,
 } from './supabase-connector';
 
-// The production `PowerSyncEngine` binding (`@powersync/capacitor` +
-// `SupabaseBackendConnectorImpl` + frozen mirror schema)
+// The production `PowerSyncEngine` binding (`SupabaseBackendConnectorImpl`
+// + frozen mirror schema). The DB engine ctor is INJECTED at boot (B2):
+// `@powersync/capacitor` on the mobile shell, `@powersync/web` on the web shell.
 export type {
   PowerSyncClientEngineOptions,
   AuroraSupabaseClient,
+  PowerSyncDatabaseCtor,
 } from './powersync-client';
 export {
   PowerSyncClientEngine,
   createPowerSyncClientEngine,
 } from './powersync-client';
+
+// Engine constructors — one per platform target. Import ONLY the one you
+// actually run, so the other vendor never enters your bundle:
+//   mobile shell → './powersync-engine-capacitor'
+//   web shell    → './powersync-engine-web'
 
 // `LocalStore` bridge over an engine (03 S8.1)
 export type { EngineStoreAdapter } from './local-store-bridge';

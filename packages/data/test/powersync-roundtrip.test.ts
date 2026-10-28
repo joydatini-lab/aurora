@@ -9,7 +9,9 @@
 import { createAuroraSupabaseClient } from '../src/supabase.ts';
 import {
   createPowerSyncClientEngine,
+  type PowerSyncDatabaseCtor,
 } from '../src/powersync-client.ts';
+import { CapacitorPowerSyncDatabase } from '../src/powersync-engine-capacitor.ts';
 import { POWERSYNC_MIRROR_TABLES } from '../src/powersync-schema.ts';
 
 let failures = 0;
@@ -63,10 +65,13 @@ async function main(): Promise<void> {
   const unknownTables = POWERSYNC_MIRROR_TABLES.filter((t) => !/^[a-z_]+$/.test(t));
   check(unknownTables.length === 0, 'mirror table names are valid identifiers');
 
-  const engine = createPowerSyncClientEngine({
-    endpoint: POWERSYNC_URL,
-    createClient: () => client,
-  });
+  const engine = createPowerSyncClientEngine(
+    {
+      endpoint: POWERSYNC_URL,
+      createClient: () => client,
+    },
+    CapacitorPowerSyncDatabase as unknown as PowerSyncDatabaseCtor,
+  );
   await engine.init();
 
   // 03 §7: INSERT one row as the owning module (Productivity). The relay

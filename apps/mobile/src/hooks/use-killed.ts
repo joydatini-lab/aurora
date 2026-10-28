@@ -97,8 +97,7 @@ export function useKilledDetection(resync: () => void): boolean {
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('aurora:first-local-read', onFirstData);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once:
-    // resync is read through the ref (stable across renders).
+    // mount-once: `resync` est lu via une ref (stable entre les rendus).
   }, []);
 
   return killed;

@@ -95,7 +95,28 @@ g2() {
   #   cfut_ (Cloudflare user tokens),
   #   Bearer <value>,
   #   <KEY_NAME>=<value> dans du code (pas dans .env ou .ps1).
-  local secret_re='(^|[^A-Za-z0-9_])(sk-[A-Za-z0-9]{8,}|gsk_[A-Za-z0-9_-]{8,}|cfut_[A-Za-z0-9_-]{8,})|Bearer[[:space:]]+[A-Za-z0-9._-]{8,}|(^|[^A-Za-z0-9_])(API_KEY|SERVICE_ROLE_KEY|SUPABASE_DB_URL|POWERSYNC_SECRET|ONESIGNAL_REST_API_KEY|Sentry_DSN|SENTRY_DSN|POSTHOG_API_KEY)=.{8,}'
+  # REECRIT le 2026-10-28 (analysis §5.3) : l'ancienne regex etait a la fois
+  # BRUYANTE (elle matchait `sk-capacite-portante` dans des fixtures et
+  # `sk-progress` dans des className CSS -> gate rouge en permanence, donc
+  # personne ne le lisait) et AVEUGLE (elle ne voyait ni les mots de passe
+  # litteraux, ni l'URL Supabase de prod codee en dur, ni les UUID live).
+  #
+  # Regle : un prefixe de cle fait >= 20 caracteres alphanumeriques.
+  # `sk-progress` / `sk-capacite-portante` (tirets, mots) ne matchent plus.
+  local secret_re='(^|[^A-Za-z0-9_])(sk-[A-Za-z0-9]{20,}|sk-proj-[A-Za-z0-9_-]{20,}|sk-ant-[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9_-]{20,}|cfut_[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16})|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}|(^|[^A-Za-z0-9_])(API_KEY|SERVICE_ROLE_KEY|SUPABASE_DB_URL|POWERSYNC_SECRET|ONESIGNAL_REST_API_KEY|Sentry_DSN|SENTRY_DSN|POSTHOG_API_KEY)=.{8,}'
+
+  # Mot de passe litteral dans du code (le trou exact du §5.2 :
+  # `'dev.aurora@…': 'Aurora-Dev1!'` n'etait detecte par aucune regle).
+  # On exclut les affectations de variable (`password: password`, `password: pw`),
+  # les placeholders et les champs de formulaire.
+  # (a) affectation nommee : password: 'xxx'
+  # (b) MAP email -> secret, SANS le mot "password" : c'est EXACTEMENT la
+  #     forme de la fuite §5.2 (`'dev.aurora@joynagassi.dev': '<secret>'`) —
+  #     la forme (a) seule ne l'aurait pas attrapee (verifie par sonde).
+  local password_re="(password|passwd|pwd)[[:space:]]*[:=][[:space:]]*['\"][^'\"]{6,}['\"]|['\"][A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}['\"][[:space:]]*:[[:space:]]*['\"][^'\"]{6,}['\"]"
+  # Un projet Supabase de PROD code en dur dans du code client (le §5.1 :
+  # l'URL de fn-dev-auth etait dans apps/mobile/src/pages/login/index.tsx).
+  local supabase_url_re='https://[a-z0-9]{20}\.supabase\.co'
   local hits=""
   for f in $(code_files); do
     case "$f" in
@@ -120,9 +141,25 @@ $f: $(echo "$hits_one" | head -5)"
         fi
         ;;
       *)
-        if grep -nE "$secret_re" "$f" >/dev/null 2>&1; then
+        local found
+        found=$(grep -nE "$secret_re" "$f" 2>/dev/null || true)
+        # Code CLIENT uniquement (apps/ + packages/) : un mot de passe
+        # litteral ou une URL de prod n'a rien a y faire. Les tests, stories
+        # et fixtures sont exclus (donnees synthetiques, pas des secrets).
+        case "$f" in
+          *.test.ts|*.test.tsx|*.spec.ts|*.stories.tsx) : ;;
+          apps/*|packages/*)
+            local sensitive
+            sensitive=$(grep -nE "$password_re|$supabase_url_re" "$f" 2>/dev/null || true)
+            if [ -n "$sensitive" ]; then
+              found="${found}${found:+"
+"}${sensitive}"
+            fi
+            ;;
+        esac
+        if [ -n "$found" ]; then
           hits="$hits
-$f: $(grep -nE "$secret_re" "$f" | head -5)"
+$f: $(echo "$found" | head -5)"
         fi
         ;;
     esac

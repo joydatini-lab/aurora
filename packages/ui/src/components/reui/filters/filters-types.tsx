@@ -317,7 +317,7 @@ export type FilterEditorRegistry = Record<string, AnyFilterEditor>
 export type FilterEditorRef<V = unknown, O = unknown> =
   | string
   | FilterEditor<V, O>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   | FilterEditor<any, any>
 
 /** Context for a custom builder empty state. Its actions ARE the footer's. */

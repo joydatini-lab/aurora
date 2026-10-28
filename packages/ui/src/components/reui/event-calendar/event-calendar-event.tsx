@@ -120,7 +120,7 @@ interface EventCalendarChipContextValue<TData = unknown> {
 }
 
 const EventCalendarChipContext =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   createContext<EventCalendarChipContextValue<any> | null>(null)
 
 /** The chip's subject; usable inside renderEvent content and chip children. */

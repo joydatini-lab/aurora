@@ -203,6 +203,15 @@ jobs:
         run: node --experimental-strip-types --no-warnings --test apps/mobile/test/e2e-device.test.ts apps/mobile/test/focus-dpc.test.ts
         continue-on-error: ${{ !exists('packages/domain/package.json') }}
 
+      - name: "Edge Functions : config.toml <-> repertoires + verify_jwt"
+        # W2 2026-10-28 : le bloc [functions.*] du config.toml nomeait les
+        # fonctions avec des underscores (fn_job_dispatcher) alors que les
+        # repertoires sont en tirets (fn-job-dispatcher). Aucune cle ne
+        # s'appliquait : bug silencieux, seul un verify_jwt inoperant en prod
+        # l'aurait revele. Ce test compare les deux et exige un verify_jwt
+        # explicite par fonction.
+        run: node --experimental-strip-types --no-warnings --test supabase/functions/_shared/config.test.ts
+
       - name: "Perf gate (30fps / TTI / JS budget, 02 S9.1)"
         # Wave 5 ERYNIS : the static perf budgets (apps/mobile/src/perf)
         # run against the frozen 02 S9.1 SLOs (300 Ko gz / 1.5 s TTI /

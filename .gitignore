@@ -86,3 +86,9 @@ third-party/
 
 *storybook.log
 storybook-static
+
+# Playwright — artefacts de run (jamais versionnes)
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/

@@ -12,6 +12,5 @@
        src/, il ne couvre que capacitor.config.ts. Ne pas re-listez ici
        sinon le composite hérité pousse les .aui de packages/ui hors
        rootDir (TS6059/TS6307 en cascade). */
-  ],
-  "references": []
+  ]
 }

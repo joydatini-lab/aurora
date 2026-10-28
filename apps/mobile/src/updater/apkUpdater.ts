@@ -13,7 +13,12 @@
  * runtime, le runtime est l'implémentation.
  */
 import { Capacitor, registerPlugin } from '@capacitor/core';
-import { Preferences } from '@capacitor/preferences';
+// B1 (web pivot 2026-10-28) : plus d'import direct de `@capacitor/preferences`
+// ici — le bundle web ne pouvait pas resoudre ce paquet (Rollup echouait avant
+// meme d'atteindre les gardes `isNativePlatform()`). La primitive de stockage
+// vit dans `./preferences` (Capacitor sur mobile, localStorage sur web, via
+// alias Vite + path TS cote apps/web).
+import { keyValueStore } from './preferences';
 
 import {
   GITHUB_OWNER,
@@ -168,7 +173,7 @@ export const ApkUpdater: ApkUpdaterPlugin = {
 
 async function readCache(): Promise<UpdateInfo | null> {
   if (!Capacitor.isNativePlatform()) return null;
-  const { value } = await Preferences.get({ key: UPDATE_CHECK_CACHE_KEY });
+  const { value } = await keyValueStore.get(UPDATE_CHECK_CACHE_KEY);
   if (value == null) return null;
   // Le TTL 6 h (le `updatedAt` est écrit côté write) : un cache plus
   // vieux → `null` (le hook re-fetch, pas de re-check caché).
@@ -188,10 +193,10 @@ async function readCache(): Promise<UpdateInfo | null> {
 
 async function writeCache(info: UpdateInfo): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
-  await Preferences.set({
-    key: UPDATE_CHECK_CACHE_KEY,
-    value: JSON.stringify({ ...info, updatedAt: Date.now() }),
-  });
+  await keyValueStore.set(
+    UPDATE_CHECK_CACHE_KEY,
+    JSON.stringify({ ...info, updatedAt: Date.now() }),
+  );
 }
 
 // ————————————————————————————————————————————————————————————————

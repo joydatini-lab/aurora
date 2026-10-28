@@ -83,7 +83,7 @@ export function useCascaderVirtualizer({
 
   // React Compiler bails on `useVirtualizer` HERE, and only here - the bail does not
   // propagate to the components that call this hook. They opt out themselves.
-  // eslint-disable-next-line react-hooks/incompatible-library
+   
   const virtualizer = useVirtualizer<HTMLElement, HTMLElement>({
     count,
     getScrollElement,

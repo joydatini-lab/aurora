@@ -73,7 +73,7 @@ interface GanttBarContextValue<TData = unknown> {
 }
 
 const GanttBarContext =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   createContext<GanttBarContextValue<any> | null>(null)
 
 /** The bar's subject; usable inside renderEvent content and bar children. */

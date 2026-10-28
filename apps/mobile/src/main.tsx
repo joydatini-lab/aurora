@@ -51,6 +51,10 @@ import { ImageThemeLayer } from './ux/image-theme';
 import { MobileDataCtx } from './query/context';
 import { mobileDataProviderFrom } from './query/query-client';
 import { createAuroraDataProvider, type AuroraDataEnv } from './lib/boot-data';
+// B2 (web pivot): the mobile shell is the ONLY target binding the native
+// PowerSync engine — `apps/web` binds `@powersync/web` instead.
+import { CapacitorPowerSyncDatabase } from '@aurora/data/powersync-engine-capacitor';
+import type { PowerSyncDatabaseCtor } from '@aurora/data';
 import { createAgentClient } from './lib/agent-client';
 import { createCanvasClient } from './lib/canvas-client';
 import { createIntegrationClient } from './lib/integrations-client';
@@ -92,6 +96,7 @@ const provider = createAuroraDataProvider(
   sharedSupabaseClient
     ? { ...env, clientFactory: () => sharedSupabaseClient }
     : env,
+  CapacitorPowerSyncDatabase as unknown as PowerSyncDatabaseCtor,
 );
 // AD-3: the agent client runs on the SAME publishable-scope client — the
 // device enqueues kernel runs (`fn-agent-run`) and reads the `agent_runs`

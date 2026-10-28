@@ -85,7 +85,8 @@
   margin-top: 10px;
 }
 
-/* Bloc de diagnostic DEV-only (fn-dev-auth — SUPPRIMER AVANT v1.0). */
+/* Bloc de diagnostic DEV-only — RETIRÉ le 2026-10-28 (analysis §5.2) :
+   aucune créance dans le bundle client. Règles conservées inertes. */
 .auth-diag {
   display: flex;
   flex-direction: column;

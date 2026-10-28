@@ -58,7 +58,12 @@ async function _loadNodeCrypto(): Promise<typeof import('node:crypto')> {
   // path degrading instead of crashing the bundle at import time.
   try {
     const url: string = import.meta.resolve('node:crypto');
-    return await import(url);
+    // `@vite-ignore` : l'URL est calculee a l'execution, Vite ne peut pas
+    // l'analyser statiquement. Sans ce marqueur il emet un avertissement a
+    // CHAQUE build alors que le cas est voulu (chemin navigateur = mort,
+    // EF/Node = resolu). Le supprimer ne change rien au comportement, ca
+    // rend juste le build lisible.
+    return await import(/* @vite-ignore */ url);
   } catch {
     // browser bundle: degrade — EF-side only (AD-3). Every R2 call
     // then throws at use time, which the app never does.

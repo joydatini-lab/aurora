@@ -14,10 +14,5 @@
   ],
   "exclude": [
     "dist"
-  ],
-  "references": [
-    {
-      "path": "../domain"
-    }
   ]
 }

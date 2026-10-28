@@ -12,6 +12,7 @@ import * as React from "react";
 import { cn } from "src/lib/utils";
 import { AppIcon } from "src/components/ui/AppIcon";
 import { Button } from "src/components/ui/button";
+import { useLatest } from "src/hooks/use-latest";
 
 /* ------------------------------------------------------------------ */
 
@@ -88,6 +89,14 @@ function AudioPlayer({
   const [muted, setMuted] = React.useState(initialMuted);
   const [playbackRate, setPlaybackRate] = React.useState(1);
 
+  // Les listeners ci-dessous ne doivent pas etre re-posees quand le parent
+  // re-rend : on lit la derniere version des callbacks via des refs stables.
+  const onTimeUpdateRef = useLatest(onTimeUpdate);
+  const onPlayRef = useLatest(onPlay);
+  const onPauseRef = useLatest(onPause);
+  const onEndedRef = useLatest(onEnded);
+  const startPositionRef = useLatest(startPosition);
+
   React.useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -102,11 +111,11 @@ function AudioPlayer({
     const onTime = () => {
       const t = audio.currentTime * 1000;
       setCurrentTime(t);
-      onTimeUpdate?.(t, audio.duration ? audio.duration * 1000 : 0);
+      onTimeUpdateRef.current?.(t, audio.duration ? audio.duration * 1000 : 0);
     };
-    const onPlayHandler = () => { setIsPlaying(true); onPlay?.(); };
-    const onPauseHandler = () => { setIsPlaying(false); onPause?.(); };
-    const onEndedHandler = () => { setIsPlaying(false); onEnded?.(); };
+    const onPlayHandler = () => { setIsPlaying(true); onPlayRef.current?.(); };
+    const onPauseHandler = () => { setIsPlaying(false); onPauseRef.current?.(); };
+    const onEndedHandler = () => { setIsPlaying(false); onEndedRef.current?.(); };
 
     audio.addEventListener("loadedmetadata", onLoaded);
     audio.addEventListener("timeupdate", onTime);
@@ -114,7 +123,8 @@ function AudioPlayer({
     audio.addEventListener("pause", onPauseHandler);
     audio.addEventListener("ended", onEndedHandler);
 
-    if (startPosition > 0) audio.currentTime = startPosition / 1000;
+    const start = startPositionRef.current ?? 0;
+    if (start > 0) audio.currentTime = start / 1000;
 
     return () => {
       audio.removeEventListener("loadedmetadata", onLoaded);
@@ -123,7 +133,7 @@ function AudioPlayer({
       audio.removeEventListener("pause", onPauseHandler);
       audio.removeEventListener("ended", onEndedHandler);
     };
-  }, [src, volume, muted, playbackRate]);
+  }, [src, volume, muted, playbackRate, onTimeUpdateRef, onPlayRef, onPauseRef, onEndedRef, startPositionRef]);
 
   const toggle = () => {
     const audio = audioRef.current;

@@ -1,8 +1,19 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    /* Surface d'ambiance — elargie le 2026-10-28 (W2, pivot web).
+       Pourquoi ICI et pas par package : en programme PLAT (noEmit), chaque
+       projet compile les SOURCES de ses dependances. Il faut donc que la
+       surface couvre l'union des cibles du monorepo (navigateur + Edge
+       Functions + node:test), sinon `focus` remonte `navigator` a cause de
+       `platform`, et `discovery` remonte `fetch` / `node:crypto`.
+       AD-12 (pas de DOM dans packages/agent) N'EST PAS affaibli : il est
+       applique par le grep G4 de scripts/check-boundaries.sh, pas par
+       l'absence de types. Verifie vert apres ce changement. */
     "lib": [
-      "ES2022"
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
     ],
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -15,10 +26,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true,
-    "noEmit": false,
-    "incremental": true
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "incremental": false
   }
 }

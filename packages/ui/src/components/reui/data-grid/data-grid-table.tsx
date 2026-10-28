@@ -1048,24 +1048,24 @@ function DataGridTableBase({ children }: { children: ReactNode }) {
           : header.column.getSize()
     }
     return colSizes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [
     props.tableLayout?.columnsResizable,
     // Visibility/order/pinning change the flat header set, so a column shown
     // after mount must get its size variable even though sizing is untouched.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     table.state.columnSizing,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     table.state.columnVisibility,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     table.state.columnOrder,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     table.state.columnPinning,
     // A def swap can change a column's `size` without touching sizing
     // STATE; without this dep the CSS variables keep the old widths. For a
     // consumer defining columns inline the memo degrades to per-render
     // recompute, which is the safe direction.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     table.options.columns,
   ])
 

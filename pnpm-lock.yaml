@@ -27,6 +27,12 @@ importers:
       eslint-plugin-import:
         specifier: ^2.31.0
         version: 2.32.0(@typescript-eslint/parser@8.70.1(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))
+      eslint-plugin-react-hooks:
+        specifier: ^7.1.1
+        version: 7.1.1(eslint@9.39.5(jiti@2.7.0))
+      eslint-plugin-storybook:
+        specifier: ^10.6.1
+        version: 10.6.1(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -124,6 +130,9 @@ importers:
       '@capacitor/core':
         specifier: ^7.6.9
         version: 7.6.9
+      '@capacitor/preferences':
+        specifier: ^7.0.0
+        version: 7.0.4(@capacitor/core@7.6.9)
       '@ionic/react':
         specifier: ^8.8.19
         version: 8.8.19(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -222,6 +231,133 @@ importers:
         specifier: workspace:*
         version: link:../../packages/scientific-engine
 
+  apps/web:
+    dependencies:
+      '@aurora/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
+      '@aurora/ascent':
+        specifier: workspace:*
+        version: link:../../packages/ascent
+      '@aurora/data':
+        specifier: workspace:*
+        version: link:../../packages/data
+      '@aurora/discovery':
+        specifier: workspace:*
+        version: link:../../packages/discovery
+      '@aurora/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@aurora/focus':
+        specifier: workspace:*
+        version: link:../../packages/focus
+      '@aurora/goal-engine':
+        specifier: workspace:*
+        version: link:../../packages/goal-engine
+      '@aurora/integrations':
+        specifier: workspace:*
+        version: link:../../packages/integrations
+      '@aurora/learning':
+        specifier: workspace:*
+        version: link:../../packages/learning
+      '@aurora/platform':
+        specifier: workspace:*
+        version: link:../../packages/platform
+      '@aurora/productivity':
+        specifier: workspace:*
+        version: link:../../packages/productivity
+      '@aurora/progress':
+        specifier: workspace:*
+        version: link:../../packages/progress
+      '@aurora/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@aurora/workflows':
+        specifier: workspace:*
+        version: link:../../packages/workflows
+      '@capacitor/core':
+        specifier: ^7.6.9
+        version: 7.6.9
+      '@ionic/react':
+        specifier: ^8.8.19
+        version: 8.8.19(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@phosphor-icons/react':
+        specifier: ^2
+        version: 2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@radix-ui/react-dropdown-menu':
+        specifier: ^2.1.24
+        version: 2.2.1(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@radix-ui/react-slot':
+        specifier: ^1.3.3
+        version: 1.5.0(@types/react@18.3.31)(react@18.3.1)
+      '@tanstack/react-query':
+        specifier: ^5.103.2
+        version: 5.103.2(react@18.3.1)
+      '@tiptap/react':
+        specifier: 2.27.3
+        version: 2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tiptap/starter-kit':
+        specifier: 2.27.3
+        version: 2.27.3
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: ^1.48.0
+        version: 1.48.0(react@18.3.1)
+      motion:
+        specifier: ^13.4.1
+        version: 13.4.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+      react-markdown:
+        specifier: 9.1.0
+        version: 9.1.0(@types/react@18.3.31)(react@18.3.1)
+      react-router-dom:
+        specifier: ^6.30.6
+        version: 6.30.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      remark-gfm:
+        specifier: ^4.0.1
+        version: 4.0.1
+      tailwind-merge:
+        specifier: ^3.7.0
+        version: 3.7.0
+      zustand:
+        specifier: ^5.0.15
+        version: 5.0.15(@types/react@18.3.31)(react@18.3.1)(use-sync-external-store@1.7.0(react@18.3.1))
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.48.0
+        version: 1.63.0
+      '@types/node':
+        specifier: ^22.13.4
+        version: 22.20.4
+      '@types/react':
+        specifier: ^18.3.31
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.7
+        version: 18.3.7(@types/react@18.3.31)
+      '@vitejs/plugin-react':
+        specifier: ^4.3.0
+        version: 4.7.0(vite@5.4.21(@types/node@22.20.4)(lightningcss@1.32.0))
+      autoprefixer:
+        specifier: ^10.4.0
+        version: 10.6.1(postcss@8.5.28)
+      postcss:
+        specifier: ^8.4.0
+        version: 8.5.28
+      tailwindcss:
+        specifier: ^3.4.19
+        version: 3.4.19
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@22.20.4)(lightningcss@1.32.0)
+
   packages/agent:
     dependencies:
       '@ai-sdk/openai-compatible':
@@ -269,6 +405,10 @@ importers:
       '@aurora/integrations':
         specifier: workspace:*
         version: link:../integrations
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.4
+        version: 22.20.4
 
   packages/domain: {}
 
@@ -322,6 +462,10 @@ importers:
       '@aurora/domain':
         specifier: workspace:*
         version: link:../domain
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.4
+        version: 22.20.4
 
   packages/learning:
     dependencies:
@@ -336,13 +480,16 @@ importers:
         version: link:../domain
       '@capacitor/app':
         specifier: ^7.1.2
-        version: 7.1.2(@capacitor/core@8.5.2)
+        version: 7.1.2(@capacitor/core@7.6.9)
+      '@capacitor/core':
+        specifier: ^7.6.9
+        version: 7.6.9
       '@capacitor/network':
         specifier: ^7.0.4
-        version: 7.0.4(@capacitor/core@8.5.2)
+        version: 7.0.4(@capacitor/core@7.6.9)
       '@capacitor/push-notifications':
         specifier: ^7.0.7
-        version: 7.0.7(@capacitor/core@8.5.2)
+        version: 7.0.7(@capacitor/core@7.6.9)
     devDependencies:
       '@types/node':
         specifier: ^22.20.4
@@ -756,7 +903,7 @@ importers:
         version: 10.6.1(postcss@8.5.28)
       eslint-plugin-storybook:
         specifier: ^10.6.1
-        version: 10.6.1(eslint@9.39.5(jiti@1.21.7))(typescript@5.9.3)
+        version: 10.6.1(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
       happy-dom:
         specifier: ^15.11.7
         version: 15.11.7
@@ -787,6 +934,10 @@ importers:
       '@aurora/domain':
         specifier: workspace:*
         version: link:../domain
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.4
+        version: 22.20.4
 
   tests/e2e:
     dependencies:
@@ -1293,6 +1444,11 @@ packages:
 
   '@capacitor/network@7.0.4':
     resolution: {integrity: sha512-fNhN3968AQWMnzasPJ0B8e+nyk7+R6V9PWIBQWSQRHrKndDgWRHpxkjEzJPgnJr3EjnKLjbwO+UYy+EwBlGs3A==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
+
+  '@capacitor/preferences@7.0.4':
+    resolution: {integrity: sha512-TJhkwaI2RCs/iDC9PjNczZV4h6JM4gUtTuKMeFdy0OwGgFEHf4TrtW2mFMc1TnPDalYQ91p9NT+UKgiJs9/xtg==}
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
 
@@ -5610,6 +5766,12 @@ packages:
       '@typescript-eslint/parser':
         optional: true
 
+  eslint-plugin-react-hooks@7.1.1:
+    resolution: {integrity: sha512-f2I7Gw6JbvCexzIInuSbZpfdQ44D7iqdWX01FKLvrPgqxoE7oMj8clOfto8U6vYiz4yd5oKu39rRSVOe1zRu0g==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0 || ^9.0.0 || ^10.0.0
+
   eslint-plugin-storybook@10.6.1:
     resolution: {integrity: sha512-XBmXuQcI0wzxMYc0rWKIiydvUxgS+GzLesO1YK1adnj97LhMqqsnlalbM+nXfQo1JoH2F2CI12sAH9/dAC99Dw==}
     peerDependencies:
@@ -6033,6 +6195,12 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  hermes-estree@0.25.1:
+    resolution: {integrity: sha512-0wUoCcLp+5Ev5pDW2OriHC2MJCbwLwuRx+gAqMTOkGKJJiBCLjtrvy4PWUGn6MIVefecRpzoOZ/UV6iGdOr+Cw==}
+
+  hermes-parser@0.25.1:
+    resolution: {integrity: sha512-6pEjquH3rqaI6cYAXYPcz9MS4rY6R4ngRgrgfDshRptUZIc3lw0MCIJIGDj9++mfySOuPTHB4nrSW99BCvOPIA==}
 
   highlight.js@10.7.3:
     resolution: {integrity: sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A==}
@@ -8659,6 +8827,12 @@ packages:
     resolution: {integrity: sha512-9qv4rlDiopXg4E69k+vMHjNN63YFMe9sZMrdlvKnCjlCRWeCBswPPMPUfx+ipsAWq1LXHe70RcbaHdJJpS6hyQ==}
     engines: {node: '>= 10'}
 
+  zod-validation-error@4.0.2:
+    resolution: {integrity: sha512-Q6/nZLe6jxuU80qb/4uJ4t5v2VEZ44lzQjPDhYJNztRQ4wyWc6VF3D3Kb/fAuPetZQnhS3hnajCf9CsWesghLQ==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      zod: ^3.25.0 || ^4.0.0
+
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
@@ -9496,9 +9670,9 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.6.9
 
-  '@capacitor/app@7.1.2(@capacitor/core@8.5.2)':
+  '@capacitor/app@7.1.2(@capacitor/core@7.6.9)':
     dependencies:
-      '@capacitor/core': 8.5.2
+      '@capacitor/core': 7.6.9
 
   '@capacitor/core@7.6.9':
     dependencies:
@@ -9508,13 +9682,17 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@capacitor/network@7.0.4(@capacitor/core@8.5.2)':
+  '@capacitor/network@7.0.4(@capacitor/core@7.6.9)':
     dependencies:
-      '@capacitor/core': 8.5.2
+      '@capacitor/core': 7.6.9
 
-  '@capacitor/push-notifications@7.0.7(@capacitor/core@8.5.2)':
+  '@capacitor/preferences@7.0.4(@capacitor/core@7.6.9)':
     dependencies:
-      '@capacitor/core': 8.5.2
+      '@capacitor/core': 7.6.9
+
+  '@capacitor/push-notifications@7.0.7(@capacitor/core@7.6.9)':
+    dependencies:
+      '@capacitor/core': 7.6.9
 
   '@chromatic-com/storybook@5.4.0(storybook@10.6.1(@types/react@18.3.31)(react@18.3.1))':
     dependencies:
@@ -9764,11 +9942,6 @@ snapshots:
 
   '@esbuild/win32-x64@0.21.5':
     optional: true
-
-  '@eslint-community/eslint-utils@4.10.1(eslint@9.39.5(jiti@1.21.7))':
-    dependencies:
-      eslint: 9.39.5(jiti@1.21.7)
-      eslint-visitor-keys: 3.4.3
 
   '@eslint-community/eslint-utils@4.10.1(eslint@9.39.5(jiti@2.7.0))':
     dependencies:
@@ -12562,17 +12735,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/utils@8.70.1(eslint@9.39.5(jiti@1.21.7))(typescript@5.9.3)':
-    dependencies:
-      '@eslint-community/eslint-utils': 4.10.1(eslint@9.39.5(jiti@1.21.7))
-      '@typescript-eslint/scope-manager': 8.70.1
-      '@typescript-eslint/types': 8.70.1
-      '@typescript-eslint/typescript-estree': 8.70.1(typescript@5.9.3)
-      eslint: 9.39.5(jiti@1.21.7)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
   '@typescript-eslint/utils@8.70.1(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)':
     dependencies:
       '@eslint-community/eslint-utils': 4.10.1(eslint@9.39.5(jiti@2.7.0))
@@ -14081,11 +14243,22 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-storybook@10.6.1(eslint@9.39.5(jiti@1.21.7))(typescript@5.9.3):
+  eslint-plugin-react-hooks@7.1.1(eslint@9.39.5(jiti@2.7.0)):
+    dependencies:
+      '@babel/core': 7.29.7
+      '@babel/parser': 7.29.9
+      eslint: 9.39.5(jiti@2.7.0)
+      hermes-parser: 0.25.1
+      zod: 4.6.5
+      zod-validation-error: 4.0.2(zod@4.6.5)
+    transitivePeerDependencies:
+      - supports-color
+
+  eslint-plugin-storybook@10.6.1(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3):
     dependencies:
       '@typescript-eslint/types': 8.70.1
-      '@typescript-eslint/utils': 8.70.1(eslint@9.39.5(jiti@1.21.7))(typescript@5.9.3)
-      eslint: 9.39.5(jiti@1.21.7)
+      '@typescript-eslint/utils': 8.70.1(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      eslint: 9.39.5(jiti@2.7.0)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -14100,47 +14273,6 @@ snapshots:
   eslint-visitor-keys@4.2.1: {}
 
   eslint-visitor-keys@5.0.1: {}
-
-  eslint@9.39.5(jiti@1.21.7):
-    dependencies:
-      '@eslint-community/eslint-utils': 4.10.1(eslint@9.39.5(jiti@1.21.7))
-      '@eslint-community/regexpp': 4.12.2
-      '@eslint/config-array': 0.21.2
-      '@eslint/config-helpers': 0.4.2
-      '@eslint/core': 0.17.0
-      '@eslint/eslintrc': 3.3.7
-      '@eslint/js': 9.39.5
-      '@eslint/plugin-kit': 0.4.1
-      '@humanfs/node': 0.16.8
-      '@humanwhocodes/module-importer': 1.0.1
-      '@humanwhocodes/retry': 0.4.3
-      '@types/estree': 1.0.9
-      ajv: 6.15.0
-      chalk: 4.1.2
-      cross-spawn: 7.0.6
-      debug: 4.4.3
-      escape-string-regexp: 4.0.0
-      eslint-scope: 8.4.0
-      eslint-visitor-keys: 4.2.1
-      espree: 10.4.0
-      esquery: 1.7.0
-      esutils: 2.0.3
-      fast-deep-equal: 3.1.3
-      file-entry-cache: 8.0.0
-      find-up: 5.0.0
-      glob-parent: 6.0.2
-      ignore: 5.3.2
-      imurmurhash: 0.1.4
-      is-glob: 4.0.3
-      json-stable-stringify-without-jsonify: 1.0.1
-      lodash.merge: 4.6.2
-      minimatch: 3.1.5
-      natural-compare: 1.4.0
-      optionator: 0.9.4
-    optionalDependencies:
-      jiti: 1.21.7
-    transitivePeerDependencies:
-      - supports-color
 
   eslint@9.39.5(jiti@2.7.0):
     dependencies:
@@ -14663,6 +14795,12 @@ snapshots:
       '@types/react': 18.3.31
     transitivePeerDependencies:
       - '@types/react-dom'
+
+  hermes-estree@0.25.1: {}
+
+  hermes-parser@0.25.1:
+    dependencies:
+      hermes-estree: 0.25.1
 
   highlight.js@10.7.3: {}
 
@@ -17842,6 +17980,10 @@ snapshots:
       archiver-utils: 3.0.4
       compress-commons: 4.1.2
       readable-stream: 3.6.2
+
+  zod-validation-error@4.0.2(zod@4.6.5):
+    dependencies:
+      zod: 4.6.5
 
   zod@3.25.76: {}
 

@@ -525,7 +525,7 @@ function createEventCalendarStore<TData>(
   ) => {
     const controlled = options[key] !== undefined
     if (!controlled) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       ;(internal as any)[key] = value
       invalidate()
     }
@@ -950,13 +950,13 @@ function useEventCalendarState<TData = unknown>(
   useEffect(() => {
     store.emitRangeIfChanged()
     // mount-only: onRangeChange fires once for the initial range
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [])
   return store.instance
 }
 
 const EventCalendarContext =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   createContext<EventCalendarInstance<any> | null>(null)
 
 /** The stable calendar instance; throws outside <EventCalendar>. */
@@ -1652,7 +1652,7 @@ const DEFAULT_VIEW_CONFIG: EventCalendarViewConfig = {
 }
 
 const EventCalendarViewConfigContext = createContext<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   EventCalendarViewConfig<any>
 >(DEFAULT_VIEW_CONFIG)
 

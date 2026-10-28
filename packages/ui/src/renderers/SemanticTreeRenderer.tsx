@@ -187,6 +187,9 @@ export function SemanticTreeRenderer({
   const laid = useMemo(
     () => toFlowNodes(layoutWithDagre(allNodes, edges, bridges ?? []), allNodes, edges, bridges ?? []),
     // R4: cached internally — deps are the batch key inputs.
+    // `effectiveVisible` n'est pas lu par la fabrique mais force le re-layout
+    // quand les branches visibles changent (cle de batch volontaire).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cle de re-layout
     [allNodes, edges, bridges, effectiveVisible],
   );
 

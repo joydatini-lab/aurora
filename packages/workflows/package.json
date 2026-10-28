@@ -18,5 +18,8 @@
   },
   "dependencies": {
     "@aurora/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4"
   }
 }

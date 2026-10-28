@@ -13,9 +13,12 @@
  * AD-13 : loading (submit) / error (alert role) / empty (OQ-03 env absent)
  * / success (connecté ou inscription confirmée). Tokens only, tap ≥ 44 px.
  *
- * DEV-ONLY (P1-4, 10-07) : bloc de diagnostic `fn-dev-auth` (récreation
- * canonique des comptes dev via l'admin API + test de sign-in verbatim) —
- * GATED DEV, SUPPRIMER AVANT v1.0 avec l'EF `supabase/functions/fn-dev-auth`.
+ * REMOVED 2026-10-28 (analysis §5.2, web pivot) : the DEV-ONLY `fn-dev-auth`
+ * diagnostic block (hardcoded dev emails + passwords + the production
+ * function URL) is gone. A browser bundle is public — client code must never
+ * carry credentials, and it must never hold the `x-aurora-internal` secret.
+ * `fn-dev-auth` is now fail-closed and server-side only (404 unless
+ * `DEV_AUTH_ENABLED=true` + the internal secret matches).
  */
 import { IonContent, IonHeader, IonTitle } from '@ionic/react';
 import { AURORA_ICONS } from '@aurora/ui';
@@ -48,11 +51,6 @@ import {
   signUp,
 } from '../../lib/auth';
 
-const DEV_EF_URL = 'https://opagfyspdbhxthlxvlrk.supabase.co/functions/v1/fn-dev-auth';
-const DEV_ACCOUNTS: Record<string, string> = {
-  'dev.aurora@joynagassi.dev': 'Aurora-Dev1!',
-  'dev.aurora2@joynagassi.dev': 'Aurora-Dev2!',
-};
 
 export function LoginPage() {
   const [tab, setTab] = useState<'signin' | 'signup'>('signin');
@@ -62,7 +60,6 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
-  const [diag, setDiag] = useState<string | null>(null);
 
   // Restaure l'état réel : session persistée (client partagé persistSession).
   useEffect(() => {
@@ -124,42 +121,6 @@ export function LoginPage() {
     setBusy(true);
     await signOut();
     window.location.assign('/');
-  }
-
-  // DEV-ONLY (P1-4 — SUPPRIMER AVANT v1.0 avec l'EF fn-dev-auth) :
-  // récrée les comptes dev via l'admin API GoTrue (canonique) + test de
-  // sign-in verbatim. Scope sensible service_role CÔTÉ EF (AD-3).
-  async function runDevAuthDiagnostic() {
-    setDiag('Diagnostic en cours (fn-dev-auth)…');
-    try {
-      const call = async (payload: Record<string, unknown>): Promise<unknown> => {
-        const r = await fetch(DEV_EF_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
-          },
-          body: JSON.stringify(payload),
-        });
-        return (await r.json().catch(
-          () => ({ ok: false, error: `HTTP ${r.status} (EF non déployée ?)` }),
-        )) as unknown;
-      };
-      const recreated = await Promise.all(
-        Object.entries(DEV_ACCOUNTS).map(async ([e, pw]) => ({
-          email: e,
-          out: await call({ action: 'recreate', email: e, password: pw }),
-        })),
-      );
-      const test = await call({
-        action: 'test-signin',
-        email: 'dev.aurora@joynagassi.dev',
-        password: DEV_ACCOUNTS['dev.aurora@joynagassi.dev'],
-      });
-      setDiag(JSON.stringify({ recreated, test }, null, 2));
-    } catch (e) {
-      setDiag(`Diagnostic impossible : ${e instanceof Error ? e.message : String(e)}`);
-    }
   }
 
   return (
@@ -244,26 +205,6 @@ export function LoginPage() {
                         {busy ? 'Connexion…' : 'Se connecter'}
                       </Button>
 
-                      {/* Comptes dev P1-4/P1-5 — pré-remplissage uniquement
-                          (jamais d'auto-submit), 10-07. */}
-                      <div className="auth-dev-accounts" role="group" aria-label="Comptes de développement">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { setEmail('dev.aurora@joynagassi.dev'); setPassword('Aurora-Dev1!'); }}
-                        >
-                          dev.aurora@…
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { setEmail('dev.aurora2@joynagassi.dev'); setPassword('Aurora-Dev2!'); }}
-                        >
-                          dev.aurora2@…
-                        </Button>
-                      </div>
                     </form>
                   </TabsContent>
 
@@ -343,18 +284,6 @@ export function LoginPage() {
             </Card>
           )}
 
-          {import.meta.env.DEV && (
-            <div className="auth-diag" data-diag="true">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void runDevAuthDiagnostic()}
-              >
-                DEV — diagnostic comptes (EF fn-dev-auth)
-              </Button>
-              {diag ? <pre>{diag}</pre> : null}
-            </div>
-          )}
         </div>
       </IonContent>
     </>

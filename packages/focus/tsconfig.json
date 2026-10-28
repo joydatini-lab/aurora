@@ -10,16 +10,5 @@
   ],
   "exclude": [
     "dist"
-  ],
-  "references": [
-    {
-      "path": "../domain"
-    },
-    {
-      "path": "../productivity"
-    },
-    {
-      "path": "../platform"
-    }
   ]
 }

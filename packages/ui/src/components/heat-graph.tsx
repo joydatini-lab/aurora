@@ -13,6 +13,10 @@ const LEVEL_TINT = [
 ] as const;
 
 export function HeatGraph({ data }: { data: HeatGraphPrimitive.DataPoint[] }) {
+  // `data` n'est pas lu dans la fabrique : c'est une CLE D'INVALIDATION
+  // volontaire — `end` (aujourd'hui) doit etre recalcule quand le jeu de
+  // donnees change. Retirer la dependance figerait la date de fin.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- data = cle d'invalidation
   const end = useMemo(() => new Date(), [data]);
   return (
     <HeatGraphPrimitive.Root

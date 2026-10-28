@@ -33,7 +33,7 @@ import { useMobileData } from '../../query/context';
 import { readKnowledgeMirror, searchKnowledgeMirror } from '../../lib/knowledge-repo';
 
 /** Shared 6-state flags for the knowledge family. */
-function knowledgeFlags(): {
+function useKnowledgeFlags(): {
   knowledgeExpanded: string;
   online: boolean;
   killed: boolean;
@@ -47,7 +47,7 @@ function knowledgeFlags(): {
 }
 
 export function KnowledgePage() {
-  const { knowledgeExpanded, online, killed, flags } = knowledgeFlags();
+  const { knowledgeExpanded, online, killed, flags } = useKnowledgeFlags();
   const [searchParams, setSearchParams] = useSearchParams();
   /**
    * Cross-page query intake (`?q=`, navigation-and-page-composition.md):
@@ -175,7 +175,7 @@ export function KnowledgePage() {
 
 export function KnowledgeNodePage() {
   const { nodeId } = useParams<{ nodeId: string }>();
-  const { flags } = knowledgeFlags();
+  const { flags } = useKnowledgeFlags();
   const mirrorProvider = useMobileData();
   const store = mirrorProvider.store;
 

@@ -1,0 +1,4 @@
+# SPA fallback (Netlify / Cloudflare Pages).
+# Toute route inconnue → index.html (200, pas 404) : le router client prend le
+# relais. Sans cette règle, /goals/:id en accès direct renvoie une 404 serveur.
+/*  /index.html  200

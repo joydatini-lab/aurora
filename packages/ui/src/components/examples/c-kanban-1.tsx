@@ -1,6 +1,7 @@
 "use client"
 
-import { ComponentProps, useState } from "react"
+import type { ComponentProps, ComponentPropsWithoutRef } from "react"
+import { useState } from "react"
 import { Badge } from "src/components/reui/badge"
 import {
   Kanban,
@@ -117,8 +118,8 @@ function TaskColumn({ value, tasks, isOverlay, ...props }: TaskColumnProps) {
             <Badge variant="outline">{tasks.length}</Badge>
           </div>
           <KanbanColumnHandle
-            render={(props: any) => (
-              <Button {...props} size="icon" variant="ghost">
+            render={(props: ComponentPropsWithoutRef<"div">) => (
+              <Button {...(props as ComponentProps<typeof Button>)} size="icon" variant="ghost">
                 <GripVerticalIcon
                 />
               </Button>

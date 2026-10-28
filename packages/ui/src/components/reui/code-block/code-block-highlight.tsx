@@ -974,10 +974,11 @@ function ansi256(index: number): string {
 
 // eslint-disable-next-line no-control-regex
 const SGR_RE = /\x1b\[([0-9;]*)m/g
-// eslint-disable-next-line no-control-regex
+ 
 /* Everything except SGR (the trailing `m`), which the tokenizer consumes -
    this regex once matched SGR too and silently stripped every colour. */
 const OTHER_ESCAPES_RE =
+  // eslint-disable-next-line no-control-regex -- tokenisation ANSI (upstream reui)
   /\x1b(?:\[(?![0-9;]*m)[0-9;?]*[A-Za-z]|\][^\x07]*(?:\x07|\x1b\\)|[()][0-9A-B])/g
 
 type AnsiStyle = {

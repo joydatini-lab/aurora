@@ -8,8 +8,11 @@
 #   - AD-13 (1 story = 1 commit = 1 rollback; revert, not rewrite).
 #
 # The tag is the release trigger: pushing `v*` re-runs the ci-gate
-# shape on the frozen tree, builds the APK, and cuts the GitHub
-# Release from docs/release/changelog.md. Deploy steps to
+# shape on the frozen tree, builds the WEB artifact, and cuts the GitHub
+# Release from docs/release/changelog.md. Since the 2026-10-28 pivot
+# the Phase-1 target is the WEB app (apps/web) — the Capacitor/APK line is
+# no longer a release artifact (docs/analysis/voie-web-2026-10-28.md).
+# Deploy steps to
 # staging/prod are DRY-RUN (echo) until OQ-03 ratifies the env
 # values (docs/release/README S5) — flip the `if` when the
 # `SUPABASE_URL_PROD` / `CF_*` secrets land in the registry.
@@ -88,13 +91,13 @@ jobs:
             --test test/sync-config-wiring.test.ts
 
   # ------------------------------------------------------------------
-  # 2. Build (APK) + notes + release
+  # 2. Build (web) + notes + release
   # ------------------------------------------------------------------
   release-build:
     runs-on: ubuntu-latest
     needs: [release-gate]
     permissions:
-      contents: write # create the GitHub Release + upload the APK
+      contents: write # create the GitHub Release + upload the web bundle
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -113,14 +116,27 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build the mobile app (Capacitor APK, docs/release/README S2.3)
-        # The APK is the Phase 1 release target (ADR S24: mobile
-        # production-ready; no Electron in the build/QA/release day).
-        run: pnpm -r exec tsc --noEmit
-        # TODO(wave7/OQ-03): wire the Capacitor build (npx cap build android)
-        # + the signed APK artifact when the keystore secret (KEYSTORE_*
-        # in the registry, AD-3 — never in the bundle) is provisioned.
-        # Until then the build is the typecheck gate only (no APK upload).
+      - name: Build the web app (apps/web, pivot 2026-10-28)
+        # AD-3 : seulement des valeurs PUBLISHABLE dans le bundle. Si l'un des
+        # VITE_* manque, le build doit echouer ici plutot que livrer une coquille
+        # qui ne se connecte a rien.
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_POWERSYNC_URL: ${{ secrets.VITE_POWERSYNC_URL }}
+        run: |
+          set -euo pipefail
+          pnpm -F @aurora/web build
+
+      - name: Bundle budget (02 §9.1 — JS gzip <= 300 Ko)
+        run: node scripts/check-web-bundle-budget.mjs --dist apps/web/dist
+
+      - name: Upload the web bundle (release artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: aurora-web-${{ github.ref_name }}
+          path: apps/web/dist
+          retention-days: 30
 
       - name: Generate RELEASE_NOTES.md from the changelog
         # The `## Upcoming (v0.1.0)` section of docs/release/changelog.md
@@ -148,8 +164,10 @@ jobs:
           generate_release_notes: false
           files: |
             RELEASE_NOTES.md
-          # APK artifact (when the Capacitor build lands):
-          #   apps/mobile/build/outputs/apk/release/*.apk
+          # L'artefact web (apps/web/dist) est attache au run via
+          # actions/upload-artifact ci-dessus ; les notes restent le seul
+          # fichier de la Release GitHub (le bundle se deploie, il ne se
+          # distribue pas en piece jointe).
 
   # ------------------------------------------------------------------
   # 3. Deploy (staging -> prod) — DRY-RUN until OQ-03

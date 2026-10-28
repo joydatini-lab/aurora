@@ -204,7 +204,8 @@ function normalizeTyped(text: string) {
     .normalize("NFKC")
     .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x660))
     .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x6f0))
-    .replace(/[  ]/g, " ")
+    // NBSP + espace fine insecable litterales -> echappements explicites
+    .replace(/[\u00a0\u202f]/g, " ")
     .toLowerCase()
 }
 

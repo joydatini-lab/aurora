@@ -62,14 +62,14 @@ const MODE_CATALOG = [
 
 type StudyMode = (typeof STUDY_MODES)[number][0];
 
-function emptyFlags() {
+function useEmptyFlags() {
   const online = useOnlineStatus();
   const killed = useUiStateStore((s) => s.killed);
   return { flags: { offline: !online, killed } as UxStateFlags, online };
 }
 
 export function LearnPage() {
-  const { flags } = emptyFlags();
+  const { flags } = useEmptyFlags();
 
   return (
     <>
@@ -139,7 +139,7 @@ export function LearnPage() {
 export function LearnDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [mode, setMode] = useState<StudyMode>('sheet');
-  const { flags } = emptyFlags();
+  const { flags } = useEmptyFlags();
   const modeLabel = STUDY_MODES.find(([m]) => m === mode)?.[1] ?? 'Fiche';
 
   return (

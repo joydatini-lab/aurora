@@ -1,5 +1,6 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import storybook from "eslint-plugin-storybook";
+import reactHooks from "eslint-plugin-react-hooks";
 
 /**
  * Aurora ESLint 9 flat config — boundary rules.
@@ -65,6 +66,20 @@ const AD10_ENGINES = [
   'katex',
   'motion',
 ];
+
+/**
+ * AD-10 en `paths` (EXACT) et non en `patterns`.
+ * Pourquoi (bug corrigé le 2026-10-28) : `patterns` matche en gitignore, donc
+ * le motif `motion` attrapait l'import RELATIF `export * from './motion'` de
+ * `packages/ui/src/index.ts` — c'est-à-dire le SSoT de motion de ui lui-même,
+ * qui est précisément le SEUL endroit où le moteur a le droit d'être.
+ * `paths` ne matche que le nom de paquet nu : la règle garde son intention
+ * (interdire le VENDOR `motion`) sans mordre sur les chemins relatifs.
+ */
+const AD10_ENGINE_PATHS = AD10_ENGINES.map((name) => ({
+  name,
+  message: 'AD-10: the 5 frozen viz engines are restricted to packages/ui only.',
+}));
 
 export default tseslint.config(// 1. Base: recommended JS rules.
 js.configs.recommended, // 2. TypeScript: parser + recommended (non type-checked, no project setup needed).
@@ -175,6 +190,7 @@ js.configs.recommended, // 2. TypeScript: parser + recommended (non type-checked
     'no-restricted-imports': [
       'error',
       {
+        paths: AD10_ENGINE_PATHS,
         patterns: [
           {
             group: VENDOR_PATTERNS,
@@ -183,11 +199,7 @@ js.configs.recommended, // 2. TypeScript: parser + recommended (non type-checked
           },
           // AD-10 engines are banned in domain / ui / apps/mobile.
           // (In ui they are allowed — the ui block above doesn't ban them.)
-          {
-            group: AD10_ENGINES,
-            message:
-              'AD-10: the 5 frozen viz engines are restricted to packages/ui only.',
-          },
+
         ],
       },
     ],
@@ -221,6 +233,7 @@ js.configs.recommended, // 2. TypeScript: parser + recommended (non type-checked
     'no-restricted-imports': [
       'error',
       {
+        paths: AD10_ENGINE_PATHS,
         patterns: [
           {
             group: [
@@ -229,13 +242,68 @@ js.configs.recommended, // 2. TypeScript: parser + recommended (non type-checked
             message:
               'AD-1: vendor SDKs (except the AI SDK layer) must stay in packages/{data,platform,integrations,scientific-engine} or apps/server.',
           },
-          {
-            group: AD10_ENGINES,
-            message:
-              'AD-10: the 5 frozen viz engines are restricted to packages/ui only.',
-          },
+
         ],
       },
     ],
+  },
+}, // ============================================================
+// React hooks — la couche de correction des hooks.
+// ELLE ETAIT ABSENTE : `eslint-plugin-react-hooks` n'etait ni installe ni
+// configure, alors que 33 directives `eslint-disable react-hooks/*` existent
+// dans le tree. ESLint 9 traite une directive vers une regle inconnue comme
+// une ERREUR -> 35 erreurs fantomes, et ZERO lint de hooks reel.
+// ============================================================
+{
+  files: ['**/*.{ts,tsx}'],
+  plugins: { 'react-hooks': reactHooks },
+  rules: {
+    // Corrige les vraies fautes de hooks (ordre, conditions, boucles).
+    'react-hooks/rules-of-hooks': 'error',
+    // `warn` : signal de justesse sur les dependances. Comme le gate tourne
+    // en `--max-warnings 0`, un avertissement est bloquant -> il faut soit
+    // corriger, soit justifier par un `eslint-disable ... -- raison`.
+    'react-hooks/exhaustive-deps': 'warn',
+    // Regles du React Compiler : DECLAREES mais non adoptees (elles
+    // signalent des patterns presents dans le code vendorise). Les declarer
+    // resout les directives existantes sans imposer une migration.
+    'react-hooks/set-state-in-effect': 'off',
+    'react-hooks/static-components': 'off',
+    'react-hooks/incompatible-library': 'off',
+    'react-hooks/purity': 'off',
+    'react-hooks/refs': 'off',
+  },
+}, // ============================================================
+// CODE VENDORISE (registre `reui` + `assistant-ui`).
+// Ce n'est PAS du code Aurora : c'est de l'amont importe (~97 000 lignes).
+// On y desactive les regles STYLISTIQUES (any, ts-comment, expressions,
+// interfaces vides) — les reecrire casserait la possibilite de re-synchroniser
+// avec l'amont, pour zero gain produit.
+//
+// CE QUI RESTE APPLIQUE (et c'est l'essentiel) : AD-1 (vendor), AD-10 (moteurs
+// de viz), AD-15 (SSoT) — les frontieres d'architecture ne sont PAS relachees.
+// ============================================================
+{
+  files: [
+    'packages/ui/src/components/reui/**/*.{ts,tsx}',
+    'packages/ui/src/components/assistant-ui/**/*.{ts,tsx}',
+  ],
+  rules: {
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/ban-ts-comment': 'off',
+    '@typescript-eslint/no-unused-expressions': 'off',
+    '@typescript-eslint/no-empty-object-type': 'off',
+    '@typescript-eslint/no-namespace': 'off',
+    'react-hooks/exhaustive-deps': 'off',
+  },
+}, // ============================================================
+// STORIES (dev-only, fixtures) : meme logique que le vendorise.
+// ============================================================
+{
+  files: ['**/*.stories.tsx'],
+  rules: {
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-unused-expressions': 'off',
+    'react-hooks/exhaustive-deps': 'off',
   },
 }, storybook.configs["flat/recommended"]);

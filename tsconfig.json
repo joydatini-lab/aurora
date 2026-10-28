@@ -1,19 +1,14 @@
 {
+  // Solution FILE — plus de `references` : depuis le 2026-10-28 tous les
+  // packages sont consommés en SOURCE (`exports` -> `src/index.ts`, alias
+  // Vite), donc les project-references n'apportaient rien et cassaient le
+  // typecheck (`tsc --noEmit` par package + `composite` = TS6305 x184).
+  //
+  // Le gate réel = `pnpm typecheck` (récursif, un programme par package).
+  // `npx tsc -b` n'est plus le chemin supporté.
   "files": [],
-  "references": [
-    { "path": "packages/domain" },
-    { "path": "packages/data" },
-    { "path": "packages/ui" },
-    { "path": "packages/platform" },
-    { "path": "packages/agent" },
-    { "path": "packages/goal-engine" },
-    { "path": "packages/scientific-engine" },
-    { "path": "packages/integrations" },
-    { "path": "packages/engineering-core" },
-    { "path": "packages/engineering-solvers" },
-    { "path": "packages/engineering-adapters" },
-    { "path": "packages/engineering-registry" },
-    { "path": "apps/mobile" },
-    { "path": "apps/server" }
-  ]
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true
+  }
 }

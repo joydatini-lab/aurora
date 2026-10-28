@@ -57,7 +57,7 @@ export function ScrollAnchor({
     if (count === INITIAL_COUNT + 1) {
       // The unpin lands one commit after the count that triggers it, so the
       // pinned scroll still runs for that message.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setPinned(false);
       setSeenCount(count);
       const viewport = viewportRef.current;

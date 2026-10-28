@@ -12,10 +12,5 @@
   "exclude": [
     "dist",
     "../integrations"
-  ],
-  "references": [
-    {
-      "path": "../domain"
-    }
   ]
 }

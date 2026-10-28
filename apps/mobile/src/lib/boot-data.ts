@@ -22,6 +22,10 @@ import {
   type LocalStore,
   type PowerSyncClientEngine,
 } from '@aurora/data';
+// B2 (web pivot): the DB engine is platform-specific — the mobile shell
+// imports ONLY the Capacitor ctor, so `@powersync/web` never enters this
+// bundle. The web shell imports `@aurora/data/powersync-engine-web`.
+import type { PowerSyncDatabaseCtor } from '@aurora/data';
 import type { AscentLearningIR, GoalProject, Task, Automation, VeilleVault } from '@aurora/domain';
 import { createAscentRepo } from './ascent-repo';
 import { createAutomationsRepo } from './automations-repo';
@@ -55,7 +59,7 @@ export interface AuroraDataProvider {
   automations?: LocalQueryRepository<Automation>;
   /** the upsync queue (03 S5.1 — the command repository's write side). */
   upsync: UpsyncQueue;
-  /** the production engine (`@powersync/capacitor`), null before init. */
+  /** la production engine (moteur injecte par le shell), null avant init. */
   engine: PowerSyncClientEngine;
   /**
    * Kick off the sync loop: init the store, `connect` (fire-and-forget) +
@@ -97,7 +101,18 @@ export interface AuroraDataEnv {
  * 3. Store: `EngineLocalStoreBridge` over the engine's store adapter
  *    (03 S8.1 swap); repositories read local-only through it (03 S3.1).
  */
-export function createAuroraDataProvider(env: AuroraDataEnv): AuroraDataProvider {
+/**
+ * B2 (web pivot 2026-10-28) : le MOTEUR est un PARAMETRE, pas un import.
+ * Ce module ne connait plus aucune plateforme — il devient partageable par
+ * les deux shells :
+ *   mobile → `CapacitorPowerSyncDatabase` (`@aurora/data/powersync-engine-capacitor`)
+ *   web    → `WebPowerSyncDatabase`      (`@aurora/data/powersync-engine-web`)
+ * Invariant : le bundle de chaque shell ne porte que SON moteur.
+ */
+export function createAuroraDataProvider(
+  env: AuroraDataEnv,
+  engineCtor: PowerSyncDatabaseCtor,
+): AuroraDataProvider {
   const clientFactory: () => AuroraSupabaseClient =
     env.clientFactory ??
     (() =>
@@ -109,11 +124,16 @@ export function createAuroraDataProvider(env: AuroraDataEnv): AuroraDataProvider
         powersyncUrl: env.powersyncUrl,
       }));
 
-  const engine = createPowerSyncClientEngine({
-    endpoint: env.powersyncUrl,
-    createClient: clientFactory,
-    dbFilename: env.dbFilename,
-  });
+  // B2 (web pivot): the DB engine ctor arrives from the platform shell —
+  // this module binds neither `@powersync/capacitor` nor `@powersync/web`.
+  const engine = createPowerSyncClientEngine(
+    {
+      endpoint: env.powersyncUrl,
+      createClient: clientFactory,
+      dbFilename: env.dbFilename,
+    },
+    engineCtor,
+  );
 
   // The `LocalStore` swap (03 S8.1): repositories keep the reference
   // `LocalStore` contract; the bridge re-projects engine rows into it.

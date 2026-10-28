@@ -268,7 +268,9 @@ const formatUnknownValue = (value: unknown, space?: number): string => {
 
     const json = JSON.stringify(value, null, space);
     if (json !== undefined) return json;
-  } catch {}
+  } catch {
+    // circularite / BigInt : on tente String() ci-dessous
+  }
 
   try {
     return String(value);

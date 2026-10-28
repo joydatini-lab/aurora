@@ -81,7 +81,7 @@ export function useTaskElapsed(
     if (!ticking) return undefined;
     // The clock is read only after mount so a prerender never reads it; the
     // layout effect still catches the elapsed value up before the first paint.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);

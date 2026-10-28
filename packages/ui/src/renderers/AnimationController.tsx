@@ -112,9 +112,11 @@ export function AnimationSlot({
     if (reduced) setRevealed(true);
   }, [controller, key, reduced]);
 
+  // `animate` est memoisee sur [controller, key, reduced] : la dependre de
+  // `animate` rejoue la revelation exactement quand l'un des trois change.
   React.useEffect(() => {
     animate();
-  }, [key]);
+  }, [animate]);
 
   return (
     <motion.div

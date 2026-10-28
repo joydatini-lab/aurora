@@ -1,3 +1,18 @@
+# =============================================================================
+# DESACTIVE — pivot web-only du 2026-10-28.
+#
+# La voie mobile (Capacitor/Android) est abandonnee : la cible Phase 1 est
+# desormais `apps/web` (voir docs/analysis/voie-web-2026-10-28.md). Ce
+# workflow n'est donc PLUS declenche par un tag `v*` — sinon chaque release
+# tenterait un build Android pour une cible qui n'existe plus.
+#
+# Le fichier est conserve (pas supprime) pour une raison precise : il porte la
+# procedure de signature (keystore en secret, `cap sync`, `gradlew
+# assembleRelease`). Si la voie mobile rouvre, on repart de la et pas de zero.
+# Le declencheur est passe a `workflow_dispatch` : rejouable a la main, jamais
+# automatique. Supprimer le fichier quand la ligne mobile sera officiellement
+# close.
+# =============================================================================
 # S8 M-87 (plan 2026-10-17 L675–711) — le workflow de publication du
 # self-updater APK (hors Play Store, le plan L620–622).
 #
@@ -33,9 +48,14 @@
 name: Release APK (self-updater)
 
 on:
-  push:
-    tags:
-      - 'v*'
+  # Pivot web-only : plus de declenchement automatique sur tag.
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Taper 'mobile' pour confirmer que la voie mobile est rouverte"
+        required: true
+        default: ""
+
 
 # Les secrets (le M-87b) : le lead les pose une seule fois dans le
 # dashboard GitHub → Settings → Secrets and variables → Actions.

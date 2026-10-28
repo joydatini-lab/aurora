@@ -14,6 +14,7 @@ import katex from "katex";
 import "katex/dist/katex.min.css";
 import { cn } from "src/lib/utils";
 import type { MathRendererProps, SourceRef } from "./contracts";
+import { useLatest } from "src/hooks/use-latest";
 
 function ProvenanceChip({ sourceRef }: { sourceRef: SourceRef }) {
   return (
@@ -34,6 +35,11 @@ export function MathRenderer({
   sourceRef,
   onError,
 }: MathRendererProps) {
+  // onError est une notification : l'inclure dans les deps relancerait la
+  // composition KaTeX a chaque rendu du parent si le callback n'est pas
+  // memoise. On lit donc toujours la derniere version via une ref stable.
+  const onErrorRef = useLatest(onError);
+
   const rendered = useMemo(() => {
     try {
       return {
@@ -46,13 +52,13 @@ export function MathRenderer({
       };
     } catch (err) {
       // AD-8 — styled raw source, never a crash
-      onError?.({
+      onErrorRef.current?.({
         latex,
         reason: err instanceof Error ? err.message : String(err),
       });
       return { ok: false as const };
     }
-  }, [latex, displayMode]);
+  }, [latex, displayMode, onErrorRef]);
 
   if (!rendered.ok) {
     // AD-8 degraded state: the raw source, styled (JetBrains Mono,

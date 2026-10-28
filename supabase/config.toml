@@ -31,14 +31,51 @@ skill-states-recompute = "0 */6 * * *"
 #    (batch over the day's TaskCompleted / FlashcardReviewed events).
 progress-evidences-recompute = "0 4 * * *"
 
-[functions.fn_job_dispatcher]
-# the ONLY dispatcher (01 §5.2)
-[functions.fn_import_course]
-# {courseId, fileRefs[]} -> 202 {jobId}
-[functions.fn_notifications]
-# events trigger -> OneSignal (Phase 1), quiet-hours aware
-[functions.fn_agent_run]
+# --- BARRIERE PROPRE : le JWT est remplace par le secret interne -----------
+[functions.fn-dev-auth]
+# DEV-ONLY (jamais en prod). verify_jwt = false est SANS DANGER parce que la
+# fonction est fail-closed sur DEUX gates independants, dans cet ordre :
+#   1. DEV_AUTH_ENABLED doit valoir exactement "true"   -> sinon 404
+#   2. x-aurora-internal doit egaler INTERNAL_FN_SECRET -> sinon 401
+#      (comparaison a temps constant, cf. secretMatches() ; secret absent =
+#      toujours faux, donc pas de porte ouverte si la variable manque)
+# Un JWT ne peut pas etre exige ici : l'appelant est le script de provisionnement
+# des comptes de dev, qui n'a par construction aucune session utilisateur.
+# CORS : allowlist explicite (DEV_AUTH_ALLOWED_ORIGIN), jamais "*".
+verify_jwt = false
+
+# --- JWT UTILISATEUR OBLIGATOIRE ------------------------------------------
+[functions.fn-agent-run]
 # {intent, contextRefs[], taskProfile} -> 202 {ok, data:{jobId}}
-[functions.fn_canvas]
-# le module Canvas (single-writer AD-7) applique les commandes canvas.read /
-# canvas.write / canvas.comment émises par le kernel (OQ-03). Authed (JWT user).
+verify_jwt = true
+
+[functions.fn-canvas]
+# Commandes canvas.read / canvas.write / canvas.comment emises par le kernel
+# (single-writer AD-7). L'identite vient du JWT utilisateur (AD-3).
+verify_jwt = true
+
+[functions.fn-import-course]
+# {courseId, fileRefs[]} -> 202 {jobId}
+verify_jwt = true
+
+[functions.fn-integrations]
+# OAuth + tick des integrations. Deux appelants : l'app (JWT utilisateur) et
+# le tick cron (service_role, qui est un JWT valide) -> true couvre les deux.
+verify_jwt = true
+
+[functions.fn-skills]
+# Lit les skill_states de l'utilisateur. Identite depuis le Bearer, jamais
+# depuis le corps de la requete.
+verify_jwt = true
+
+# --- APPELANTS SYSTEME (cron / triggers) ----------------------------------
+[functions.fn-job-dispatcher]
+# L'UNIQUE dispatcher (01 §5.2). Appele par pg_cron/pg_net et par le trigger
+# NOTIFY (migration 0010) : ces appelants presentent la service_role key, qui
+# EST un JWT -> verify_jwt = true reste tenable et garde la fonction fermee.
+verify_jwt = true
+
+[functions.fn-notifications]
+# Declenche par evenement -> OneSignal (quiet-hours aware). Meme raisonnement :
+# l'appelant est le dispatcher (service_role), donc un JWT.
+verify_jwt = true

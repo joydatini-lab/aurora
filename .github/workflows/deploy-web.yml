@@ -1,0 +1,205 @@
+# Aurora — Deploiement WEB (pivot web-only 2026-10-28, W2)
+#
+# Remplace la chaine APK comme chemin de livraison Phase 1 : l'artefact est
+# `apps/web/dist` (coquille web + moteur @powersync/web), produit par
+# `pnpm -F @aurora/web build`.
+#
+# Ce workflow a TROIS responsabilites, volontairement separees :
+#
+#   1. gate (build-web)      : typecheck + build + budget bundle, sur chaque PR
+#                              et sur main. Il ne deploie rien.
+#   2. deploy (deploy-web)   : publie sur Render, UNIQUEMENT si
+#                              `vars.WEB_DEPLOY_ENABLED == 'true'` ET si le
+#                              secret `RENDER_DEPLOY_HOOK_URL` existe. Sans ces
+#                              deux elements le job est saute (pas d'echec) :
+#                              le repo reste utilisable sans compte provider.
+#   3. rollback (documente)  : voir la section « ROLLBACK » en fin de fichier.
+#
+# POURQUOI PAS `if: false` COMME release.yml : le gate doit tourner en continu
+# (c'est lui qui protege main), seul le DEPLOIEMENT est conditionnel. Le
+# garde-fou est donc une variable de repo, pas un `false` en dur — on peut
+# activer la prod sans modifier ce fichier.
+#
+# ISOLATION CROSS-ORIGIN : `@powersync/web` (WASQLite) exige SharedArrayBuffer,
+# donc COOP `same-origin` + COEP `require-corp` DOIVENT etre servis par l'hote
+# (voir apps/web/public/_headers et render.yaml). Ce workflow ne peut pas les
+# poser lui-meme : c'est une propriete de l'hebergeur. Un deploiement sans ces
+# en-tetes « reussit » mais l'app perd sa base locale — d'ou le smoke check
+# ci-dessous, qui echoue si les en-tetes manquent en prod.
+
+name: Deploy Web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'apps/mobile/src/**' # ecrans partages via l'alias @app
+      - 'packages/**'
+      - 'scripts/check-web-bundle-budget.mjs'
+      - '.github/workflows/deploy-web.yml'
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'apps/mobile/src/**'
+      - 'packages/**'
+      - 'scripts/check-web-bundle-budget.mjs'
+      - '.github/workflows/deploy-web.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PNPM_VERSION: "10.28.0"
+  NODE_VERSION: "22"
+
+jobs:
+  # ------------------------------------------------------------------
+  # 1. Gate : ce qui doit etre vrai avant toute publication
+  # ------------------------------------------------------------------
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Typecheck (monorepo)
+        run: pnpm typecheck
+
+      - name: Lint (monorepo)
+        run: pnpm lint
+
+      - name: Boundary greps (G1-G4)
+        run: sh scripts/check-boundaries.sh
+
+      - name: Tests (unitaires + wiring)
+        run: pnpm test
+
+      - name: Build web (apps/web)
+        # AD-3 : uniquement des valeurs PUBLISHABLE. Le build echoue si une
+        # variable manque, plutot que de livrer une coquille inutilisable.
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_POWERSYNC_URL: ${{ secrets.VITE_POWERSYNC_URL }}
+        run: pnpm -F @aurora/web build
+
+      - name: Budget bundle (02 §9.1 — initial JS gzip <= 300 Ko)
+        run: node scripts/check-web-bundle-budget.mjs --dist apps/web/dist
+
+      - name: Verifier les invariants de la coquille
+        # Ce que l'hebergeur doit servir est verifie AVANT publication :
+        # SPA fallback + en-tetes d'isolation + manifeste PWA + service worker.
+        run: |
+          set -euo pipefail
+          fail=0
+          check() { if [ -e "apps/web/dist/$2" ]; then echo "  OK   $1"; else echo "  MANQUE $1 ($2)"; fail=1; fi; }
+          check "index.html"                   "index.html"
+          check "manifeste PWA"                "manifest.webmanifest"
+          check "service worker"               "sw.js"
+          check "regles SPA (_redirects)"      "_redirects"
+          check "en-tetes d'hote (_headers)"   "_headers"
+          grep -q 'Cross-Origin-Embedder-Policy' apps/web/public/_headers \
+            || { echo "  MANQUE COEP dans public/_headers"; fail=1; }
+          grep -q 'Cross-Origin-Opener-Policy' apps/web/public/_headers \
+            || { echo "  MANQUE COOP dans public/_headers"; fail=1; }
+          exit $fail
+
+      - name: Upload du bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: aurora-web-dist
+          path: apps/web/dist
+          retention-days: 14
+
+  # ------------------------------------------------------------------
+  # 2. Deploiement (Render static site)
+  # ------------------------------------------------------------------
+  deploy-web:
+    runs-on: ubuntu-latest
+    needs: [build-web]
+    if: >-
+      github.event_name != 'pull_request'
+      && github.ref == 'refs/heads/main'
+      && vars.WEB_DEPLOY_ENABLED == 'true'
+    environment:
+      name: production
+      url: ${{ vars.WEB_PUBLIC_URL }}
+    steps:
+      - name: Verifier que le deploiement est configure
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::WEB_DEPLOY_ENABLED=true mais RENDER_DEPLOY_HOOK_URL est absent des secrets."
+            exit 1
+          fi
+
+      - name: Declencher le deploiement Render
+        # Le hook deploie le HEAD de la branche configuree dans render.yaml.
+        # On l'appelle apres le gate : Render reconstruit, mais on veut savoir
+        # AVANT que le build est vert (sinon le site tombe pour tout le monde).
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl --fail --silent --show-error --request POST "$HOOK"
+
+      - name: Smoke check — isolation cross-origin active en production
+        # Un deploiement qui perd COOP/COEP « reussit » et casse l'offline-first
+        # en silence. On verifie donc ce que l'hote sert reellement.
+        env:
+          URL: ${{ vars.WEB_PUBLIC_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$URL" ]; then
+            echo "::error::WEB_PUBLIC_URL (variable de repo) est absent — impossible de verifier la prod."
+            exit 1
+          fi
+          # Render propage les en-tetes a chaud : on laisse 90 s au deploiement.
+          for i in $(seq 1 18); do
+            headers=$(curl --silent --show-error --head "$URL/" || true)
+            if echo "$headers" | grep -qi 'cross-origin-embedder-policy: *require-corp' \
+              && echo "$headers" | grep -qi 'cross-origin-opener-policy: *same-origin'; then
+              echo "OK — COOP/COEP servis, SharedArrayBuffer disponible."
+              exit 0
+            fi
+            echo "attente de la propagation ($i/18)..."
+            sleep 5
+          done
+          echo "::error::COOP/COEP absents apres 90 s — sans eux @powersync/web perd sa base locale (AD-7)."
+          exit 1
+
+# ====================================================================
+# ROLLBACK
+# ====================================================================
+#
+# Deux chemins, dans cet ordre de preference :
+#
+# 1. Revert (AD-13 — « 1 story = 1 commit = 1 rollback ») :
+#      git revert <sha> && git push origin main
+#    Le push repasse le gate complet puis redeploie. C'est le chemin trace :
+#    l'historique raconte le retrait, pas seulement le retour a l'etat.
+#
+# 2. Render — « Rollback to this deploy » (une action, immediat) :
+#    Dashboard Render > service aurora-web > Deploys > choisir le dernier
+#    deploiement sain > Rollback. A utiliser quand la prod est cassee et que
+#    le revert ne peut pas attendre un cycle de CI complet. A noter ensuite
+#    dans docs/release/changelog.md, sinon l'etat de prod diverge de main.
+#
+# Le rollback Render ne passe PAS par ce workflow : c'est volontaire. En
+# incident, rien ne doit dependre d'un runner GitHub disponible.

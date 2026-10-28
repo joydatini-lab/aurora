@@ -1,5 +1,196 @@
 # WDS Progress — Claude (main loop)
 
+---
+
+## 🔒 PRISE EN CHARGE — agent Arena · 2026-10-28 · PIVOT WEB
+
+> **Lu ton registre avant d'écrire** (règle du repo : on ne duplique pas un travail).
+> J'ai pris **une** tâche, elle est isolée, et elle **ne recoupe aucun** de tes deux items
+> encore ouverts dans `## Plan / Next` (Canvas wave 2 · RLS live positif). Tu peux
+> continuer sans collision.
+
+### 1. Décision produit qui change la cible (à intégrer partout)
+
+**La voie mobile (Android/Capacitor) est abandonnée — la cible est le WEB.**
+Décision de Joy, 2026-10-28. Conséquences pour ton travail :
+
+- **Ton déploiement Render reste valide mais change de dossier** : il publie
+  aujourd'hui `apps/mobile/dist` ; la cible devient `apps/web/dist` (voir §5).
+- Toute doc qui dit « Phase 1 mobile-only / Android » est désormais **périmée**
+  (04-mobile, ADR §24, une partie de `AI_RULES.md` §3-4). Je ne les ai pas
+  réécrites : c'est un chantier doc séparé, à ne pas faire à moitié.
+- Le code natif n'est **pas supprimé** : `apps/mobile`, `packages/platform`, DPC,
+  updater APK restent en place, simplement hors du bundle web.
+
+### 2. La tâche que je prends (et que je termine)
+
+| | |
+|---|---|
+| **Nature** | Analyse complète du dépôt + exécution du pivot web (sprints W0/W1) |
+| **Branche** | `arena/fa2fed09-aurora` (jamais `main`) |
+| **Statut** | W0 ✅ · W1 ✅ · **W2 ✅** — reste 2 actions hors agent (rotation des comptes, bascule Render) : voir §6 |
+| **Rapports** | `docs/analysis/analyse-projet-aurora-2026-10-28.md` (diagnostic) · `docs/analysis/voie-web-2026-10-28.md` (pivot + journal d'exécution §9) |
+
+### 3. ⚠️ Incident sécurité à connaître (corrigé, mais action de ton côté)
+
+**a) `fn-dev-auth` était une backdoor admin ouverte.** Aucune auth, `CORS: *`,
+service_role derrière : `list-users` (tous les emails), `set-password` (reset du
+mot de passe de **n'importe quel** user), `recreate`, `test-signin`.
+→ Corrigée **fail-closed** : 404 si `DEV_AUTH_ENABLED != true`, puis 401 si
+`x-aurora-internal` ≠ `INTERNAL_FN_SECRET` (comparaison temps constant), CORS en
+allowlist. **Si tu la redéploies, provisionne les 2 env vars, sinon elle renvoie 404
+(c'est voulu).**
+
+**b) Identifiants dev en clair** (`dev.aurora@…` + mots de passe) étaient dans
+`apps/mobile/src/pages/login/index.tsx` **et** dans `docs/plans/finalisation-v1.md`,
+avec les UUID live. → Purger du code (73 lignes), caviardé dans la doc.
+**⏳ Reste à faire par toi/Joy : ROTATION des 2 comptes Supabase** (ils sont
+compromis par construction — un secret écrit dans un dépôt l'est pour toujours).
+
+**c) Le gate G2 était aveugle sur (b)** et rouge en permanence sur des faux positifs
+(`sk-progress`, `sk-capacite-portante`) → un gate toujours rouge n'est plus lu.
+→ Réécrit : prefixes de clé ≥ 20 car., **détection de la forme `'email': 'secret'`**,
+URL `*.supabase.co`, mots de passe littéraux. Vérifié par sonde (vert sur arbre
+propre, **rouge sur la fuite réelle**). Ton entrée du 09/23 sur l'exclusion
+`0021_lots/*` reste valable et n'a pas été touchée.
+
+### 4. Fichiers que j'ai modifiés — **ne pas éditer en parallèle**
+
+```
+supabase/functions/fn-dev-auth/index.ts      (fail-closed + secret interne)
+scripts/check-boundaries.sh                  (G2 réécrit)
+apps/mobile/src/pages/login/index.tsx        (purge dev-auth, -73 lignes)
+apps/mobile/src/updater/apkUpdater.ts        (n'importe plus @capacitor/preferences)
+apps/mobile/src/updater/preferences.ts       (NOUVEAU — primitive de stockage isolée)
+apps/mobile/src/lib/boot-data.ts             (moteur INJECTÉ, plus d'import plateforme)
+apps/mobile/src/main.tsx                     (passe CapacitorPowerSyncDatabase)
+apps/mobile/src/styles/auth.css              (commentaire obsolète)
+packages/platform/package.json               (+ @capacitor/core — le manquant)
+packages/data/src/powersync-client.ts        (ctor requis, import vendor retiré)
+packages/data/src/index.ts                   (export du type PowerSyncDatabaseCtor)
+packages/data/src/powersync-engine-{capacitor,web}.ts  (NOUVEAUX — un par cible)
+packages/data/package.json                   (subpath exports des 2 moteurs)
+packages/data/test/powersync-roundtrip.test.ts
+docs/plans/finalisation-v1.md                (secrets caviardés)
+pnpm-lock.yaml                               (+ @capacitor/preferences, @capacitor/core)
+apps/web/**                                  (NOUVEAU — la coquille web)
+docs/analysis/*2026-10-28*.md                (NOUVEAUX — mes 2 rapports)
+```
+
+**Non touché (ton périmètre reste intact) :** `packages/discovery`, `packages/progress`,
+`packages/learning`, `packages/agent`, `packages/ui`, `fn-canvas`, `fn-notifications`,
+`apps/mobile/src/styles/*` (hors auth.css), les migrations.
+
+### 5. Ce que j'ai construit : `apps/web`
+
+Coquille web **propre** (choix option B validé par Joy), pas un fork des écrans :
+les 38 routes et les 45 écrans sont **partagés** via l'alias Vite/TS `@app` →
+`apps/mobile/src`. **Une seule copie du code produit** — le jour où `pages/ query/
+`ux/ lib/ state/` déménagent dans `packages/app-core`, seul l'alias change.
+
+- **Router** : `createBrowserRouter` (le projet utilisait déjà `react-router-dom`,
+  jamais Ionic pour le routage → rien à réécrire).
+- **Shell** : `apps/web/src/shell/WebShell.tsx` — rail vertical ≥ 900 px, barre
+  basse en dessous ; `<AgentBus />` monté une fois ; pas d'updater, pas de DPC.
+- **Moteur de données** : `@powersync/web` (WASQLite) au lieu de
+  `@powersync/capacitor`. **C'était le vrai bug de fond** : le seam d'injection
+  existait mais n'était jamais câblé, donc un build navigateur n'avait **pas de
+  SQLite local** → AD-7 (offline-first) cassé silencieusement.
+- **PWA** : `manifest.webmanifest` + `sw.js` (navigation réseau-d'abord avec repli
+  coquille, assets cache-first, **API jamais cachée** : une seule vérité locale, pas
+  une copie HTTP périmée). Icônes 192/512 générées depuis `assets/` (pas de logo
+  redessiné — §9 `ui-libraries`).
+- **Hébergement** : `public/_redirects` (SPA fallback `/* → /index.html 200`) et
+  `public/_headers` avec **COOP `same-origin` + COEP `require-corp`** —
+  **sans ces 2 en-têtes WASQLite n'a pas `SharedArrayBuffer`** et l'offline tombe.
+
+**→ Pour ton service Render : `publishPath` = `apps/web/dist`, build =
+`pnpm --filter @aurora/web build`. Garde `NODE_OPTIONS=--max-old-space-size=4096`,
+le build web est plus lourd que l'ancien (17 036 modules).**
+
+### 6. W2 — fait (ne pas refaire), et ce qui reste vraiment
+
+**Fait le 2026-10-28 (fin de W2) :**
+
+- [x] `tsconfig` : **tranché** — projet *plat par package*, aucune project-reference,
+      `composite/declaration/incremental: false`, `noEmit: true`. `pnpm typecheck`
+      couvre désormais **24/24** projets (les 8 manquants sont ajoutés par la récursion,
+      le `tsconfig.json` racine ne porte plus de `references`). Gate = `tsc --noEmit`.
+- [x] `pnpm lint` **démarre et passe** : `eslint-plugin-storybook` **et**
+      `eslint-plugin-react-hooks` installés à la racine. 15/15 packages à
+      `--max-warnings 0`.
+- [x] Blocs `files:` de `eslint.config.js` étendus : règles de frontière appliquées
+      à `.ts` **et** `.tsx`. AD-10 ne mord plus sur `./motion` (`patterns` gitignore →
+      `paths` exacts).
+- [x] `packages/ui` : **102 problèmes → 0**. Dont 3 vrais bugs (voir plus bas).
+- [x] `apps/mobile` : 6 violations des règles des Hooks corrigées ; `apps/web` **ajouté**
+      au lint (il n'était couvert par rien).
+- [x] `deploy-web.yml` : gate → deploy Render (gated par `vars.WEB_DEPLOY_ENABLED`) →
+      smoke check **COOP/COEP en prod** → rollback documenté (revert AD-13 + rollback Render).
+- [x] `release.yml` : le job APK est remplacé par un **build web réel**
+      (`pnpm -F @aurora/web build` + budget + artefact).
+      `release-apk.yml` : plus de trigger sur `v*` (`workflow_dispatch` seulement, bandeau
+      « DÉSACTIVÉ »), fichier conservé pour sa procédure de signature.
+- [x] `supabase/config.toml` : 5 blocs en underscores → **8 en tirets** (les noms des
+      dossiers), `verify_jwt` **explicite partout**, `false` **uniquement** pour
+      `fn-dev-auth` (justifié sur place). Test de garde : `supabase/functions/_shared/config.test.ts`
+      (4 tests, branché dans `ci.yml`).
+- [x] Playwright : **5 parcours, 36 tests, 2 profils** (`apps/web/e2e/`). Écrits et
+      parsés (`--list` OK) ; **non exécutés** ici (CDN Playwright hors réseau →
+      `.github/workflows/e2e-web.yml`).
+- [x] Budget bundle : `scripts/check-web-bundle-budget.mjs`. Le SLO n'est **pas réinventé** :
+      il lit `PERF_BUDGETS.jsGzBytes` (300 Ko, 02 §9.1) depuis `apps/mobile/src/perf/budgets.ts`.
+
+**Reste (bloqué, à faire hors agent) :**
+
+- [ ] **Rotation des 2 comptes Supabase dev** — priorité sécurité, cf. §3b.
+- [ ] Service Render existant : basculer le `publishDir` de `apps/mobile/dist` à
+      `apps/web/dist` (et poser `Cross-Origin-Opener-Policy: same-origin` +
+      `Cross-Origin-Embedder-Policy: require-corp`). Le blueprint `render.yaml`
+      contient déjà le service `aurora-web` correctement configuré.
+- [ ] Poser `WEB_DEPLOY_ENABLED=true`, `WEB_PUBLIC_URL`, `RENDER_DEPLOY_HOOK_URL`
+      et les 3 `VITE_*` (voir `docs/analysis/voie-web-2026-10-28.md` §9.5).
+- [ ] Premier run CI : c'est **lui** qui mesurera le bundle et exécutera les 5 parcours.
+      Si le budget déborde, réduire l'entrée avant d'ajouter du lazy-loading partout.
+
+**Les 3 bugs que le lint a sortis (aucun n'était visible au typecheck) :**
+
+1. `OnboardingView.tsx:1112` — `{(authTab === "signup" || true) && …}` : **toujours vrai**,
+   le bloc OAuth s'affiche aussi en mode connexion. Comportement **préservé** +
+   désactivation justifiée : arbitrage produit, pas arbitrage lint.
+2. `components/ui/combobox.tsx` — `@ts-nocheck` masquait un `forwardRef` sur
+   `Popover.Root` (aucun nœud DOM, pas de prop `ref`). `@ts-nocheck` retiré, fichier
+   re-typechecké.
+3. `knowledge/learn/tasks` — `knowledgeFlags()` / `emptyFlags()` / `taskFlags()` appelaient
+   des Hooks depuis des fonctions minuscules → renommées `use*`.
+
+### 7. État vérifié au 2026-10-28 (reproductible)
+
+```
+pnpm typecheck ................................... 24/24 projets, exit 0
+pnpm lint ........................................ 15/15 packages, exit 0
+                                                   (--max-warnings 0 partout)
+pnpm test ........................................ 661 + 48 (vitest ui) = 709 pass
+                                                   0 fail
+supabase/config.toml (garde) ..................... 4 pass / 0 fail
+scripts/check-boundaries.sh ...................... G1-G4 OK
+apps/web  tsc --noEmit ........................... 0 erreur (src + e2e + configs)
+playwright test --list ........................... 36 tests / 5 fichiers / 2 profils
+graphe d'imports web ............................. 92 fichiers, 0 module natif
+                                   (@capacitor/preferences et @powersync/capacitor absents)
+vite build ....................................... OOM à 17 036 modules ici
+                                                   -> mesuré par deploy-web.yml (runner)
+```
+
+### 8. Ce que j'ai appris en te lisant (utile pour la suite)
+
+- Ton entrée Render est la plus précieuse du registre : elle documente que
+  `NODE_OPTIONS` doit être une **variable d'env du service** et pas un préfixe de
+  commande — je l'ai vérifié, `vite build` OOM dès ~2 Go sur un bundle plein.
+- Ton garde-fou « vérifier les claims de synthèse par un adversaire » s'est encore
+  vérifié : `AI_RULES.md` §1 se proclame source de vérité et dérive sur **7 points**
+  mesurables (24 vs 28 migrations, 6 vs 9 Edge Functions, 236 vs 682 tests,...).
+
 ## Context
 - Projet : Aurora (monorepo pnpm, Capacitor/Ionic React mobile app, Supabase + PowerSync)
 - Travail de session :
@@ -157,6 +348,14 @@
      (commit `6e8e8cc`).
 
 ## Plan / Next
+
+### ⚠️ Hérité de la prise en charge Arena (2026-10-28) — voir la section en tête
+- [ ] **W2 pivot web** : `tsconfig` (trancher `-b` vs `--noEmit` + 8 projets manquants) ·
+     `eslint-plugin-storybook` au root (le lint ne démarre pas) · règles `.tsx` ·
+     `deploy-web.yml` + retrait du job APK · `verify_jwt` par EF · Playwright · budget bundle.
+- [ ] **Render** : basculer `publishPath` de `apps/mobile/dist` → **`apps/web/dist`**
+     et le build de `--filter @aurora/mobile` → **`--filter @aurora/web`**.
+- [ ] **Rotation des 2 comptes dev Supabase** (secrets exposés puis purgés, mais compromise).
 - [ ] **Canvas wave 2** : extension `@tiptap/markdown` pour une vraie ré-sérialisation
      JSON→markdown idempotente (le fallback actuel garde le dernier markdown connu) ; e2e
      Cypress sur l'app live pour valider le flow canvas → indexation → agent.

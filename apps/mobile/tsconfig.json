@@ -2,7 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
+    /* rootDir retire le 2026-10-28 : en programme PLAT (noEmit), il
+       rejetait chaque source de packages/* (TS6059 x231). Il ne
+       servait qu'au mode emit, abandonne. */
     "jsx": "react-jsx",
     /**
      * Sibling packages (focus / goal-engine / platform) typecheck with
@@ -34,7 +36,11 @@
        and never the lagging build artifact. */
     "baseUrl": ".",
     "paths": {
-      "@aurora/ui": ["../../packages/ui/src/index.ts"]
+      "@aurora/ui": ["../../packages/ui/src/index.ts"],
+      /* packages/ui importe ses propres helpers en absolu (`src/lib/utils`),
+         resolu chez lui par son tsconfig.paths.json. Sans ce mapping, tout
+         programme qui l'inclut remonte 273 TS2307 (verifie 2026-10-28). */
+      "src/*": ["../../packages/ui/src/*"]
     }
   },
   "include": [
@@ -49,28 +55,5 @@
   ],
   "exclude": [
     "dist"
-  ],
-  "references": [
-    {
-      "path": "../../packages/domain"
-    },
-    {
-      "path": "../../packages/data"
-    },
-    {
-      "path": "../../packages/ui"
-    },
-    {
-      "path": "../../packages/platform"
-    },
-    {
-      "path": "../../packages/agent"
-    },
-    {
-      "path": "../../packages/focus"
-    },
-    {
-      "path": "../../packages/goal-engine"
-    }
   ]
 }
