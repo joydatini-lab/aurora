@@ -235,3 +235,148 @@ La matrice = **lecture locale 100 %** (AD-7) : au kill système, le relaunch **p
 | **OQ-10** | `eisenhower` | SSoT manquante (§3 « dense 48 px off par défaut » + §11 annonce `aria-live` du re-ordonnancement) | Deux lignes du doc reposaient sur une référence factice : (1) §3 ligne « Ligne tâche » — le pattern « WDS 05.3 pattern dense 48 px **option** off par défaut » **n'existe pas dans la SSoT** (05 §3.3 l. 513-529 fixe le `ListItem` dense ; le comportement « 48 px option off par défaut » n'est nulle part) ; (2) §11 `aria-live` — le « pattern OQ-49 kanban.md l. 148 » cité est **factice** (le registre OQ de kanban.md s'arrête à OQ-14 ; aucune annonce `aria-live` de re-ordonnancement dans le SSoT, 05 §6.3 n'impose pas de `aria-live` sur les quadrants) | (a) Libellé/règle « dense 48 px option » à trancher par la DS team (pattern : densité par zone, 05 §3.3 l. 513-529) (b) Annonce `aria-live` du changement de quadrant : à trancher par la DS team (05 §6.3 l. 3327-3335 ; pattern WCAG annonce de réordonnancement) — SSoT à compléter | Design System team | 05 §3.3 l. 513-529 (dense `ListItem`) ; 05 §6.3 l. 3327-3335 (aria-labels, pas de `aria-live` quadrants) ; WDS 05.3 (pattern muet sur la densité) |
 | **OQ-11** | `eisenhower` | CTA secondaire 404 / feature-disabled (« Consulter l'écran parent », §6.1 l. 202) | La SSoT (§6.1 l. 202) liste le CTA secondaire comme **optionnel** ; le parent de la matrice n'est pas tranché (OQ-2 : onglet projet **ou** `/tasks`) → le libellé exact et l'inclusion du CTA secondaire de l'état 404 **ne sont pas dans le SSoT** (not-found.tsx ne porte que le CTA primaire « Retour à l'accueil ») | (a) Inclusion + libellé à trancher par la DS team (parent = `/tasks` si OQ-2 = (b), parent = `/projects/:id` si OQ-2 = (a)) (b) SSoT à compléter (CTA secondaire optionnel par écran) | Design System team / 05 owner | ui-libraries §6.1 l. 202 (CTA secondaire « optionnel ») ; `apps/mobile/src/pages/not-found/index.tsx` l. 20 ; OQ-2 |
 | **OQ-12** | `eisenhower` | La bannière killed « Reconnexion… » (05 §3.7 l. 1290-1301) peut-elle exposer le logo monochrome, même en offline/killed ? | §12 (AD-7/AD-12) précise que l'état d'agent (contexte kernel) est **server-only** (AD-12 : jamais mirroré, AD-3) — aucun SSoT ne règle la présence du **logo** sur la bannière killed/offline (OQ-7 = le tranché global, cf. OQ-8 kanban.md) ; le §9.1 l. 383 dit « Killed = monochrome » sans assigner de logo à la bannière | (a) Bannière sans logo (texte « Reconnexion… » seul) (b) Logo monochrome `vs_monochrome_en_svg.svg` (stripped, §9.2 l. 407-418) | Design System team | 05 §3.7 l. 1290-1301 ; §9.1 l. 383 ; §9.2 ; OQ-7 ; OQ-8 kanban.md |
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Tableau de bord** (`docs/frontend/web-shell-and-responsive.md` §2.3 —
+la grille de quadrants est un conteneur de cartes, pas un split liste+détail ;
+l'écran hérite du gabarit du parent `/tasks`, dont il est une vue `ui-state`).
+
+L'écran réel est `EisenhowerView` (`apps/mobile/src/pages/tasks/views/EisenhowerView.tsx`,
+546 lignes), **empoté** dans `TasksPage` (`apps/mobile/src/pages/tasks/index.tsx` l. 459 :
+`<EisenhowerView tasks={list} />`) derrière le switch `taskView` l. 62
+(`['eisenhower', 'Quadrants']`). Le shell web (`apps/web-app`) **ne rend pas
+encore** cet écran : la section `organiser` (`navigation.ts` l. 109-116) porte
+`readiness: 'shell'`.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : grille 2×2 de quadrants empilés (chaque quadrant = titre + `ListItem` compacts ≥ 44 px) | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | grille 2×2 conservée + rail d'icônes | rail (`navFormForMode` → `rail`) | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** (nav + contenu) ; la grille 2×2 s'élargit (quadrants côte à côte) | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°1** : l'écran ne teste jamais la largeur lui-même — il déclare son
+gabarit, le shell applique l'arrangement. La matrice reste un **`ui-state`** du
+tab `/tasks` (`taskView='eisenhower'`, persistant par tab, pack 02 §3.2) — jamais
+une route distincte (`_inventory.md` l. 189 : « T4 vue interne »).
+
+> **OQ-50** — le seuil exact de bascule 1 → 2 panneaux (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` l. 21) |
+| R2 | Ligne de catalogue | ✅ | `productivity.eisenhower` (`master-feature-catalog.md` L20 : « quadrant view + agent-assisted explainable prioritization (ADR §2.3) ; `quadrantOf`/`prioritizationSuggestion` domain fns ; UI = quadrant screen **additive to 05 inventory (G-L5)** ; activation: feature registry (G-M7) ; DESIGNED_ONLY + NEEDS_DECISION (screen) ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Task` + `TaskStatus` (`entities-productivity.ts` l. 8/10) — la matrice est une **projection calculée**, aucune table neuve |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4(a) |
+| R6 | États §6.1 couverts | ✅ | §4(b) + §4(c) 404 |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 93 ; catalog L20) |
+| R8 | Événements déclarés | ✅ **aucun émis** | `applySuggestion` retourne une commande `tasks` (`eisenhower.ts:217`), aucun `event` — cohérent avec `events.ts` |
+| R9 | Permissions déclarées | ✅ | aucune (la matrice ne demande rien) |
+| R10 | Entrée de nav déclarée | ✅ | vue `ui-state` sous `/tasks` (`taskView='eisenhower'`, `tasks/index.tsx` l. 62) — **pas** une route (`_inventory.md` l. 189) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | la vue **redéfinit sa propre** règle de quadrant (`EisenhowerView.tsx:88-94` — « important » = `priority >= 4`, « urgent » = présence d'échéance) **au lieu d'importer `quadrantOf`** du domaine : `grep -rn "quadrantOf" apps/mobile/src/` → aucun résultat (`productivity.eisenhower.md` §M4). Deux sources de vérité pour un même mot (décision AD-15 requise) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-1 (ratification de l'écran additif, G-L5), OQ-2 (parent/route), OQ-4 (composant `ListItem`) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12**
+(duplication de logique — la vue n'importe pas `quadrantOf` du domaine,
+`productivity.eisenhower.md` §M4) et **R13** (OQ-1 : l'écran additif n'est pas
+ratifié au périmètre v1).
+
+**Demande de contrat (plan §4)** — pour l'alignement de la règle de quadrant :
+
+```
+WS:        WS-3c (specs d'écran — Productivity)
+Chemin:    docs/features/specs/productivity.eisenhower.md  ·  packages/productivity/src/eisenhower.ts
+Besoin:    la décision AD-15 d'aligner `EisenhowerView` sur `quadrantOf` du domaine
+           (aujourd'hui la vue porte sa propre règle divergente : `priority >= 4` vs
+           `importance` + bandes d'urgence 48 h / `blocked`)
+Motif:     la spec de module §M4 documente la duplication de logique ; deux sources
+           de vérité pour « important » et « urgent »
+Bloque:    oui — sans alignement, la matrice peut classer une tâche différemment du domaine
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la matrice lit le store local `tasks` (AD-7) ; **interdit** : `state={{status:'empty'}}` figé |
+| S2 | 6 états prouvés | §4(a) — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4(c) — pattern global, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : matrice + suggestions **locales** OK ; seul le scan d'impact **serveur** (non implémenté) est indisponible |
+| S5 | Retour arrière vérifié | relance froide → matrice recalculée depuis le miroir (jamais d'écran blanc, AD-7) |
+| S6 | Isolation utilisateur | RLS sur `tasks` (`0002:174-202`, policy `tasks_user_isolation`) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `quadrantOf` (overdue→Q1, futur→Q2, non important→Q3) et `quadrantBoard` (exclut `done`/`cancelled`) corrects ? | Vitest ≥ 80 % ; `productivity.test.ts` « eisenhower: quadrant derivation » (l. 96) |
+| Intégration | ✅ | vue PowerSync `tasks` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | `prioritizationSuggestion` porte le signal `overdue` + `requiresConfirmation: true` ; `applySuggestion` retourne une commande `tasks` | `productivity.test.ts` « eisenhower: explainable suggestions + confirmed apply » (l. 114) |
+| E2E | ✅ | « ouvrir les quadrants → appliquer une suggestion » ? | Playwright web |
+| Failure | ✅ | suggestion refusée / sync échoué → état `error` + retry ? | test failure |
+| Permission | ⚠️ | aucune sur la matrice → n/a justifié | — |
+| Offline | ✅ | réseau coupé → matrice + suggestions locales OK ? | test offline |
+| Recovery | ✅ | relance froide → matrice intacte ? | test recovery |
+| Plateforme | ⏳ | budgets perf (grille 2×2, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.eisenhower` | ≥ 1 test par classe applicable | ✅ partiel — `productivity.test.ts` « eisenhower: quadrant derivation » (l. 96) + « explainable suggestions + confirmed apply » (l. 114) |
+| Région « grille de quadrants » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `eisenhower` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Tasks.stories.tsx` couvre `EisenhowerMatrix`, **pas** la vue `EisenhowerView` de l'écran |
+| Écran `eisenhower` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (règle de quadrant dupliquée) + OQ-1 (ratification)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-50** — Seuil de bascule 1 → 2 panneaux (§15) : `lg` (1024 px) confirmé ?
+  (cf. OQ-4 globale)
+- **OQ-51** — **Écart code ↔ domaine** : `EisenhowerView` porte sa **propre** règle
+  de quadrant (`EisenhowerView.tsx:88-94`) au lieu d'importer `quadrantOf`
+  (`packages/productivity/src/eisenhower.ts:70`). Le domaine utilise `importance` +
+  bandes d'urgence (48 h, `blocked`) ; la vue utilise `priority >= 4` + présence
+  d'échéance. → **OQ** : aligner la vue sur le domaine (décision AD-15, cf.
+  `productivity.eisenhower.md` ME-1) ?
+- **OQ-52** — La vue `EisenhowerView` **n'est pas** une story testée : seule
+  `EisenhowerMatrix` (le composite `@aurora/ui`) l'est. → **OQ** : quel composant
+  porte le contrat de rendu (le composite vs la vue d'écran) ?
