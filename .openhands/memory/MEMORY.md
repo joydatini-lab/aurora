@@ -366,3 +366,45 @@ d'écran, mergées dans `rebaseline/2026-10-23`.
   navigateur est la première du dépôt qui mesure réellement.
 - **Cache Playwright purge souvent** (`~/.cache/ms-playwright` disparaît) : réinstaller via
   `packages/ui/node_modules/.bin/playwright install chromium` (`npx playwright` échoue : `not found`).
+
+## VÉRIFICATION LIVE SUPABASE (2026-10-28) — le déblocage majeur
+- **Les outils Supabase MCP sont branchés sur la PRODUCTION** : `shttp_get_project_url` →
+  `https://opagfyspdbhxthlxvlrk.supabase.co`. C'est LE projet live du dépôt. Beaucoup de
+  « bloqué faute de creds » (RLS live, schéma live, drift) n'était en fait pas bloqué du tout :
+  il fallait juste vérifier que les outils étaient disponibles. **Toujours tester les outils
+  avant de déclarer un blocage.**
+- **Simuler un utilisateur RLS sans credential** : `set role authenticated;` (le rôle `postgres`
+  des outils a `BYPASSRLS=true`, il faut donc changer de rôle) puis
+  `set request.jwt.claim.sub = '<uuid>';` — c'est EXACTEMENT ce que lit `auth.uid()` (définition
+  mesurée : `coalesce(nullif(current_setting('request.jwt.claim.sub',true),''), ...)`).
+  Le client MCP **n'accepte qu'un seul statement** → mettre `SET` avant et le `SELECT` en DERNIER
+  (seul le dernier résultat revient).
+- **L'outil MCP est en autocommit** : pas de transaction à annuler. Pour un test propre :
+  `INSERT` de lignes MARQUÉES (préfixe reconnaissable), mesures, puis `DELETE`. Vérifier ensuite
+  0 ligne restante. La prod de ce projet a 0 ligne métier (tables vides) → risque nul.
+- **Preuve RLS live obtenue** : `FORCE RLS=true` sur tasks/projects/agent_runs/canvas_sessions ;
+  A voit 1/2 lignes, 0 de B, symétrique ; `INSERT` croisé → `42501` ; `UPDATE` croisé → 0 ligne.
+- **DRIFT PRODUCTION trouvé et fermé** : la prod était à `0030` ; **`0031` était appliquée**
+  (`user_context` = 11 col) mais **`0032_fix_phantom_columns.sql` NON** (`tasks.tags`/`recurrence_rule`
+  absentes). Or 0032 corrige une **perte de données SILENCIEUSE** : `createTask` écrit `tags`, la Map
+  du bridge accepte la clé inconnue, l'écran l'affiche, mais le PATCH échoue → la donnée n'existe
+  jamais côté serveur. Appliquée via `shttp_apply_migration` (nom `fix_phantom_columns`) ;
+  vérifié : `tasks.tags`+`recurrence_rule`, `projects.view_mode` + CHECK, `artifacts_kind_check`
+  élargi, `applied_count` 31→32. **`schema_migrations` est le tracker** : `apply_migration` y écrit.
+
+## Docker & le harnais RLS (2026-10-28)
+- **Docker marche dans ce sandbox** : `sudo dockerd > /tmp/docker.log 2>&1 &`, puis utiliser
+  **`sudo docker`** (le CLI sans sudo échoue sur les permissions du socket, alors que le daemon
+  tourne — `docker info` ment sur l'état réel).
+- **`scripts/rls-live-check.sh` n'avait JAMAIS tourné** (gate manuel, absent de `ci.yml`). Deux
+  fixtures manquaient, imputables au HARNAIS, pas aux migrations :
+  (1) **`auth.identities`** — GoTrue la crée au RUNTIME, l'image ne l'a pas ; `0029` y attache un
+  trigger → rejeu mourrait à `0029` ; (2) **`auth.users`** — l'image a un GoTrue PLUS ANCIEN
+  (21 col, `confirmed_at`) que le live (37 col, `email_confirmed_at`) → le trigger de `0029` échoue.
+  Correctif : réaligner le fixture sur la forme **MESURÉE en production**, jamais dégrader la migration.
+- **Régression silencieuse** : vert au 2026-10-24 (« 28/28 migrations »), cassé le 2026-10-26 par
+  `0029`, personne ne l'a vu. **Leçon générale : un gate manuel jamais relancé après une migration
+  cesse silencieusement de garder quoi que ce soit.** Vérifier la fraîcheur d'un gate, pas son
+  dernier verdict.
+- **Résultat du harnais** : 33 migrations rejouées, 58 tables contrôlées, 41 amorcées, 0 pénétration,
+  contrôle négatif déclenché. 17 tables SKIPPED pour FK/CHECK (le test le DIT — couverture 41/58).
