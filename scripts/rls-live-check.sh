@@ -82,7 +82,11 @@ alter table auth.users
   add column if not exists reauthentication_sent_at  timestamptz,
   add column if not exists is_sso_user               boolean not null default false,
   add column if not exists deleted_at                timestamptz,
-  add column if not exists is_anonymous              boolean not null default false;
+  add column if not exists is_anonymous              boolean not null default false,
+  -- The positive proof resolves its two identities by the marker stored in
+  -- this column. Guarded here so the harness works even if the image's
+  -- `auth.users` predates it.
+  add column if not exists raw_user_meta_data        jsonb default '{}'::jsonb;
 SQL
 
 echo "[rls-live] applying migrations"
@@ -94,26 +98,51 @@ done
 echo "[rls-live] $n migrations applied"
 
 echo "[rls-live] creating two auth users"
+# `raw_user_meta_data` carries the MARKER the positive proof resolves by
+# (`is_test_identity` + `purpose`). It is also added to the fixture above in
+# case this image's GoTrue predates it. The marker is the contract: the proof
+# never hard-codes an email or an id.
 docker exec -i -e PGPASSWORD=postgres "$C" $PSQL <<'SQL'
-insert into auth.users (id, email, instance_id, aud, role, confirmed_at, created_at, updated_at)
+insert into auth.users (id, email, instance_id, aud, role, confirmed_at, created_at, updated_at, raw_user_meta_data)
 values
- ('00000000-0000-0000-0000-00000000000a','a@test.local','00000000-0000-0000-0000-000000000000','authenticated','authenticated', now(), now(), now()),
- ('00000000-0000-0000-0000-00000000000b','b@test.local','00000000-0000-0000-0000-000000000000','authenticated','authenticated', now(), now(), now())
+ ('00000000-0000-0000-0000-00000000000a','a@test.local','00000000-0000-0000-0000-000000000000','authenticated','authenticated', now(), now(), now(), '{"is_test_identity":true,"purpose":"rls-positive-proof"}'::jsonb),
+ ('00000000-0000-0000-0000-00000000000b','b@test.local','00000000-0000-0000-0000-000000000000','authenticated','authenticated', now(), now(), now(), '{"is_test_identity":true,"purpose":"rls-positive-proof"}'::jsonb)
 on conflict (id) do nothing;
+
+-- `on conflict do nothing` leaves a pre-existing row unmarked; force it so a
+-- rerun on a non-fresh database still resolves the two identities.
+update auth.users
+   set raw_user_meta_data = '{"is_test_identity":true,"purpose":"rls-positive-proof"}'::jsonb
+ where id in ('00000000-0000-0000-0000-00000000000a','00000000-0000-0000-0000-00000000000b');
 SQL
 
 echo "[rls-live] running the penetration test"
 docker exec -i -e PGPASSWORD=postgres "$C" $PSQL < "$ROOT/tests/rls-penetration.sql"
 
-echo "[rls-live] negative control: disable RLS on tasks, expect a FAIL"
+# The penetration test proves the NEGATIVE. On its own it cannot tell
+# "isolated" from "broken": a policy that denies EVERYTHING passes it
+# perfectly. The positive proof closes that hole — A must READ ITS OWN row.
+echo "[rls-live] running the POSITIVE proof (A reads its own row)"
+docker exec -i -e PGPASSWORD=postgres "$C" $PSQL < "$ROOT/tests/rls-positive-proof.sql"
+
+echo "[rls-live] negative control: disable RLS on tasks, expect BOTH tests to FAIL"
 docker exec -e PGPASSWORD=postgres "$C" \
   psql -h 127.0.0.1 -U supabase_admin -d postgres -q \
   -c "alter table tasks disable row level security"
 if docker exec -i -e PGPASSWORD=postgres "$C" $PSQL < "$ROOT/tests/rls-penetration.sql" 2>&1 \
    | grep -q 'RLS PENETRATION'; then
-  echo "[rls-live] negative control OK — the test detects a missing policy"
+  echo "[rls-live] negative control OK — the penetration test detects a missing policy"
 else
-  echo "[rls-live] FAIL: the negative control did NOT trip. The test is blind."
+  echo "[rls-live] FAIL: the penetration negative control did NOT trip. The test is blind."
+  exit 1
+fi
+# The positive proof must ALSO trip when isolation is gone, otherwise it is a
+# guard that can never fail — i.e. not a guard.
+if docker exec -i -e PGPASSWORD=postgres "$C" $PSQL < "$ROOT/tests/rls-positive-proof.sql" 2>&1 \
+   | grep -q 'RLS POSITIVE FAILED'; then
+  echo "[rls-live] negative control OK — the positive proof detects a missing policy"
+else
+  echo "[rls-live] FAIL: the positive proof did NOT trip with RLS off. It is blind."
   exit 1
 fi
 
