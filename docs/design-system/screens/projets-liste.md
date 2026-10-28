@@ -223,3 +223,141 @@ Comportement des 3 couches sur `/projects` (05 §5 l. 2925-3307 ; overview §3 l
 | **OQ-8** | `/projects` | CTA secondaire du 404 (§4b) | Le deep link inconnu vers `/projects/...` (fallback wildcard `*`, router.tsx l. 102, écran `not-found` §14) = **logo AURORA COLORE au CENTRE** (§9.1 l. 387) + CTA primaire « Retour à l'accueil » (→ `/home`) + CTA secondaire optionnel « Consulter l'écran parent » (§6.1 l. 202) : **vers quel écran** pointe ce CTA secondaire **pour ce module** ? (le OQ-2 de l'écran `not-found` = global / pas tranché) ; et le **message court** du 404 (`text-secondary` `md`, 2 lignes max, non-routé) = le verbatim global OQ-1 de `not-found` §14 (OQ-8 ici ne **double pas** l'OQ-1 — il **précise** la valeur par écran) | (a) CTA secondaire → `/tasks` (le tab parent du module Productivité, 02 §6.1 : « le tab Tâches est le point d'entrée principal du module », §2) (b) CTA secondaire → `/home` (l'accueil, 02 §6.3 non-surprise) (c) CTA secondaire **absent** V1 (optionnel §6.1 l. 202, le OQ-2b de `not-found` : seulement si le parent est résolu) ; le message court reste l'OQ-1 global | Product / Feature Registry (G-M7) ; 02 §6.1 owner | ui-libraries §6.1 l. 202 ; §9.1 l. 387 ; `router.tsx` l. 92, 102 ; écran `not-found` §14 (OQ-1, OQ-2) ; 02 §6.1 (parent tab) |
 | **OQ-9** | `/projects` | Bannière `killed` « Reconnexion… » — présence du logo S9 (§12.4) | La case `killed` de §4a dit « le logo dans la bannière `killed` = monochrome SANS fond » (ui-libraries §9.1 l. 383 : « Killed / disabled states (S6) = monochrome — inactive visual consistency »), mais la bannière fine DS de 05 §3.7 l. 1296-1298 (G-M2 : « message « Reconnexion… » = bannière fine DS, jamais par composant ») ne mentionne **aucun** logo. Le `§9.1` l. 383 prescrivait-il un logo **dans** la bannière `killed`, ou l'état `killed` est-il une **surface** (composant au niveau de la page, pas la bannière fine) où le logo **peut** s'afficher en monochrome ? | (a) Bannière fine **sans** logo (la bannière = texte seul « Reconnexion… » + shimmer — 05 §3.7 l. 1296-1298) (b) Bannière **avec** le logo monochrome SANS fond (`vs_monochrome_en_svg.svg` §9.2 copy stripped, 16-24px, à gauche du texte — §9.1 l. 383 « monochrome » s'applique à la surface killed, pas à la bannière) (c) Le logo monochrome n'apparaît **que** sur les surfaces killed **complètes** (pas sur une bannière fine) — la bannière de §12.3 = sans logo, le §4a case `killed` à corriger en « pas de logo dans la bannière » | Design System team ; 05 §3.7 owner (G-M2) | ui-libraries §9.1 l. 383 ; 05 §3.7 l. 1290-1301 (bannière fine) ; §4a case `killed` ; §12.3/12.4 (spéc) |
 | **OQ-10** | `/projects` | `TopBar` (header) — présence du logo S9 (§13) | Le 05 §4.3.1 **ne mentionne pas** de logo asset dans le `TopBar` (titre « Projets » + `Menu` de tri seulement) et le `Shell` (chrome global, Shell.tsx : `IonMenu` + titre texte, **pas** de logo asset) n'en porte **pas** non plus. La matrice §9.1 l. 380 prescrit pourtant « the header ALWAYS carries the COLORED brand » : l'occurrence `TopBar` de §13 (logo coloré SANS fond 16px à gauche du titre) est-elle **conforme** à cette règle SSoT, ou une **interprétation ad hoc** (logo = centres de page uniquement, pas le chrome) ? | (a) Header **avec** le logo coloré SANS fond 16px à gauche du titre (règle §9.1 l. 380, conforme — à figer dans 05 §4.3.1) (b) Header **texte uniquement** (pas de logo, le logo S9 = centres de page uniquement — conforme Shell.tsx, §13 à corriger) | Design System owner (ui-libraries §9.1 l. 380 vs. Shell.tsx / 05 §4.3.1 l. 1436-1437) | ui-libraries §9.1 l. 380 ; S1 l. 59 (16px) ; 05 §4.3.1 l. 1436-1437 ; Shell.tsx (ssootCode logoRefs) ; SSoT manquante : 05 §4.3.1 ne mentionne pas de logo asset dans le `TopBar` |
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **Liste + détail** (`docs/frontend/web-shell-and-responsive.md` §2.3 — la
+matrice nomme `projets-*` dans la ligne « Liste + détail »).
+
+L'écran réel est `ProjectsPage` (`apps/mobile/src/pages/projects/index.tsx`) ; le
+détail (`projets-detail`, `/projects/:id`) est une **route push**. Le shell web
+(`apps/web-app`) **ne rend pas encore** cet écran : la section `projets`
+(`navigation.ts` l. 73-79) porte `readiness: 'shell'`.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : liste de `Card flat` (progression + prochain jalon + statut) + FAB « Nouveau projet » | tab bar basse (5 onglets) | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail (`navFormForMode` → `rail`) | tablette |
+| **`lg+` (≥ 1024 px)** | **2 panneaux** : liste de projets à gauche, détail (`/projects/:id`) à droite | barre latérale (`sidebar`) | cible web/desktop (Phase 1–2) |
+
+**Règle §2.3 n°2** : le détail est un **overlay/push** sous `lg`, un **panneau** à
+`lg`+ — même composant, conteneur différent. Le FAB « Nouveau projet »
+(mobile-only, `05 §4.3.1`) devient, à `lg`+, une action de `PageHeader`.
+
+> **OQ-11** — le seuil exact de bascule 1 → 2 panneaux (`lg` = 1024 px) n'est pas
+> ratifié au niveau de l'écran (cf. OQ-4 globale).
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | famille **Productivity** (`module-ownership-matrix.md` l. 21) |
+| R2 | Ligne de catalogue | ✅ | `productivity.projects` (`master-feature-catalog.md` L22 : « Gantt/Kanban/Timeline/List views + milestones + templates ; agent: project.create CONFIRMATION_REQUIRED ; offline-capable ») |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `Project` (`entities-productivity.ts` l. 61), `Milestone` (l. 78) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4a |
+| R6 | États §6.1 couverts | ✅ | §4b (N/A justifiés) + §4c |
+| R7 | Classe offline déclarée | ✅ | §12 : `offline-capable` (`_inventory.md` l. 75 ; catalog L22) |
+| R8 | Événements déclarés | ✅ **aucun émis** | la liste **lit** ; `createProject` retourne une commande `projects` (`goals-projects.ts:150`), aucun `event` |
+| R9 | Permissions déclarées | ⚠️ | le **scan de documents** (action cloud) demande `CAMERA`/fichiers **au 1ᵉʳ usage** (OQ-2 §14 : déclenché ici ou dans le détail ?) |
+| R10 | Entrée de nav déclarée | ✅ | route `/projects` (`router.tsx` l. 122) ; section web `projets` (`navigation.ts` l. 73-79, `readiness: 'shell'`) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ❌ **NON** | le **repo projets n'est pas câblé** à `MobileDataProvider` : `projects/index.tsx` l. 57-59 (« until the projects repo is wired to `MobileDataProvider`, every surface ships clean empty states ») → l'écran livre un état vide **honnête** (pas de fausses données) |
+| R13 | OQ bloquantes fermées | ❌ **NON** | OQ-1 (virtualisation), OQ-3 (CTA `empty` : « Créer un projet » vs « Créer un objectif »), OQ-5 (`Select` d'objectif), OQ-6 (FAB absent) restent ouvertes |
+
+**Verdict : `NOT_READY`** — 11 critères sur 13. **Deux bloquants** : **R12** (repo
+projets non câblé) et **R13** (OQ-3 : le CTA `empty` diverge entre SSoT et code).
+
+**Demande de contrat (plan §4)** — pour le câblage du repo :
+
+```
+WS:        WS-3c (specs d'écran — Productivity)
+Chemin:    docs/features/specs/productivity.goals.md  ·  packages/data/src/powersync-schema.ts
+Besoin:    le câblage du repo `projects` à `MobileDataProvider` (aujourd'hui non
+           branché → état vide honnête, AD-7) ; la spec de module `productivity.projects`
+           n'existe PAS dans docs/features/specs/ (seul productivity.goals couvre les
+           projets : `createProject`/`updateProject`/`createMilestone`)
+Motif:     `projects/index.tsx` l. 57-59 documente le non-câblage ; `productivity.projects`
+           n'a pas de spec §M1-§M6 propre
+Bloque:    oui — sans câblage, la liste ne peut pas afficher de données réelles (S1)
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | la liste lit le store local `projects` (AD-7) ; **interdit** : état vide figé (aujourd'hui le repo n'est pas câblé, l. 57-59) |
+| S2 | 6 états prouvés | §4a — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4c — pattern global, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : liste lisible (miroir) ; seul le **scan de documents** est désactivé |
+| S5 | Retour arrière vérifié | relance froide → projets re-lus du miroir (jamais d'écran blanc, AD-7) |
+| S6 | Isolation utilisateur | RLS sur `projects` (`0002:174-202`, policy `projects_user_isolation`) |
+| S7 | Tokens-only | §3/§10 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `createProject`/`updateProject` (liste exacte des champs changés) corrects ? | Vitest ≥ 80 % sur `packages/productivity` |
+| Intégration | ✅ | vue PowerSync `projects` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ⚠️ | aucun événement émis → n/a justifié | — |
+| E2E | ✅ | « ouvrir la liste → tap projet → détail » ? | Playwright web |
+| Failure | ✅ | lecture échouée → état `error` + retry ? | test failure |
+| Permission | ✅ | refus camera/fichiers ne casse pas la liste ? | test permission |
+| Offline | ✅ | réseau coupé → liste OK, scan désactivé ? | test offline |
+| Recovery | ✅ | relance froide → liste intacte ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `productivity.projects` | ≥ 1 test par classe applicable | ✅ partiel — `productivity.test.ts` (projets : `createProject`/`updateProject`/`createMilestone`) |
+| Région « liste de projets » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `projets-liste` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **absente** — aucune story `ProjectsPage` |
+| Écran `projets-liste` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R12 (repo non câblé) + OQ-3
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (camera/fichiers au 1ᵉʳ usage)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
+
+---
+
+## §20 Nouvelles questions ouvertes (issues du cadre v1)
+
+- **OQ-11** — Seuil de bascule 1 → 2 panneaux (§15) : `lg` (1024 px) confirmé ?
+  (cf. OQ-4 globale)
+- **OQ-12** — **Câblage du repo** : le repo `projects` n'est pas branché à
+  `MobileDataProvider` (`projects/index.tsx` l. 57-59) → l'écran est un état vide
+  honnête. → **OQ** : quand le repo est-il câblé (et par quel module) ?
+- **OQ-13** — **Spec de module manquante** : `productivity.projects` n'a **pas** de
+  spec §M1-§M6 (`docs/features/specs/` ne contient que `productivity.goals`, qui
+  couvre partiellement les projets). → **OQ** : écrire la spec de module
+  `productivity.projects` (gabarit §M1-§M6) ?
