@@ -196,6 +196,37 @@ Les 17 tables non amorcées le sont pour une raison **structurelle** (FK ou CHEC
 qu'un générateur ne peut pas inventer), pas par échec de policy — la raison de
 chaque saut est imprimée en `NOTICE`.
 
+**Régression silencieuse 2026-10-26 → 2026-10-28 (corrigée).** Le harnais a
+cessé de fonctionner sans que personne ne s'en aperçoive : `0029` (2026-10-26)
+attache un trigger `BEFORE INSERT` à `auth.identities`, table que **GoTrue crée
+au runtime** et que l'image `supabase/postgres` ne fournit pas. Le rejeu mourait
+donc à `0029` sur `relation "auth.identities" does not exist`. Second défaut,
+révélé une fois le premier corrigé : l'image embarque un GoTrue **plus ancien**
+(21 colonnes, `confirmed_at`) que le projet live (37 colonnes,
+`email_confirmed_at`), donc le trigger de `0029` échouait sur
+`column "email_confirmed_at" does not exist`. La fenêtre existe parce que le
+harnais n'est **pas** dans `ci.yml` : il ne tourne que si on l'invoque à la main.
+Leçon : un gate manuel qui n'est pas relancé après chaque migration cesse
+silencieusement de garder quoi que ce soit.
+
+**Résultat 2026-10-28 (après correctif des fixtures) :** **33** migrations
+rejouées (0001..0032 + 0200), 0 erreur, **58 tables** contrôlées, **41**
+amorcées, **0 pénétration**, contrôle négatif déclenché. Le correctif réaligne le
+fixture sur la forme **mesurée en production** (`information_schema` du projet) ;
+aucune migration n'a été dégradée.
+
+**Vérification live indépendante (2026-10-28, projet de production).** Le harnais
+Docker prouve l'isolation sur un schéma rejoué ; la vérification suivante l'a
+prouvée sur la **production réelle**, via `SET ROLE authenticated` +
+`set request.jwt.claim.sub` (ce que `auth.uid()` lit) :
+
+- A voit **1** ligne sur 2 (la sienne) et **0** ligne de B ; B symétriquement —
+  `FORCE RLS = true` confirmé sur `tasks`, `projects`, `agent_runs`,
+  `canvas_sessions` ;
+- `INSERT` de A pour le compte de B → `42501 new row violates row-level security
+  policy` ; `UPDATE` croisé → **0 ligne affectée** ;
+- jeu de test marqué `RLS-PROOF-*`, inséré puis supprimé (0 ligne restante).
+
 > **Ce que ce script a révélé.** Avant lui, `tests/rls-penetration.sql` **n'avait
 > jamais été exécuté** : il portait une liste figée de 49 tables et supposait une
 > colonne `id` partout. Les deux étaient faux (73 tables portent `user_id` ; 4 de
