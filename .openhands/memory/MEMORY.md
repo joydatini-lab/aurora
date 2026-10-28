@@ -251,3 +251,22 @@ sections §15–§19, zero data-contract redefinition. Index §4.1/§4.2 updated
   (a deleted file makes a step vanish silently — pitfall G2).
 - `pnpm` shim is `/tmp/bin/pnpm` → `exec corepack pnpm "$@"`; `/tmp` is EPHEMERAL here, recreate it
   when "pnpm: command not found". `mkdir -p /tmp/bin` first or the `printf >` fails.
+
+## PowerSync config-drift gate (2026-10-28)
+- `scripts/check-powersync-config.mjs` (branch `gate/powersync-config-drift`, `de4de86`): exit
+  0/1/2. Static: parse `powersync/sync-config.yaml` (11 streams / 33 tables), `auto_subscribe` +
+  `query`/`queries`, table in migrations, `user_id` column (AD-16), no `JOIN` (F-03). Live:
+  `npx powersync fetch config --instance-id <id> --output=json`, diff table sets; `--remote-config
+  <json>` for offline diff. This is the gate that would have caught the 2026-10-27 drift
+  (`focus_profiles` + `discovery_vault` missing in prod).
+- **`PS_ADMIN_TOKEN` is NOT injectable in this sandbox** (not in CUSTOM_SECRETS; stays empty even
+  when referenced in the command). Prove the live path with `--remote-config` fixtures, not a real
+  fetch. `npx eslint` is unusable here: the isolated checkout has **no `node_modules`** and `npx
+  eslint` downloads v10 then hangs (timeout). Use `node --check`.
+- **Fetched config JSON shape** (read from the CLI package, not guessed):
+  `powersync/dist/api/cloud/fetch-cloud-config.js` returns `{ config, syncRules }` where `syncRules`
+  is the sync-config **text** (`instanceConfig.sync_rules`, `string` in
+  `@powersync/management-types/dist/routes/manage-routes.d.ts:457`). Read both `syncRules` and
+  `sync_rules`.
+- **`--project-id` is a CLI no-op** ("Project ID is resolved automatically" — `powersync fetch
+  config --help`); accept it for display but do NOT pass it to the CLI.
