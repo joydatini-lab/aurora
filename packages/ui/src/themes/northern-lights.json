@@ -1,0 +1,40 @@
+{
+  "name": "northern-lights",
+  "universe": "tweakcn — northern-lights",
+  "isDefault": false,
+  "colors": {
+    "primary": "#34A85A",
+    "secondary": "#6495ED",
+    "accent": "#66D9EF",
+    "surface": "#DDD9C4"
+  },
+  "colorsDark": {
+    "primary": "#34A85A",
+    "secondary": "#4682B4",
+    "accent": "#6495ED",
+    "surface": "#1A1D23"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#34A85A",
+      "#66D9EF",
+      "#6495ED"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#34A85A",
+    "#6495ED",
+    "#66D9EF",
+    "#4682B4",
+    "#1A9641"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/northern-lights.json)"
+}

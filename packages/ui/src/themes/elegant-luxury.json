@@ -1,0 +1,40 @@
+{
+  "name": "elegant-luxury",
+  "universe": "tweakcn — elegant-luxury",
+  "isDefault": false,
+  "colors": {
+    "primary": "#9B2C2C",
+    "secondary": "#FDF2D6",
+    "accent": "#FEF3C7",
+    "surface": "#F0EBE8"
+  },
+  "colorsDark": {
+    "primary": "#B91C1C",
+    "secondary": "#92400E",
+    "accent": "#B45309",
+    "surface": "#1C1917"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#9B2C2C",
+      "#FEF3C7",
+      "#FDF2D6"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#B91C1C",
+    "#9B2C2C",
+    "#7F1D1D",
+    "#B45309",
+    "#92400E"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/elegant-luxury.json)"
+}

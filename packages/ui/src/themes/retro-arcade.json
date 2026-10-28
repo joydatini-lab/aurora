@@ -1,0 +1,40 @@
+{
+  "name": "retro-arcade",
+  "universe": "tweakcn — retro-arcade",
+  "isDefault": false,
+  "colors": {
+    "primary": "#D33682",
+    "secondary": "#2AA198",
+    "accent": "#CB4B16",
+    "surface": "#93A1A1"
+  },
+  "colorsDark": {
+    "primary": "#D33682",
+    "secondary": "#2AA198",
+    "accent": "#CB4B16",
+    "surface": "#002B36"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#D33682",
+      "#CB4B16",
+      "#2AA198"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#268BD2",
+    "#2AA198",
+    "#D33682",
+    "#CB4B16",
+    "#DC322F"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/retro-arcade.json)"
+}

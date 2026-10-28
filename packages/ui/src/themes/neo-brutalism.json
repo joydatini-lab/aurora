@@ -1,0 +1,40 @@
+{
+  "name": "neo-brutalism",
+  "universe": "tweakcn — neo-brutalism",
+  "isDefault": false,
+  "colors": {
+    "primary": "#FF3333",
+    "secondary": "#FFFF00",
+    "accent": "#0066FF",
+    "surface": "#F0F0F0"
+  },
+  "colorsDark": {
+    "primary": "#FF6666",
+    "secondary": "#FFFF33",
+    "accent": "#3399FF",
+    "surface": "#000000"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#FF3333",
+      "#0066FF",
+      "#FFFF00"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#FF3333",
+    "#FFFF00",
+    "#0066FF",
+    "#00CC00",
+    "#CC00CC"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/neo-brutalism.json)"
+}

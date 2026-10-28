@@ -1,0 +1,40 @@
+{
+  "name": "midnight-bloom",
+  "universe": "tweakcn — midnight-bloom",
+  "isDefault": false,
+  "colors": {
+    "primary": "#6C5CE7",
+    "secondary": "#A1C9F2",
+    "accent": "#8B9467",
+    "surface": "#C9C4B5"
+  },
+  "colorsDark": {
+    "primary": "#6C5CE7",
+    "secondary": "#4B0082",
+    "accent": "#6495ED",
+    "surface": "#1A1D23"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#6C5CE7",
+      "#8B9467",
+      "#A1C9F2"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#6C5CE7",
+    "#8E44AD",
+    "#4B0082",
+    "#6495ED",
+    "#4682B4"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/midnight-bloom.json)"
+}

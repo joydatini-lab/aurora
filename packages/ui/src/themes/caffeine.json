@@ -1,0 +1,40 @@
+{
+  "name": "caffeine",
+  "universe": "tweakcn — caffeine",
+  "isDefault": false,
+  "colors": {
+    "primary": "#644A40",
+    "secondary": "#FFDFB5",
+    "accent": "#E8E8E8",
+    "surface": "#EFEFEF"
+  },
+  "colorsDark": {
+    "primary": "#FFE0C2",
+    "secondary": "#393028",
+    "accent": "#2A2A2A",
+    "surface": "#111111"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#644A40",
+      "#E8E8E8",
+      "#FFDFB5"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#644A40",
+    "#FFDFB5",
+    "#E8E8E8",
+    "#FFE6C4",
+    "#66493E"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/caffeine.json)"
+}

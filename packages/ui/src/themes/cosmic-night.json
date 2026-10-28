@@ -1,0 +1,40 @@
+{
+  "name": "cosmic-night",
+  "universe": "tweakcn — cosmic-night",
+  "isDefault": false,
+  "colors": {
+    "primary": "#6E56CF",
+    "secondary": "#E4DFFF",
+    "accent": "#D8E6FF",
+    "surface": "#F0F0FA"
+  },
+  "colorsDark": {
+    "primary": "#A48FFF",
+    "secondary": "#2D2B55",
+    "accent": "#303060",
+    "surface": "#0F0F1A"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#6E56CF",
+      "#D8E6FF",
+      "#E4DFFF"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#6E56CF",
+    "#9E8CFC",
+    "#5D5FEF",
+    "#7C75FA",
+    "#4740B3"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/cosmic-night.json)"
+}

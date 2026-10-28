@@ -1,0 +1,40 @@
+{
+  "name": "nature",
+  "universe": "tweakcn — nature",
+  "isDefault": false,
+  "colors": {
+    "primary": "#2E7D32",
+    "secondary": "#E8F5E9",
+    "accent": "#C8E6C9",
+    "surface": "#F0E9E0"
+  },
+  "colorsDark": {
+    "primary": "#4CAF50",
+    "secondary": "#3E4A3D",
+    "accent": "#388E3C",
+    "surface": "#1C2A1F"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#2E7D32",
+      "#C8E6C9",
+      "#E8F5E9"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#4CAF50",
+    "#388E3C",
+    "#2E7D32",
+    "#1B5E20",
+    "#0A1F0C"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/nature.json)"
+}

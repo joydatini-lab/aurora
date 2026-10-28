@@ -1,0 +1,40 @@
+{
+  "name": "bold-tech",
+  "universe": "tweakcn — bold-tech",
+  "isDefault": false,
+  "colors": {
+    "primary": "#8B5CF6",
+    "secondary": "#F3F0FF",
+    "accent": "#DBEAFE",
+    "surface": "#F5F3FF"
+  },
+  "colorsDark": {
+    "primary": "#8B5CF6",
+    "secondary": "#1E1B4B",
+    "accent": "#4338CA",
+    "surface": "#0F172A"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#8B5CF6",
+      "#DBEAFE",
+      "#F3F0FF"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#8B5CF6",
+    "#7C3AED",
+    "#6D28D9",
+    "#5B21B6",
+    "#4C1D95"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/bold-tech.json)"
+}

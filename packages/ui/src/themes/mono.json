@@ -1,0 +1,40 @@
+{
+  "name": "mono",
+  "universe": "tweakcn — mono",
+  "isDefault": false,
+  "colors": {
+    "primary": "#737373",
+    "secondary": "#F5F5F5",
+    "accent": "#F5F5F5",
+    "surface": "#F5F5F5"
+  },
+  "colorsDark": {
+    "primary": "#737373",
+    "secondary": "#262626",
+    "accent": "#404040",
+    "surface": "#0A0A0A"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#737373",
+      "#F5F5F5",
+      "#F5F5F5"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#737373",
+    "#737373",
+    "#737373",
+    "#737373",
+    "#737373"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/mono.json)"
+}

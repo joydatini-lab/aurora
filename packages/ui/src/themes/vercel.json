@@ -1,0 +1,40 @@
+{
+  "name": "vercel",
+  "universe": "tweakcn — vercel",
+  "isDefault": false,
+  "colors": {
+    "primary": "#000000",
+    "secondary": "#EBEBEB",
+    "accent": "#EBEBEB",
+    "surface": "#F5F5F5"
+  },
+  "colorsDark": {
+    "primary": "#FFFFFF",
+    "secondary": "#222222",
+    "accent": "#333333",
+    "surface": "#000000"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#000000",
+      "#EBEBEB",
+      "#EBEBEB"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#FFAE04",
+    "#2D62EF",
+    "#A4A4A4",
+    "#E4E4E4",
+    "#747474"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/vercel.json)"
+}

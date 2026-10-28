@@ -1,0 +1,40 @@
+{
+  "name": "bubblegum",
+  "universe": "tweakcn — bubblegum",
+  "isDefault": false,
+  "colors": {
+    "primary": "#D04F99",
+    "secondary": "#8ACFD1",
+    "accent": "#FBE2A7",
+    "surface": "#B2E1EB"
+  },
+  "colorsDark": {
+    "primary": "#FBE2A7",
+    "secondary": "#E4A2B1",
+    "accent": "#C67B96",
+    "surface": "#12242E"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#D04F99",
+      "#FBE2A7",
+      "#8ACFD1"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#E670AB",
+    "#84D2E2",
+    "#FBE2A7",
+    "#F3A0CA",
+    "#D7488E"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/bubblegum.json)"
+}

@@ -1,0 +1,40 @@
+{
+  "name": "starry-night",
+  "universe": "tweakcn — starry-night",
+  "isDefault": false,
+  "colors": {
+    "primary": "#3A5BA0",
+    "secondary": "#F7C873",
+    "accent": "#6EA3C1",
+    "surface": "#E5E5DF"
+  },
+  "colorsDark": {
+    "primary": "#3A5BA0",
+    "secondary": "#FFE066",
+    "accent": "#BCCDF0",
+    "surface": "#181A24"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#3A5BA0",
+      "#6EA3C1",
+      "#F7C873"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#3A5BA0",
+    "#F7C873",
+    "#6EA3C1",
+    "#B0B8C1",
+    "#2D1E2F"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/starry-night.json)"
+}

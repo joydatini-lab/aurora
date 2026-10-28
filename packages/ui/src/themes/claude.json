@@ -1,0 +1,40 @@
+{
+  "name": "claude",
+  "universe": "tweakcn — claude",
+  "isDefault": false,
+  "colors": {
+    "primary": "#C96442",
+    "secondary": "#E9E6DC",
+    "accent": "#E9E6DC",
+    "surface": "#EDE9DE"
+  },
+  "colorsDark": {
+    "primary": "#D97757",
+    "secondary": "#FAF9F5",
+    "accent": "#1A1915",
+    "surface": "#1A1915"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#C96442",
+      "#E9E6DC",
+      "#E9E6DC"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#B05730",
+    "#9C87F5",
+    "#DED8C4",
+    "#DBD3F0",
+    "#B4552D"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/claude.json)"
+}

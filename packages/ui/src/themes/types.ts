@@ -152,7 +152,7 @@ export interface AuroraPreset {
   note?: string;
 }
 
-/** Every expressive theme name (10 living themes, 05 §5.4). */
+/** Every expressive theme name (10 Aurora universes + 32 tweakcn imports, 05 §5.4). */
 export type ExpressiveThemeName =
   | "aurora"
   | "lagoon"
@@ -163,7 +163,39 @@ export type ExpressiveThemeName =
   | "terra"
   | "verdant"
   | "citrus"
-  | "cosmos";
+  | "cosmos"
+  | "amber-minimal"
+  | "bold-tech"
+  | "bubblegum"
+  | "caffeine"
+  | "candyland"
+  | "catppuccin"
+  | "claude"
+  | "clean-slate"
+  | "cosmic-night"
+  | "cyberpunk"
+  | "doom-64"
+  | "elegant-luxury"
+  | "graphite"
+  | "kodama-grove"
+  | "midnight-bloom"
+  | "mocha-mousse"
+  | "mono"
+  | "nature"
+  | "neo-brutalism"
+  | "northern-lights"
+  | "ocean-breeze"
+  | "pastel-dreams"
+  | "perpetuity"
+  | "quantum-rose"
+  | "retro-arcade"
+  | "solar-dusk"
+  | "starry-night"
+  | "sunset-horizon"
+  | "tangerine"
+  | "twitter"
+  | "vercel"
+  | "vintage-paper";
 
 /** Every preset name (05 §5.5). */
 export type PresetName = "slate" | "nocturne" | "high-contrast";
@@ -172,11 +204,29 @@ export type PresetName = "slate" | "nocturne" | "high-contrast";
 export type ThemeName = ExpressiveThemeName | PresetName;
 
 export const EXPRESSIVE_THEMES: readonly [
-  "aurora", "lagoon", "boreal", "sakura", "vesper",
-  "solara", "terra", "verdant", "citrus", "cosmos",
+  "aurora", "lagoon", "boreal", "sakura",
+  "vesper", "solara", "terra", "verdant",
+  "citrus", "cosmos", "amber-minimal", "bold-tech",
+  "bubblegum", "caffeine", "candyland", "catppuccin",
+  "claude", "clean-slate", "cosmic-night", "cyberpunk",
+  "doom-64", "elegant-luxury", "graphite", "kodama-grove",
+  "midnight-bloom", "mocha-mousse", "mono", "nature",
+  "neo-brutalism", "northern-lights", "ocean-breeze", "pastel-dreams",
+  "perpetuity", "quantum-rose", "retro-arcade", "solar-dusk",
+  "starry-night", "sunset-horizon", "tangerine", "twitter",
+  "vercel", "vintage-paper",
 ] = [
-  "aurora", "lagoon", "boreal", "sakura", "vesper",
-  "solara", "terra", "verdant", "citrus", "cosmos",
+  "aurora", "lagoon", "boreal", "sakura",
+  "vesper", "solara", "terra", "verdant",
+  "citrus", "cosmos", "amber-minimal", "bold-tech",
+  "bubblegum", "caffeine", "candyland", "catppuccin",
+  "claude", "clean-slate", "cosmic-night", "cyberpunk",
+  "doom-64", "elegant-luxury", "graphite", "kodama-grove",
+  "midnight-bloom", "mocha-mousse", "mono", "nature",
+  "neo-brutalism", "northern-lights", "ocean-breeze", "pastel-dreams",
+  "perpetuity", "quantum-rose", "retro-arcade", "solar-dusk",
+  "starry-night", "sunset-horizon", "tangerine", "twitter",
+  "vercel", "vintage-paper",
 ] as const;
 
 export const PRESETS: readonly ["slate", "nocturne", "high-contrast"] = [

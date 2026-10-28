@@ -1,0 +1,40 @@
+{
+  "name": "clean-slate",
+  "universe": "tweakcn — clean-slate",
+  "isDefault": false,
+  "colors": {
+    "primary": "#6366F1",
+    "secondary": "#E5E7EB",
+    "accent": "#E0E7FF",
+    "surface": "#F3F4F6"
+  },
+  "colorsDark": {
+    "primary": "#818CF8",
+    "secondary": "#2D3748",
+    "accent": "#374151",
+    "surface": "#0F172A"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#6366F1",
+      "#E0E7FF",
+      "#E5E7EB"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#6366F1",
+    "#4F46E5",
+    "#4338CA",
+    "#3730A3",
+    "#312E81"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/clean-slate.json)"
+}

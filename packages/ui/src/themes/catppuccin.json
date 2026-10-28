@@ -1,0 +1,40 @@
+{
+  "name": "catppuccin",
+  "universe": "tweakcn — catppuccin",
+  "isDefault": false,
+  "colors": {
+    "primary": "#8839EF",
+    "secondary": "#CCD0DA",
+    "accent": "#04A5E5",
+    "surface": "#DCE0E8"
+  },
+  "colorsDark": {
+    "primary": "#CBA6F7",
+    "secondary": "#585B70",
+    "accent": "#89DCEB",
+    "surface": "#181825"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#8839EF",
+      "#04A5E5",
+      "#CCD0DA"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#8839EF",
+    "#04A5E5",
+    "#40A02B",
+    "#FE640B",
+    "#DC8A78"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/catppuccin.json)"
+}

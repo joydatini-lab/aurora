@@ -1,0 +1,40 @@
+{
+  "name": "vintage-paper",
+  "universe": "tweakcn — vintage-paper",
+  "isDefault": false,
+  "colors": {
+    "primary": "#A67C52",
+    "secondary": "#E2D8C3",
+    "accent": "#D4C8AA",
+    "surface": "#ECE5D8"
+  },
+  "colorsDark": {
+    "primary": "#C0A080",
+    "secondary": "#4A4039",
+    "accent": "#59493E",
+    "surface": "#2D2621"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#A67C52",
+      "#D4C8AA",
+      "#E2D8C3"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#A67C52",
+    "#8D6E4C",
+    "#735A3A",
+    "#B3906F",
+    "#C0A080"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/vintage-paper.json)"
+}

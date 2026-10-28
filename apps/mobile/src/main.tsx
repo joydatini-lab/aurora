@@ -29,6 +29,7 @@ import '@ionic/react/css/typography.css';
 // runtime `var(--*)` written by <AuroraThemeProvider> (tailwind.config.js).
 import './styles/tw.css';
 import './styles/tokens.css';
+import './styles/gradients.css';
 import './styles/atoms.css';
 import './styles/home.css';
 import './styles/goals.css';

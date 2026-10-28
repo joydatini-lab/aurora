@@ -1,0 +1,40 @@
+{
+  "name": "mocha-mousse",
+  "universe": "tweakcn — mocha-mousse",
+  "isDefault": false,
+  "colors": {
+    "primary": "#A37764",
+    "secondary": "#BAAB92",
+    "accent": "#E4C7B8",
+    "surface": "#E4C7B8"
+  },
+  "colorsDark": {
+    "primary": "#C39E88",
+    "secondary": "#8A655A",
+    "accent": "#BAAB92",
+    "surface": "#2D2521"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#A37764",
+      "#E4C7B8",
+      "#BAAB92"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#A37764",
+    "#8A655A",
+    "#C39E88",
+    "#BAAB92",
+    "#A28777"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/mocha-mousse.json)"
+}

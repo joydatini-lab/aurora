@@ -1,0 +1,40 @@
+{
+  "name": "amber-minimal",
+  "universe": "tweakcn — amber-minimal",
+  "isDefault": false,
+  "colors": {
+    "primary": "#F59E0B",
+    "secondary": "#F3F4F6",
+    "accent": "#FFFBEB",
+    "surface": "#F9FAFB"
+  },
+  "colorsDark": {
+    "primary": "#F59E0B",
+    "secondary": "#262626",
+    "accent": "#92400E",
+    "surface": "#171717"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#F59E0B",
+      "#FFFBEB",
+      "#F3F4F6"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#F59E0B",
+    "#D97706",
+    "#B45309",
+    "#92400E",
+    "#78350F"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/amber-minimal.json)"
+}

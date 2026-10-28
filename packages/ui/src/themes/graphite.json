@@ -1,0 +1,40 @@
+{
+  "name": "graphite",
+  "universe": "tweakcn — graphite",
+  "isDefault": false,
+  "colors": {
+    "primary": "#606060",
+    "secondary": "#E0E0E0",
+    "accent": "#C0C0C0",
+    "surface": "#D9D9D9"
+  },
+  "colorsDark": {
+    "primary": "#A0A0A0",
+    "secondary": "#303030",
+    "accent": "#404040",
+    "surface": "#1A1A1A"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#606060",
+      "#C0C0C0",
+      "#E0E0E0"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#606060",
+    "#476666",
+    "#909090",
+    "#A8A8A8",
+    "#C0C0C0"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/graphite.json)"
+}

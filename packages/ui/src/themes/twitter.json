@@ -1,0 +1,40 @@
+{
+  "name": "twitter",
+  "universe": "tweakcn — twitter",
+  "isDefault": false,
+  "colors": {
+    "primary": "#1E9DF1",
+    "secondary": "#0F1419",
+    "accent": "#E3ECF6",
+    "surface": "#E5E5E6"
+  },
+  "colorsDark": {
+    "primary": "#1C9CF0",
+    "secondary": "#F0F3F4",
+    "accent": "#061622",
+    "surface": "#000000"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#1E9DF1",
+      "#E3ECF6",
+      "#0F1419"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#1E9DF1",
+    "#00B87A",
+    "#F7B928",
+    "#17BF63",
+    "#E0245E"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/twitter.json)"
+}

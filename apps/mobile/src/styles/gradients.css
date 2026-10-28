@@ -1,0 +1,99 @@
+/*
+ * Aurora — ready-made gradient library (owner request 2026-10-28).
+ *
+ * SOURCE: uigradients.com — https://github.com/ghosh/uiGradients
+ *   License: MIT (verified via the GitHub API, 2026-10-28)
+ *   Data file: gradients.json (382 gradients, `name` + `colors[]`)
+ *
+ * Colors are copied VERBATIM from the uigradients data — no channel was
+ * re-picked. uigradients publishes color stops but no angle, so the
+ * direction (`135deg`) is our choice and is the ONLY value not from the
+ * source; change it here if a different direction is wanted.
+ *
+ * Two forms, both usable:
+ *   · CSS variable `var(--aurora-grad-<name>)` — for inline styles;
+ *   · utility class `.aurora-grad-<name>`      — for plain markup;
+ *   · Tailwind `bg-grad-<name>`                — declared in tailwind.config.js.
+ *
+ * These are DECORATIVE surfaces: they never replace the theme tokens, and
+ * no component reads them as a semantic color (05 §5.1).
+ */
+
+:root {
+  --aurora-grad-amin: linear-gradient(135deg, #8E2DE2, #4A00E0);
+  --aurora-grad-kye-meh: linear-gradient(135deg, #8360c3, #2ebf91);
+  --aurora-grad-ohhappiness: linear-gradient(135deg, #00b09b, #96c93d);
+  --aurora-grad-flare: linear-gradient(135deg, #f12711, #f5af19);
+  --aurora-grad-mango: linear-gradient(135deg, #ffe259, #ffa751);
+  --aurora-grad-aqua-marine: linear-gradient(135deg, #1A2980, #26D0CE);
+  --aurora-grad-bloody-mary: linear-gradient(135deg, #FF512F, #DD2476);
+  --aurora-grad-sweet-morning: linear-gradient(135deg, #FF5F6D, #FFC371);
+  --aurora-grad-purple-love: linear-gradient(135deg, #cc2b5e, #753a88);
+  --aurora-grad-sea-blue: linear-gradient(135deg, #2b5876, #4e4376);
+  --aurora-grad-crystal-clear: linear-gradient(135deg, #159957, #155799);
+  --aurora-grad-megatron: linear-gradient(135deg, #C6FFDD, #FBD786, #f7797d);
+  --aurora-grad-blue-raspberry: linear-gradient(135deg, #00B4DB, #0083B0);
+  --aurora-grad-sunrise: linear-gradient(135deg, #FF512F, #F09819);
+  --aurora-grad-emerald-water: linear-gradient(135deg, #348F50, #56B4D3);
+  --aurora-grad-lush: linear-gradient(135deg, #56ab2f, #a8e063);
+  --aurora-grad-cosmic-fusion: linear-gradient(135deg, #ff00cc, #333399);
+  --aurora-grad-nelson: linear-gradient(135deg, #f2709c, #ff9472);
+  --aurora-grad-relay: linear-gradient(135deg, #3A1C71, #D76D77, #FFAF7B);
+}
+
+/* Amin — #8E2DE2 #4A00E0 */
+.aurora-grad-amin { background-image: var(--aurora-grad-amin); }
+
+/* Kye Meh — #8360c3 #2ebf91 */
+.aurora-grad-kye-meh { background-image: var(--aurora-grad-kye-meh); }
+
+/* Ohhappiness — #00b09b #96c93d */
+.aurora-grad-ohhappiness { background-image: var(--aurora-grad-ohhappiness); }
+
+/* Flare — #f12711 #f5af19 */
+.aurora-grad-flare { background-image: var(--aurora-grad-flare); }
+
+/* Mango — #ffe259 #ffa751 */
+.aurora-grad-mango { background-image: var(--aurora-grad-mango); }
+
+/* Aqua Marine — #1A2980 #26D0CE */
+.aurora-grad-aqua-marine { background-image: var(--aurora-grad-aqua-marine); }
+
+/* Bloody Mary — #FF512F #DD2476 */
+.aurora-grad-bloody-mary { background-image: var(--aurora-grad-bloody-mary); }
+
+/* Sweet Morning — #FF5F6D #FFC371 */
+.aurora-grad-sweet-morning { background-image: var(--aurora-grad-sweet-morning); }
+
+/* Purple Love — #cc2b5e #753a88 */
+.aurora-grad-purple-love { background-image: var(--aurora-grad-purple-love); }
+
+/* Sea Blue — #2b5876 #4e4376 */
+.aurora-grad-sea-blue { background-image: var(--aurora-grad-sea-blue); }
+
+/* Crystal Clear — #159957 #155799 */
+.aurora-grad-crystal-clear { background-image: var(--aurora-grad-crystal-clear); }
+
+/* MegaTron — #C6FFDD #FBD786 #f7797d */
+.aurora-grad-megatron { background-image: var(--aurora-grad-megatron); }
+
+/* Blue Raspberry — #00B4DB #0083B0 */
+.aurora-grad-blue-raspberry { background-image: var(--aurora-grad-blue-raspberry); }
+
+/* Sunrise — #FF512F #F09819 */
+.aurora-grad-sunrise { background-image: var(--aurora-grad-sunrise); }
+
+/* Emerald Water — #348F50 #56B4D3 */
+.aurora-grad-emerald-water { background-image: var(--aurora-grad-emerald-water); }
+
+/* Lush — #56ab2f #a8e063 */
+.aurora-grad-lush { background-image: var(--aurora-grad-lush); }
+
+/* Cosmic Fusion — #ff00cc #333399 */
+.aurora-grad-cosmic-fusion { background-image: var(--aurora-grad-cosmic-fusion); }
+
+/* Nelson — #f2709c #ff9472 */
+.aurora-grad-nelson { background-image: var(--aurora-grad-nelson); }
+
+/* Relay — #3A1C71 #D76D77 #FFAF7B */
+.aurora-grad-relay { background-image: var(--aurora-grad-relay); }

@@ -1,0 +1,40 @@
+{
+  "name": "cyberpunk",
+  "universe": "tweakcn — cyberpunk",
+  "isDefault": false,
+  "colors": {
+    "primary": "#FF00C8",
+    "secondary": "#F0F0FF",
+    "accent": "#00FFCC",
+    "surface": "#F0F0FF"
+  },
+  "colorsDark": {
+    "primary": "#FF00C8",
+    "secondary": "#1E1E3F",
+    "accent": "#00FFCC",
+    "surface": "#0C0C1D"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#FF00C8",
+      "#00FFCC",
+      "#F0F0FF"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#FF00C8",
+    "#9000FF",
+    "#00E5FF",
+    "#00FFCC",
+    "#FFE600"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/cyberpunk.json)"
+}

@@ -1,0 +1,40 @@
+{
+  "name": "quantum-rose",
+  "universe": "tweakcn — quantum-rose",
+  "isDefault": false,
+  "colors": {
+    "primary": "#E6067A",
+    "secondary": "#FFD6FF",
+    "accent": "#FFC1E3",
+    "surface": "#FFE3F2"
+  },
+  "colorsDark": {
+    "primary": "#FF6BEF",
+    "secondary": "#46204F",
+    "accent": "#5A1F5D",
+    "surface": "#1A0922"
+  },
+  "gradient": {
+    "angle": 120,
+    "stops": [
+      "#E6067A",
+      "#FFC1E3",
+      "#FFD6FF"
+    ]
+  },
+  "gradients": "tweakcn — dégradé du thème",
+  "illustrationMood": "importé de tweakcn (palette du thème)",
+  "iconTreatment": "hérite du style neutre Aurora",
+  "selectionTreatment": "hérite du style neutre Aurora",
+  "focusTreatment": "hérite du style neutre Aurora",
+  "chartPalette": [
+    "#E6067A",
+    "#C44B97",
+    "#9969B6",
+    "#7371BF",
+    "#5E84FF"
+  ],
+  "decorativeShapes": "hérite du style neutre Aurora",
+  "motionMood": "hérite du style neutre Aurora (05 §2.6)",
+  "usageEmotionnelRecommande": "thème prêt à l'emploi importé de tweakcn (https://tweakcn.com/r/themes/quantum-rose.json)"
+}
