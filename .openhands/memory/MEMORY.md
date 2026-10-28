@@ -269,3 +269,24 @@ d'écran, mergées dans `rebaseline/2026-10-23`.
   ne sync pas. Exigence : `references/supabase-auth.md:24` ; précédent `0018:113-115`. → migration `0033`.
 - `powersync pull instance` n'écrase pas (écrit `*-fetched.yaml`, git-ignored). Un échec de
   `validate` ne prouve rien : la config de prod échoue pareil (secret `secret_ref` non résoluble).
+
+## Thèmes prédéfinis (mission propriétaire 2026-10-28) — `51cbd59`
+- **Le système de thème fonctionne** : `apps/mobile/tailwind.config.js` mappe `background: var(--background)`,
+  `primary: var(--primary)` … = les valeurs que `<AuroraThemeProvider>` écrit en inline sur `<html>` via
+  `toShadcnVars` (hex). NE PAS se fier à `packages/ui/tailwind.config.ts` (`hsl(var(--aurora-*-h))`) : c'est
+  la couche CSS interne de packages/ui, **statique** (2 valeurs seulement, `aurora.css`) — elle n'est PAS
+  ce qui pilote l'app. Le sélecteur de réglages itère `Object.keys(THEMES)` → ajouter un thème = 1 JSON + 1 ligne.
+- **3 voies « shadcn » écartées par la mesure** (ne pas les retenter) : `npx shadcn add` tweakcn écrit
+  `--background: oklch()` → 0 effet visuel (mauvais nom de var ET mauvais format) ; `@madooei/shadcn-theme-presets`
+  exige Tailwind ≥4 + React ≥19 (Aurora = 3.4.19 + 18.3.1) ; registry colorswitchcn injoignable (000).
+- **Solution retenue** : importer les données officielles. `scripts/import-tweakcn-themes.mjs` convertit
+  tweakcn (`tweakcn.com/r/themes/<nom>.json`) → JSON Aurora. Conversion **oklch→hex obligatoire** :
+  `theme-gradient.test.ts` exige des stops hex et `hexLuminance` parse du hex. Matrices OKLab d'Ottosson
+  (`oklch(0.6279 0.2577 29.2339)` → `#FF0000`). Import des tokens **accent uniquement** — `neutral.ts` figé.
+  `colorsDark.surface` = la plus sombre valeur tweakcn du scope dark (test : luminance < 0.55).
+- **42 thèmes** (10 Aurora + 32 tweakcn) + **19 dégradés uigradients** (github.com/ghosh/uiGradients, MIT ;
+  seule la direction 135deg est notre choix, la source ne publie pas d'angle).
+- **`build:web` OOM** : crash `exit 134` / « Ineffective mark-compacts » à ~4 Go. Préexistant, PAS lié aux
+  thèmes. Fix : `NODE_OPTIONS=--max-old-space-size=8192` (la machine a 15 Go) → OK en ~65 s. Lancer en
+  arrière-plan + poller le log (un build ~65 s, dist 77 Mo). Le `.gitignore` couvre `apps/mobile/dist`.
+- Gate : typecheck `-r` 0, test `-r` **738** (mobile 206, ui **68** = 52 + 16 live DOM), lint 0/0.
