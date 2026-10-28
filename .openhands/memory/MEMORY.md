@@ -290,3 +290,40 @@ d'écran, mergées dans `rebaseline/2026-10-23`.
   thèmes. Fix : `NODE_OPTIONS=--max-old-space-size=8192` (la machine a 15 Go) → OK en ~65 s. Lancer en
   arrière-plan + poller le log (un build ~65 s, dist 77 Mo). Le `.gitignore` couvre `apps/mobile/dist`.
 - Gate : typecheck `-r` 0, test `-r` **738** (mobile 206, ui **68** = 52 + 16 live DOM), lint 0/0.
+
+## L5 chemin vertical (apps/web-app) — `2050277`
+- **Nouvelle app** : `apps/web-app` (React Router + shell) EST la cible du chemin vertical, pas `apps/mobile`.
+  Route `/tasks` = écran de capture. `NAV_SECTIONS[].readiness` (SSoT `src/lib/navigation.ts`) est la SEULE
+  autorité de routage : `'ready'` → écran réel, sinon `ShellState` honnête. Ne jamais tester une route en dur.
+- **DEUX défauts de fond trouvés par la preuve navigateur** (une ligne qui ne persiste pas ET s'affiche vide) :
+  1. `EngineLocalStoreBridge.upsert` n'écrivait que dans un cache MÉMOIRE. `storeAdapter()` doit fournir
+     `upsertRow`/`deleteRow`, et `apply()` doit ATTENDRE le flush — sinon `await apply()` ment sur la
+     durabilité (course fire-and-forget : la ligne apparaît puis disparaît au reload).
+  2. `SqliteQueryRepository` livrait la ligne MIROIR par un cast. Le miroir nomme le titre d'une tâche
+     `subject`, l'entité `title` → titre vide. Fix : mapper de ligne INJECTABLE (3ᵉ param), branché sur
+     `mapTaskRow` de `data-session.ts` (il existait déjà, jamais câblé). **Ne pas dupliquer ce mapper.**
+- **`AuroraPowerSyncSchema.tables` est un TABLEAU** (de `ResolvedTable`) : `Object.keys` renvoie les INDEX.
+  `auroraSchemaTableNames()`/`mirrorColumns()` étaient donc faux. `id` n'est jamais déclaré → l'ajouter.
+- **Élimination de la branche DEV** (identité synthétique sans Supabase live) : `import()` DYNAMIQUE gardé par
+  `import.meta.env.DEV` dans un module séparé (`lib/dev-session.ts`). Vite supprime la branche ET le chunk.
+  Une condition sur une propriété d'env (`env.dev`) NE se replie PAS — le littéral reste dans le bundle.
+  Vérification : grep le bundle prod, 0 occurrence. **Le DEV ne minifie pas** (`vite.config.ts` `minify: false`,
+  contournement de build pré-existant) → les chaînes de dev survivraient visibles si non éliminées.
+- **Preuve** : `apps/web-app/test/proof-l5.mjs` (`pnpm -F @aurora/web-app proof:l5`), Playwright + serveur dev.
+  `playwright` n'est devDep QUE de `@aurora/ui` : résoudre via `createRequire` ancré sur ce package.json
+  (pas de nouvelle dépendance). Utiliser `domcontentloaded`, jamais `networkidle` (bundle ~15,8 Mo).
+
+## Pièges d'environnement (coûteux, à ne pas repayer)
+- **CRLF fantôme** : plusieurs fichiers de `packages/data/src` (`local-store.ts`, `index.ts`) sont en CRLF dans
+  git ; une écriture Python en mode texte les convertit en LF → diff de plusieurs centaines de lignes pour
+  3 lignes réelles. Diagnostic : `git diff --ignore-all-space --stat`. Fix : réécrire en binaire avec `\r\n`.
+  **Toujours éditer ces fichiers en binaire, ou vérifier `git diff --stat --ignore-all-space` avant de commit.**
+- **La branche de travail réelle n'est pas celle annoncée** : le contexte disait `rebaseline/2026-10-23`,
+  le travail a atterri sur `ws-themes/tweakcn-gradients`. **Vérifier `git branch --show-current` au début**,
+  ne pas se fier au contexte de session.
+- **`git checkout -- <fichier>` est destructeur sur une branche sale** : il a effacé `capture-path.test.ts`
+  du script `test` de `apps/web-app` (en plus de la devDep playwright visée). Vérifier le script après.
+- `apps/web-app` liste ses fichiers de test EXPLICITEMENT dans `package.json` (comme mobile) : ajouter un
+  test = l'ajouter au script, sinon il ne tourne pas (28 → 17 tests détecté par l'écart de compte).
+- **Tests validés par MUTATION** : la règle du dépôt « un test qui ne peut pas échouer n'est pas une preuve »
+  s'applique. Mutationner chaque correctif (3 mutations → 3 échecs data + 2 échecs web) puis restaurer.
