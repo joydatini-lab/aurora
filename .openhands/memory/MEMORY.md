@@ -492,3 +492,20 @@ d'écran, mergées dans `rebaseline/2026-10-23`.
   "./renderers"` (mermaid, katex, three, tiptap) → entrée à 14,5 Mo (3 Mo gz).
   Présent sur rebaseline depuis 549a8ec, PAS mon delta. Le budget 300 Ko gz
   (02 S9.1) reste violé : à traiter en L6 via `@aurora/ui/icons`.
+
+## Preuve RLS POSITIVE cablée dans le gate CI (c4c18cb)
+- Le harnais `scripts/rls-live-check.sh` ne faisait que le NEGATIF, et son seed
+  écrivait en `service_role` → il ne prouvait **jamais** qu'un user authentifié
+  peut écrire/relire SES lignes. Une policy `USING (false)` passait le gate.
+- Désormais : penetration (négatif) **puis** `tests/rls-positive-proof.sql`
+  (positif), puis **deux** contrôles négatifs (RLS coupée → les deux doivent
+  tripper). Les 2 users du harnais portent le marqueur `raw_user_meta_data`
+  (`is_test_identity` + `purpose`), forcé par UPDATE au cas où la ligne
+  préexiste. Le fixture ajoute `raw_user_meta_data` si l'image GoTrue est vieille.
+- **Vérifié en CI** (run 40773648457) : 33 migrations, 58 tables, positif OK,
+  les 2 contrôles négatifs OK. `docker` est ABSENT de ce sandbox → ce harnais ne
+  se valide qu'en CI (ubuntu-latest). Ne pas conclure depuis un run local.
+- **Piège** : `rls-penetration.sql` seed en `service_role` (il contourne RLS
+  pour poser la ligne de B). Ne pas en déduire que `authenticated` a INSERT ;
+  sur le live les grants par défaut Supabase donnent bien INSERT/SELECT/UPDATE/
+  DELETE à `authenticated` sur les 4 tables sondées.
