@@ -408,3 +408,25 @@ d'écran, mergées dans `rebaseline/2026-10-23`.
   dernier verdict.
 - **Résultat du harnais** : 33 migrations rejouées, 58 tables contrôlées, 41 amorcées, 0 pénétration,
   contrôle négatif déclenché. 17 tables SKIPPED pour FK/CHECK (le test le DIT — couverture 41/58).
+
+## Harnais RLS : 58/58 + branche en CI (2026-10-28, suite)
+- **Couverture portee 41/58 -> 58/58.** Les 17 « structurellement impossibles » ne l'etaient
+  pas : le seedeur ne lisait pas `pg_constraint` assez loin. Deux causes :
+  (1) **FK vers un parent portant `user_id`** (13 tables) — un uuid aleatoire ne matche rien ;
+  corriger en amorcant le parent A LA DEMANDE recursivement et en pointant l'enfant dessus.
+  Ne resoudre que les FK que le seed remplit (NOT NULL sans defaut) ; une FK NULLABLE reste
+  NULL, ce qui rompt au passage les cycles d'auto-reference (`semantic_nodes.parent_id`).
+  (2) **CHECK sur ensemble ferme** (6 tables) — lire le PREMIER litteral autorise DANS la
+  definition (`regexp_match(def,'ARRAY\[(''[^'']*'')')`) + les bornes numeriques
+  (`base_minutes >= 1`), au lieu d'inventer. **Toujours decouvrir depuis le catalogue, jamais
+  lister** : une liste derive, le catalogue non.
+- **CAUSE RACINE de la regression : le harnais n'etait pas dans `ci.yml`.** Le commentaire du
+  workflow l'assumait (« non branchee en CI pour l'instant : ~2 min de pull d'image »). C'est
+  precisement l'economie qui a laisse la garde mourir 2 jours sans que personne ne le voie.
+  Il est desormais un step de `ci-gate` (`ubuntu-latest` fournit Docker ; le script n'utilise
+  PAS `sudo` — il tourne en root sur le runner).
+- **Piege local** : dans ce sandbox, `sh scripts/rls-live-check.sh` sans `sudo` echoue
+  (`permission denied ... docker.sock`, socket `srw-rw---- root:docker`, uid 10001 hors du
+  groupe). Ce n'est PAS un defaut du script : `sudo chmod 666 /var/run/docker.sock` le rend
+  conforme aux conditions d'un runner CI et le script passe alors sans `sudo`. Ne pas
+  « corriger » le script pour ce symptome local.
