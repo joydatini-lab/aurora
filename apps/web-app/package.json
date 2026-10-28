@@ -10,6 +10,7 @@
     "lint": "eslint src --max-warnings 0",
     "preview": "vite preview",
     "proof:l5": "node test/proof-l5.mjs",
+    "proof:l5:prod": "PROOF_MODE=prod node test/proof-l5.mjs",
     "test": "node --experimental-strip-types --no-warnings --import ./test/register-resolve-hook.mjs --test test/shell-routes.test.ts test/responsive-modes.test.ts test/layout-tokens.test.ts test/capture-path.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },

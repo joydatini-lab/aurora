@@ -26,6 +26,15 @@ const require = createRequire(
 const { chromium } = require('playwright');
 
 const BASE = process.env.PROOF_URL ?? 'http://127.0.0.1:12000';
+/**
+ * `dev` (defaut) : serveur de dev — l'identite locale de preuve est ARMEE,
+ *                  donc on peut capturer et verifier la persistance.
+ * `prod`         : bundle de PRODUCTION — la branche dev est ELIMINEE par
+ *                  Vite. On verifie donc la DEGRADATION HONNETE : aucune
+ *                  affordance de dev, capture desactivee faute d'utilisateur
+ *                  (AD-7 : sans `userId` il n'y a pas d'ecriture possible).
+ */
+const MODE = process.env.PROOF_MODE ?? 'dev';
 const results = [];
 const check = (ok, label) => {
   results.push({ ok, label });
@@ -50,11 +59,35 @@ try {
 
   // La bannière d'état doit être HONNÊTE (pas de « Synchronisé » sans session).
   const banner = (await page.textContent('[data-testid="sync-banner"]')) ?? '';
-  check(
-    /Session locale de développement|Hors ligne|Initialisation/.test(banner),
-    `la bannière dit la vérité sans session (reçu: "${banner.trim()}")`,
-  );
+  if (MODE === 'prod') {
+    // Le bundle de production ne doit contenir AUCUNE affordance de dev.
+    check(
+      !/développement/i.test(banner),
+      `PROD: aucune affordance de dev dans la bannière (reçu: "${banner.trim()}")`,
+    );
+    check(
+      /Hors ligne|Initialisation/.test(banner),
+      `PROD: la bannière annonce la dégradation honnête (reçu: "${banner.trim()}")`,
+    );
+    const disabled = await page.getAttribute('[data-testid="capture-input"]', 'disabled');
+    check(
+      disabled !== null,
+      'PROD: la capture est DÉSACTIVÉE sans session (AD-7 : pas d’userId → pas d’écriture)',
+    );
+  } else {
+    check(
+      /Session locale de développement|Hors ligne|Initialisation/.test(banner),
+      `la bannière dit la vérité sans session (reçu: "${banner.trim()}")`,
+    );
+  }
 
+  // En PROD on s'arrete ici : la capture est volontairement impossible.
+  if (MODE === 'prod') {
+    const realErrors0 = consoleErrors.filter(
+      (e) => !/favicon|Failed to load resource.*404/.test(e),
+    );
+    check(realErrors0.length === 0, `PROD: aucune erreur console (${realErrors0.length})`);
+  } else {
   // ---- 2. capture ------------------------------------------------------
   const title = `Preuve L5 ${Date.now()}`;
   await page.fill('[data-testid="capture-input"]', title);
@@ -102,6 +135,7 @@ try {
     realErrors.length === 0,
     `aucune erreur console (${realErrors.length})${realErrors.length ? ': ' + realErrors.slice(0, 2).join(' | ') : ''}`,
   );
+  }
 } finally {
   await browser.close();
 }
