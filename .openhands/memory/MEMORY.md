@@ -327,3 +327,42 @@ d'écran, mergées dans `rebaseline/2026-10-23`.
   test = l'ajouter au script, sinon il ne tourne pas (28 → 17 tests détecté par l'écart de compte).
 - **Tests validés par MUTATION** : la règle du dépôt « un test qui ne peut pas échouer n'est pas une preuve »
   s'applique. Mutationner chaque correctif (3 mutations → 3 échecs data + 2 échecs web) puis restaurer.
+
+## Parallélisation par agents Cloud (2026-10-28) — recette vérifiée
+- **Le plan de division du travail EXISTE et fait autorité** : `docs/plans/2026-10-27-division-du-travail-parallele.md`.
+  Il dit **qui peut travailler en même temps que qui**. À lire AVANT de lancer un agent : il évite de
+  re-décider ce qui est déjà tranché. Contrainte dure : **3 chemins à writer unique** —
+  `docs/frontend/implementation-index.md` (SSoT de la file), `supabase/migrations/*.sql` (numérotation
+  sans garde), `packages/domain/src/**` (SSoT de types AD-1). **WS-1 (L5, parcours vertical) doit rester
+  SEUL** : il traverse toutes les couches, le paralléliser garantit les conflits.
+- **Délégation Cloud fonctionne depuis le sandbox** : `POST https://app.all-hands.dev/api/v1/app-conversations`
+  avec `Authorization: Bearer $OPENHANDS_API_KEY`, corps `{title, selected_repository, selected_branch,
+  initial_message:{content:[{type:'text',text}]}}`. **Le dépôt est PUBLIC** → l'agent clône sans provider token
+  (`secrets_store.provider_tokens` est vide). Suivre via `GET .../start-tasks?ids=<start_task_id>` →
+  `app_conversation_id`. Lien UI : `<base>/canvas/conversations/<app_conversation_id>`. Max **5** en parallèle.
+- **Les conversations Cloud ne voient QUE ce qui est poussé sur GitHub.** Une branche locale non poussée
+  est invisible pour elles. Pousser d'abord (`ws-themes/tweakcn-gradients` l'était PAS — c'était le blocage réel).
+- **Le token embarqué dans l'URL du remote est PÉRIMÉ** (« Invalid username or token »). Utiliser
+  `$GITHUB_TOKEN` : `git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/..."`
+  puis `git push`. Le remote d'origine contient un token en clair → **le masquer** dans toute sortie
+  (`sed -E 's#(x-access-token:)[^@]+@#\1***@#'`).
+- **Topologie des branches** : `origin/main` est PÉRIMÉ (juste un « Add files via upload »). La branche
+  d'intégration canonique est **`rebaseline/2026-10-23`** (+99 commits). Aucune branche de workstream
+  n'est fusionnée dans `main`. `git merge-base --is-ancestor <b> origin/rebaseline/2026-10-23` dit si un
+  workstream est déjà intégré. 3 branches restent non intégrées (thèmes, `0033`, gate PowerSync).
+- **Brief d'agent = règles VÉRIFIABLES, pas des intentions.** Inclure la commande de mesure exacte et
+  la valeur attendue (« `grep -cE '^## §(15|16|17|18|19) ' <f> ` → 5 »). Et **interdire explicitement**
+  `.openhands/memory/` aux agents parallèles : sinon tous écrivent le même journal et le rebase devient manuel.
+
+## Preuve navigateur : dev ET prod (2026-10-28)
+- `apps/web-app/test/proof-l5.mjs` a un mode `PROOF_MODE=dev|prod` (`proof:l5` / `proof:l5:prod`).
+  **dev 7/7** (capture + persistance après reload) · **prod 5/5** (dégradation honnête : bannière
+  « Hors ligne — lecture locale seulement », capture DÉSACTIVÉE sans `userId` — AD-7).
+- **Non-vacuité sans muter de code** : lancer les vérifications PROD contre le serveur de DEV (où la
+  bannière de dev est présente) fait ÉCHOUER les 3 vérifs prod → 2/5. Un test qu'on peut faire échouer
+  par un simple changement d'entrée n'est pas un test complaisant.
+- Le mode dev exige **`VITE_LOCAL_DEV_SESSION=1`** en plus de `import.meta.env.DEV` (sinon `no-session`).
+- `tests/e2e/` est un **stub** (`DESIGNED_NOT_IMPLEMENTED`, `tests/e2e/playwright.config.ts`) : ma preuve
+  navigateur est la première du dépôt qui mesure réellement.
+- **Cache Playwright purge souvent** (`~/.cache/ms-playwright` disparaît) : réinstaller via
+  `packages/ui/node_modules/.bin/playwright install chromium` (`npx playwright` échoue : `not found`).
