@@ -2,7 +2,7 @@
   "name": "@aurora/web-app",
   "version": "0.0.0",
   "private": true,
-  "description": "Aurora web shell — React pur (React Router + shadcn/ReUI, AUCUN ion-*) : la surface complète web-first (ADR-018 / D-018.1, OQ-10). Electron l'enveloppe (apps/desktop), ce n'est pas un 3e front.",
+  "description": "Aurora web shell \u2014 React pur (React Router + shadcn/ReUI, AUCUN ion-*) : la surface compl\u00e8te web-first (ADR-018 / D-018.1, OQ-10). Electron l'enveloppe (apps/desktop), ce n'est pas un 3e front.",
   "type": "module",
   "scripts": {
     "dev": "vite --port 5180",
@@ -15,8 +15,10 @@
   "dependencies": {
     "@aurora/data": "workspace:*",
     "@aurora/domain": "workspace:*",
+    "@aurora/productivity": "workspace:*",
     "@aurora/ui": "workspace:*",
     "@phosphor-icons/react": "^2",
+    "@powersync/web": "2.4.1",
     "@tanstack/react-query": "^5.103.2",
     "clsx": "^2.1.1",
     "react": "^18.3.1",

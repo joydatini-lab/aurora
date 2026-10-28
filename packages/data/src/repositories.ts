@@ -153,7 +153,7 @@ export class SqliteCommandRepository implements LocalCommandRepository {
     }
 
     const rawPatch = (c as { patch?: Record<string, unknown> }).patch ?? {};
-    const patch = this.normalizePatch(rawPatch);
+    const patch = this.normalizePatch(entity, rawPatch);
     const existing = this.store.row(entity, c.id);
 
     if (existing) {
@@ -168,7 +168,18 @@ export class SqliteCommandRepository implements LocalCommandRepository {
     } else {
       // create (or an update that seeds the row locally): the server
       // re-stamps `updated_at` canonically on acknowledgement (03 S4.2 r3)
-      const base: LocalRow = { id: c.id, userId: c.userId, serverUpdatedAtMs: 0 };
+      const base: LocalRow = {
+        id: c.id,
+        // `userId` satisfies the `LocalRow` reference-store contract
+        // (`local-filter.ts`) and the app-side dual-read (`user_id ?? userId`).
+        userId: c.userId,
+        // `user_id` is the MIRROR column: both SQLite schemas and every
+        // migration name it `user_id` (RLS `user_id = auth.uid()`), and the
+        // upsync payload is this row. Without it the relay would carry a
+        // column the server does not have (same defect class as `title`).
+        user_id: c.userId,
+        serverUpdatedAtMs: 0,
+      };
       for (const [k, v] of Object.entries(patch)) {
         if (v === undefined) continue;
         base[k] = v;
@@ -176,22 +187,60 @@ export class SqliteCommandRepository implements LocalCommandRepository {
       this.store.upsert(entity, base);
     }
 
-    this.queue.enqueue(entity, c.id, ownerModule, patch, false, Date.now());
+    // The upstream payload is the partial intent PLUS the mirror envelope
+    // column: `CommandBase.userId` is part of the intent ("the user the
+    // command acts for — RLS-scoped"), and the server column is `user_id`.
+    // Without it the relayed payload carried only the caller's fields.
+    this.queue.enqueue(
+      entity,
+      c.id,
+      ownerModule,
+      { ...patch, user_id: c.userId },
+      false,
+      Date.now(),
+    );
   }
 
   /**
    * Normalize a camelCase command field (e.g. `dueAt`, `r2Key`) to the
    * mirror row's snake_case column (e.g. `due_at`, `r2_key`) so the local
    * store and the SQLite mirror stay column-aligned (03 S4.1).
+   *
+   * `MIRROR_COLUMN_ALIASES` handles the few fields whose DOMAIN name is
+   * deliberately not the MIRROR column name. The only one today is
+   * `tasks.title` → `tasks.subject`: the domain type `Task` carries
+   * `title` (`@aurora/domain/entities-productivity.ts`) and
+   * `TaskCreateCommand.patch` documents `title`, but BOTH mirror schemas
+   * (`sqlite-schema.ts`, `powersync-schema.ts`) and the server migration
+   * (`0002_productivity.sql`) name the column `subject`. Without this
+   * alias a kernel `task.create` carrying `title` silently inserted a
+   * task with a NULL/empty subject.
    */
-  private normalizePatch(patch: Record<string, unknown>): Record<string, unknown> {
+  private normalizePatch(
+    entity: string,
+    patch: Record<string, unknown>,
+  ): Record<string, unknown> {
+    const aliases = MIRROR_COLUMN_ALIASES[entity];
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(patch)) {
-      out[k.replace(/([A-Z])/g, '_$1').toLowerCase()] = v;
+      const aliased = aliases?.[k] ?? k;
+      out[aliased.replace(/([A-Z])/g, '_$1').toLowerCase()] = v;
     }
     return out;
   }
 }
+
+/**
+ * Domain field → mirror column, for the fields where the two names
+ * diverge on purpose (AD-15 keeps the migration as the SSoT; the domain
+ * type keeps the human name). Scoped per entity so a future `title`
+ * column on another table is never renamed by accident.
+ */
+const MIRROR_COLUMN_ALIASES: Readonly<
+  Record<string, Readonly<Record<string, string>>>
+> = {
+  tasks: { title: 'subject' },
+};
 
 // ---------------------------------------------------------------------------
 // helpers
