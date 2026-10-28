@@ -452,3 +452,22 @@ d'écran, mergées dans `rebaseline/2026-10-23`.
 - **Le vrai correctif** n'est pas `NODE_OPTIONS` (masque le symptôme) : c'est de sortir
   `@aurora/data` du chemin critique — `import()` dynamique au montage de l'écran, ou
   entrée dédiée. Sinon le budget perf 02 S9.1 (300 Ko gz) reste violé 11×.
+
+## Identites de test RLS (mesure live 2026-10-28)
+- **Creer un user auth a la main exige 8 colonnes de tokens a `''`**, sinon GoTrue
+  echoue en HTTP 500 `Database error querying schema` au login : `confirmation_token`,
+  `recovery_token`, `email_change`, `email_change_token_new`, `email_change_token_current`,
+  `reauthentication_token`, `phone_change`, `phone_change_token` (+ `confirmation_sent_at`).
+  Les DEFAULT de la table NE s'appliquent PAS quand on nomme les colonnes.
+  `auth.identities` est AUSSI requis (provider_id=user_id, provider='email'), et sa colonne
+  `email` est GENERATED (ne pas l'inserer).
+- **Outils** : `tests/rls-positive-proof.sql` (preuve POSITIVE, resout les users par
+  marqueur `raw_user_meta_data.is_test_identity`), `scripts/rls-test-identities.sh`
+  (`create|list|proof|drop`). Le drop ne peut toucher qu'une ligne marquee.
+- **Resultat live** : 4/4 PASS (artifacts, canvas_sessions, projects, tasks) ; login GoTrue
+  reel verifie. Identites : `rls-proof-{a,b}@test.aurora.local`.
+- **Pieges de schema** : `artifacts.kind` a un CHECK (`image`, pas `logo`) ; `jsonb_populate_record`
+  renvoie TOUTES les colonnes -> projeter `r.<col>`, pas `*` ; la connexion MCP est `postgres`
+  non-superuser -> `reset role`, jamais `set local role supabase_admin`.
+- **Projet live** : `opagfyspdbhxthlxvlrk` (MCP Supabase donne un acces direct : `execute_sql`).
+  Les 4 comptes pre-existants sont ceux de l'owner — ne pas y toucher.
