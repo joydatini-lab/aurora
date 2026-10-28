@@ -198,13 +198,9 @@ Detail and per-lot narratives live in the daily logs (`.openhands/memory/YYYY-MM
 - `@aurora/ui` barrel is heavy (assistant-ui, antv, xyflow, katex): importing it just for
   `AURORA_ICONS` yields a ~9.4MB bundle. Real finding; a scoped `@aurora/ui/icons` would help.
 
-## L4 done (d2dc84f) — module specs + parallel-work division (e7b2c94)
-
-**WS-2 COMPLETE 2026-10-27**: all **13/13 module specs** written (`docs/features/specs/`),
-each verified 6/6 sections §M1–§M6. Delivered by 2 parallel cloud agents (WS-2a 6 + WS-2b 5)
-+ the 2 from L4. Merged into `rebaseline/2026-10-23`. WS-3.1 delivered 5 screen specs
-(`home`, `taches-detail`, `cours-liste`, `progress-dashboard`, `agent-chat`), each 5/5
-sections §15–§19, zero data-contract redefinition. Index §4.1/§4.2 updated to match.
+## Specs + agents parallèles (récit dans le log 2026-10-27)
+13/13 specs de module (`docs/features/specs/`, gabarit `productivity.tasks.md`) + 6 specs
+d'écran, mergées dans `rebaseline/2026-10-23`.
 
 **Parallel-agent lessons (learned the hard way, 3 infra failures)**:
 - The Cloud LLM provider returned "Service Temporarily Unavailable" (HTML maintenance page)
@@ -245,9 +241,31 @@ sections §15–§19, zero data-contract redefinition. Index §4.1/§4.2 updated
 - Parallelism (verified): `git worktree add` works; pnpm store `/workspace/.pnpm-store/v10`
   (1.6 G) is SHARED → a worktree re-downloads nothing. 23 G free disk. Three writer-exclusive
   paths: the index (G7), `supabase/migrations/`, `packages/domain/`.
-- Gate baseline on this base: **1326 node:test + 52 vitest, 0 fail**; typecheck+lint exit 0;
-  boundaries G1–G4, check-rls (33 files), view-joins (93 .sql), drift 8/8+5/5, ef-imports (74
-  symbols/31 imports/19 files), ef-bundles (8) all green. `ci.yml` has 24 `hashFiles`-guarded steps
-  (a deleted file makes a step vanish silently — pitfall G2).
+- Gate baseline (mesure corrigée 2026-10-27) : **738 node:test (21 suites) + 52 vitest, 0 fail** ;
+  typecheck+lint exit 0 ; boundaries G1–G4, check-rls, view-joins, drift 8/8+5/5, ef-imports,
+  ef-bundles verts. ⚠️ un chiffre « 1326 » a circulé : il était **faux** (doublage). `ci.yml` a 24
+  étapes gardées par `hashFiles` (un fichier supprimé fait disparaître l'étape en silence).
 - `pnpm` shim is `/tmp/bin/pnpm` → `exec corepack pnpm "$@"`; `/tmp` is EPHEMERAL here, recreate it
   when "pnpm: command not found". `mkdir -p /tmp/bin` first or the `printf >` fails.
+
+## PowerSync (topologie + pièges) — vérifié 2026-10-28
+- Org `6ab1609e88083500079d0b68` · projet `6ab1612d6860dd00071fcc98`.
+  **Production** `6ab1612e8453e7cf8338ef9a` (rôle `powersync_e56673171470a907b5579e90`) ·
+  **Development** `6ab1612f02481fb31b986822` (rôle `postgres`). Prod = **saine** (33 tables, lag 0).
+- Le PAT **n'est pas** un ID d'instance (le champ `i=` décodé n'en est pas un) : autorité =
+  `powersync fetch instances`.
+- `powersync/cli.yaml` pointe **Development** → `deploy` **sans `--instance-id`** vise Development.
+- **PIÈGE** : `fetch config --instance-id X` **sans `--project-id`** (CLI 0.9.0) retombe sur le
+  **lien local** → lit Development en croyant lire Prod (m'a fait conclure à tort que prod
+  utilisait `postgres`). **Toujours passer les deux IDs.** (0.10.3 : `--project-id` = no-op.)
+- `npm i -g` refusé (pas de sudo) → `npm install -g powersync --prefix ~/.npm-global` +
+  `PATH=$HOME/.npm-global/bin:$PATH`.
+- **Client env = `apps/mobile/.env.local`**, PAS la racine : `vite.config.ts:68` pose `root: here`
+  sans `envDir`, donc Vite ignore le `.env.local` racine. `POWERSYNC_TOKEN` (clé racine) n'a
+  **aucun lecteur**. Recréer `apps/mobile/.env.local` avec `VITE_SUPABASE_URL`,
+  `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_POWERSYNC_URL` (git-ignored → disparaît à chaque clone).
+- Client : `supabase-connector.ts:81-88` envoie le **JWT Supabase**, pas un token PowerSync.
+- **`REPLICA IDENTITY FULL` absent sur les 33 tables streamées** (mesuré 0 en `'f'`) → les DELETE
+  ne sync pas. Exigence : `references/supabase-auth.md:24` ; précédent `0018:113-115`. → migration `0033`.
+- `powersync pull instance` n'écrase pas (écrit `*-fetched.yaml`, git-ignored). Un échec de
+  `validate` ne prouve rien : la config de prod échoue pareil (secret `secret_ref` non résoluble).
