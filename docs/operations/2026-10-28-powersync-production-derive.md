@@ -101,23 +101,42 @@ ne l'a appliquée qu'à `keep_alive`. Le skill
 **Impact** : les suppressions ne peuvent pas être synchronisées vers les clients.
 **Correctif** : migration `0033` (WS-A).
 
-### 4b. `POWERSYNC_URL` absent de `.env.local` — bloquant côté client
+### 4b. Le fichier d'env du client est absent — bloquant
 
-`apps/mobile/src/main.tsx:66` lit `import.meta.env.VITE_POWERSYNC_URL ?? ''`. `.env.local`
-ne contient **que** `POWERSYNC_TOKEN` : **pas d'URL**. Sans URL, le client n'a **aucune**
-cible de synchronisation, même avec un serveur parfaitement sain.
+`apps/mobile/src/main.tsx:63-67` lit `import.meta.env.VITE_POWERSYNC_URL ?? ''` (idem
+`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`).
 
-Correction : ajouter à `.env.local` (git-ignored) :
+**Où Vite cherche ces variables** : `apps/mobile/vite.config.ts:68` pose `root: here`
+(`here` = `apps/mobile`) et **aucun `envDir`** n'est défini. Vite lit donc
+`apps/mobile/.env*` — **jamais** le `.env.local` de la racine du dépôt.
+
+État mesuré :
+
+- `apps/mobile/.env.local` : **absent**.
+- `.env.local` (racine) : contient **uniquement** `POWERSYNC_TOKEN`.
+- `grep -rn "POWERSYNC_TOKEN"` sur tout le code (`.ts`, `.tsx`, `.mjs`, `.sh`) : **aucun
+  lecteur**. C'est une variable orpheline — elle ne configure rien.
+
+La doc du dépôt le confirmait déjà : `docs/plans/finalisation-v1.md` (ligne 23, G10) décrit
+exactement ce symptôme — *« `apps/mobile/.env.local` absent →
+`VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY`/`VITE_POWERSYNC_URL` vides →
+`createClient('')` = « supabaseUrl is required » »* — et le marque **RESOLVED le 2026-10-07**
+par la création de `apps/mobile/.env.local`. Ce fichier a donc **disparu depuis** (il est
+git-ignored : `.gitignore:18`, donc non versionné, donc non recréé par un `git clone`).
+
+**Correctif** — créer `apps/mobile/.env.local` (git-ignored, AD-3 : publishable only) :
 
 ```
-POWERSYNC_URL=https://6ab1612e8453e7cf8338ef9a.powersync.journeyapps.com
+VITE_SUPABASE_URL=https://opagfyspdbhxthlxvlrk.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<clé publishable du projet>
+VITE_POWERSYNC_URL=https://6ab1612e8453e7cf8338ef9a.powersync.journeyapps.com
 ```
 
-**Précision** : le client ne se sert **pas** de `POWERSYNC_TOKEN`. Il envoie le **JWT de
-session Supabase** (`packages/data/src/supabase-connector.ts:81-88` →
+**Précision sur l'authentification** : le client ne se sert **pas** de `POWERSYNC_TOKEN`. Il
+envoie le **JWT de session Supabase** (`packages/data/src/supabase-connector.ts:81-88` →
 `session.access_token`), ce qui est cohérent avec `client_auth: { supabase: true }`. Un
-`POWERSYNC_TOKEN` invalide dans `.env.local` n'empêche donc rien : cette variable n'est pas
-lue par ce chemin de code.
+`POWERSYNC_TOKEN` invalide n'empêcherait donc rien de toute façon : ce chemin de code ne le
+lit pas.
 
 **Vérifié et conforme** : `packages/data/src/powersync-schema.ts` déclare bien les **33**
 tables, `focus_profiles` et `discovery_vault` inclus. Le schéma client n'a **pas** de retard —
@@ -144,7 +163,7 @@ Trois pièges qui ont rendu la panne difficile à lire :
 
 | # | Action | Qui |
 |---|---|---|
-| 1 | Ajouter `POWERSYNC_URL` à `.env.local` (§4b) | opérateur |
+| 1 | Créer `apps/mobile/.env.local` avec les 3 `VITE_*` (§4b) — **pas** à la racine | opérateur |
 | 2 | Appliquer la migration `0033` (`REPLICA IDENTITY FULL`) via le pipeline | opérateur |
 | 3 | Corriger `powersync/service.yaml:4` (mauvais ID d'instance) et y documenter le rôle réel de Production | à faire |
 | 4 | Versionner une config Production (ou rendre la dérive visible en CI) | à faire |
