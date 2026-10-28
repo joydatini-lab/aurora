@@ -154,3 +154,127 @@
 - **OQ-14** : Focus Mode atténuation des 5 actions S14 — §10 dit « les 5 actions S14 restent actives mais visuellement atténuées » mais **pas** de SSoT pour l'atténuation (pas de rule pour « atténué = quelle opacité / quel token » ; l'override Focus = `node.secondary-opacity`/`node.active-contrast`, **pas** les boutons S14) → **OQ** (pas de spec atténuation boutons, pas de token dédié, pas de rule pour CTA in Focus Mode) ; cf. ssootCode themeRefs theme-adapter.tsx FOCUS_OVERRIDES (OQ-15 V1).
 - **OQ-15** : Transition sortie vers Learning (QCM) / Progress (evidence) — §2 dit « Sorties : l'activité elle-même = déléguée à Learning (QCM/flashcards) ; l'épreuve = Progress (evidence) » mais **pas** de SSoT pour la transition (pas de rule slide/push, pas de pattern navigation entre écran Ascent → écran Learning) → **OQ** (pas de spec transition, pas de rule pour navigate Ascent → Learning, pas de composant transition dédié).
 - **OQ-16** : Empty state CTA — §4a empty dit « CTA ghost "Demande à Aurora" » (pack 02 §7) mais **pas** de SSoT pour le **comportement** du CTA (ouvre l'Agent ? ouvre un form ?) → **OQ** (pas de spec dans S11, pas de pattern CTA empty dans ui-libraries S1, pas de rule pour « CTA empty = quelle action ? » ; cf. `apps/mobile/src/pages/ascent/index.tsx` l.174–182 = « Aucun chemin actif » **sans** CTA, mais **pas** de SSoT pour le CTA).
+
+---
+
+## §15 Responsive (cadre v1 — `docs/frontend/spec-template-v1.md`)
+
+Gabarit : **État spécial** (`docs/frontend/web-shell-and-responsive.md` §2.3 — ligne
+« État spécial » : `not-found`, `bibliotheque-ressources`, `slide-ascent`). « Hérite du
+parent » : le parent est le détail d'objectif (`/goals/:id`), donc le layout suit le
+gabarit de ce parent.
+
+L'écran réel est `SlideAscentPage` (`apps/mobile/src/pages/ascent/index.tsx`,
+`router.tsx` l.85), ouvert **sur** l'onglet courant (02 §6.1 S1/S3). Le shell web
+(`apps/web-app`) **ne rend pas encore** cet écran (aucune section `navigation.ts` ne porte
+`/goals/:id/ascent`). Le tableau ci-dessous est **la cible** (Phase 1–2), pas l'état livré.
+
+| Breakpoint | Layout | Navigation | Notes |
+|---|---|---|---|
+| base → `md` (< 768 px) | 1 colonne : header + slides (palette 12 types) + 5 actions | tab bar basse | cible mobile (Phase 3) |
+| `md` → `lg` (768–1023 px) | 1 colonne + rail d'icônes | rail | tablette |
+| **`lg+` (≥ 1024 px)** | **hérite du parent** (`/goals/:id` = détail d'objectif) ; les slides s'élargissent, contenu identique | barre latérale | cible web/desktop (Phase 1–2) |
+
+**Règle** : les **5 actions de lecture active** (S14 : Explain / Note / Flashcard /
+Visualize / « Je bloque », §3) restent visibles aux 3 paliers. Les paliers Level 3/4
+(disclosure) restent atteignables (format = OQ-13).
+
+> **OQ (cadre v1)** — le seuil exact de bascule (héritage du parent `/goals/:id`) n'est pas ratifié
+> au niveau de l'écran (cf. OQ-4 globale) ; le format des paliers Level 3/4 est **OQ-13**.
+
+---
+
+## §16 Critères de readiness (avant de coder)
+
+| # | Critère | État | Preuve |
+|---|---|---|---|
+| R1 | Owner identifié | ✅ | module **Ascent** (`docs/ascent/overview.md` ; `module-ownership-matrix.md` : Ascent = module serveur AD-12) |
+| R2 | Ligne de catalogue | ✅ | module **Ascent** (server-side, `docs/ascent/overview.md` §5) — ligne catalogue dédiée **absente** du `master-feature-catalog.md` (OQ §14) |
+| R3 | Types SSoT dans `packages/domain` | ✅ | `AscentActivity` (`ascent.ts` l.47), `AscentPathStatus` (l.40), `DepthLevel` (l.26), `AscentAdaptation` (l.108), `AscentConsumedEvent` (l.229) |
+| R4 | Spec §1–§14 complète | ✅ | ce document |
+| R5 | 6 états S6 couverts | ✅ | §4 (matrice AD-13) |
+| R6 | États §6.1 couverts | ✅ | §4 (N/A justifiés) |
+| R7 | Classe offline déclarée | ✅ | §12 : **offline-capable (lecture du goal, mirror)** — lecture seule du miroir `ascent_paths` ; adaptations = serveur (AD-12) |
+| R8 | Événements déclarés | ✅ | `AscentConsumedEvent` (`ascent.ts` l.229) — Ascent **consomme** les événements du vocabulaire fermé (AD-9) ; l'écran ne produit rien |
+| R9 | Permissions déclarées | ✅ | aucune (lecture du chemin) |
+| R10 | Entrée de nav déclarée | ✅ | `/goals/:id/ascent` (`router.tsx` l.85, `SlideAscentPage`, détail ouvert sur l'onglet courant) |
+| R11 | Tokens identifiés | ✅ | §3 (colonne « Tokens ») |
+| R12 | Contrat de données | ⚠️ **partiel** | la page **lit réellement** le miroir via `useQuery` (`ascent/index.tsx` l.148) et mappe vers l'`AsyncState` canonique (l.171-186, y compris `{ status: 'empty' }` **dérivé** des données, pas figé) — mais la **palette 12 slides** et les adaptations serveur ne sont pas toutes prouvées |
+| R13 | OQ bloquantes fermées | ❌ **NON** | **OQ-01…OQ-16** (§14) restent ouvertes (Level 3/4 = Drawer/Popover, atténuation Focus, transitions, CTA empty) |
+
+**Verdict : `NOT_READY`** — 12 critères sur 13. **Le bloquant est R13** (OQ §14
+ouvertes) ; R12 est **partiel** (lecture réelle du miroir — plus favorable que la moyenne).
+
+**Demande de contrat (plan §4)** — pour lever R12/R13 :
+
+```
+WS:        WS-3 (specs d'écran)
+Chemin:    apps/mobile/src/pages/ascent/**  ·  packages/ascent/src/**
+Besoin:    le contrat de rendu des 12 types de slides (S12) + le contrat des adaptations
+           serveur (`AscentAdaptation`, AD-12) + la ligne catalogue Ascent (absente)
+Motif:     docs/ascent/overview.md §5 : Ascent = module serveur ; la palette 12 slides
+           n'a pas de SSoT catalogue ; les adaptations sont serveur-only
+Bloque:    oui — sans contrat, la palette et les adaptations ne sont pas démontrables
+```
+
+---
+
+## §17 Critères de succès (pour déclarer « fait »)
+
+| # | Critère | Mesure sur cet écran |
+|---|---|---|
+| S1 | Données réelles | l'écran lit le chemin (`ascent_paths`) du miroir (AD-7) ; **interdit** : `{ status: 'empty' }` figé (aujourd'hui dérivé des données, l.186) |
+| S2 | 6 états prouvés | §4 — 1 story + 1 test par état |
+| S3 | 404/feature-disabled | §4 — chemin/objectif inconnu → état 404/feature-disabled, jamais un 404 brut |
+| S4 | Offline vérifié | §12 — réseau coupé : lecture du chemin (miroir) OK ; les adaptations serveur sont différées |
+| S5 | Retour arrière vérifié | relance froide → re-lecture du miroir (`useKilledDetection`, l.158 ; pas d'écran blanc) |
+| S6 | Isolation utilisateur | RLS sur `ascent_paths` (user A ≠ user B) |
+| S7 | Tokens-only | §3 — aucune valeur brute |
+| S8 | A11y AA | §11 — cibles ≥ 44 px, `aria-label`, focus visible, `reduced-motion` |
+| S9 | Responsive vérifié | §15 — 3 paliers (cible ; web non livré) |
+| S10 | Gate vert | `AI_RULES.md` §9 |
+| S11 | Aucune régression | suite existante verte |
+
+**Verdict : `INCOMPLETE`** tant que S1–S11 ne sont pas tous vrais.
+
+---
+
+## §18 Critères de QA (9 classes — `docs/testing/matrix.md` §1)
+
+| Classe | Applicable | Question QA sur cet écran | Preuve attendue |
+|---|---|---|---|
+| Unitaire (domaine) | ✅ | `mapLevelToBaselineState`/`computeLearnerBaseline`/`depth`/`phases` corrects ? | Vitest ≥ 80 % sur `packages/domain` / `@aurora/ascent` |
+| Intégration | ✅ | lecture du miroir `ascent_paths` sans JOIN + re-sync ? | test `check-view-joins` + re-sync |
+| Contrat | ✅ | `AscentConsumedEvent` (`ascent.ts` l.229) — Ascent = consommateur (AD-9) | test AD-9 producer/consumer |
+| E2E | ✅ | « ouvrir un chemin → lire une étape → agir » ? | Playwright web |
+| Failure | ✅ | adaptation serveur indisponible → état honnête sans crash ? | test failure |
+| Permission | ⚠️ | aucune sur le chemin → n/a justifié | — |
+| Offline | ✅ | réseau coupé → chemin (miroir) lisible, adaptation différée ? | test offline |
+| Recovery | ✅ | relance froide → état intact ? | test recovery |
+| Plateforme | ⏳ | budgets perf (≤ 300 Ko gz, ≤ 1,5 s TTI) ? | Phase 3 (mobile) |
+
+---
+
+## §19 Couverture de tests exigée (seuils + DoD)
+
+| Périmètre | Seuil | État |
+|---|---|---|
+| `packages/domain` | ≥ 80 % lignes | à mesurer |
+| `@aurora/ascent` | ≥ 1 test par classe applicable | ✅ — `packages/ascent/test/ascent.test.ts` (baseline, depth, phases, path-builder, adaptOnEvidence, source-hierarchy) ; `apps/mobile/src/pages/ascent/slide-view.test.ts` |
+| Région « palette 12 slides » | **6 tests d'état S6** + états §6.1 | à écrire |
+| Écran `slide-ascent` | ≥ 1 story complète (`Defaut`+`vide`+`chargement`+`erreur`) | **partielle** — `Ascent.stories.tsx` couvre `Carte`/`Reflet`/`Enregistr`/`Flux`/`FluxVide`, **pas** l'écran slide-ascent complet |
+| Écran `slide-ascent` | ≥ 1 test `play` | à écrire |
+
+**DoD (à cocher avant de déclarer le lot terminé) :**
+
+```
+[ ] R1–R13 vrais (readiness)              ← bloqué par R13 (OQ) ; R12 partiel (palette non prouvée)
+[ ] S1–S11 vrais (succès)
+[ ] 6 états S6 testés + états §6.1 applicables
+[ ] ≥ 1 story complète (cdd.md) + ≥ 1 test play
+[ ] classe offline testée
+[ ] permission testée (n/a — aucune)
+[ ] responsive testé aux 3 paliers (§15)
+[ ] a11y AA vérifiée (§11)
+[ ] gate du lot vert (AI_RULES §9)
+```
