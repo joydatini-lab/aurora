@@ -205,25 +205,29 @@ laquelle la rastérisation reste une étape, et pas un luxe.
 
 **Non vérifié** :
 
-- **Aucun appel réel à Agnes.** Le sandbox n'a pas d'accès sortant vers
-  `apihub.agnes-ai.com`, et aucune clé n'y est disponible. Le mode `live` est
-  écrit, typé, mais **jamais exercé** : on ne peut donc pas affirmer qu'un vrai
-  modèle renverra un plan conforme au contrat. Le parser est testé sur des
-  réponses *représentatives*, pas sur des réponses *observées*.
+- ~~**Aucun appel réel à Agnes.**~~ **Levée le 2026-10-29.** Le mode `live` a
+  depuis été exercé avec une clé réelle : **4/4 briefs conformes du premier coup**
+  (FR + EN, 0 correction), un plan complet en 58 s, une affiche au score 9,7 et
+  0 violation. Mesures, latences et `usage` : `edition-ia.md` §11. Deux
+  conséquences pour ce document : le délai du service doit passer à 240 s (un
+  plan réel dépasse les 60 s), et le parser est désormais testé sur des réponses
+  *observées*, pas seulement *représentatives*.
 - Aucune spec Playwright exécutée (Chromium non téléchargeable ici).
 
 ---
 
 ## 8. Suite
 
-1. **Premier appel réel.** Lancer `pnpm design-api` avec une clé et générer une
-   affiche. Consigner le taux de réponses conformes du premier coup — c'est la
-   seule mesure qui compte du prompt.
+1. ~~**Premier appel réel.**~~ **Fait le 2026-10-29** — 4/4 conformes du premier
+   coup, mesures dans `edition-ia.md` §11.
 2. **Raffinement guidé par modèle.** `critique()` existe dans l'interface du
    provider et n'est pas branché. Le corpus prévoit que le raffineur ne voie que
    le rapport, jamais les pixels : le contrat est déjà celui-là.
-3. **Multi-tours.** Aujourd'hui une demande produit une affiche. « Plus
-   contrasté », « raccourcis l'accroche » demandent de conserver le plan
-   précédent comme contexte.
+3. **Multi-tours et édition.** Aujourd'hui une demande produit une affiche.
+   « Plus contrasté », « raccourcis l'accroche » demandent de conserver le plan
+   précédent comme contexte. **Spécifié** dans
+   [`edition-ia.md`](edition-ia.md) — le modèle sait déjà le faire (3/3 éditions
+   conformes, mesuré §11.3) ; c'est le contrat et l'écran qui manquent.
 4. **Coût et latence.** `usage` et `ms` remontent déjà jusqu'à l'écran ; il
-   manque un historique pour les suivre.
+   manque un historique pour les suivre. Premières mesures : `edition-ia.md`
+   §9.2–9.3.

@@ -83,6 +83,8 @@ Details = the doc that carries the prescriptive chain (the "full chain" evidence
 | `integrations.notifications` | OneSignal (server key, `fn-notifications`) + local split rule (never both for one object, 04 §3.4); `POST_NOTIFICATIONS` first-use | 04 §3.4 |
 | `identity.session` | Supabase Auth + `UserContext` (theme v2 enum, silence windows, preferences); RLS root | modules/index.md §2 |
 | `designsystem.themes` | neutral style × 10 themes × 3 presets × local adaptation (AD-17 candidate, 05 §5–6); canvas values aligned 2026-09-22 (G-H2 closed); local adaptation V1 = Focus only (OQ-15) | design-system/overview.md |
+| `designspace.create` | brief + demande en langage naturel → intention (marque/direction/copie) → 10 calques → raffinement K≤4 → validateur déterministe → SVG/JSON ; agent: aucune (écran studio) ; online-required (modèle côté serveur) ; clé serveur seule (F-09) ; écran `/studio` ; **mesuré 2026-10-29 : 4/4 conformes, 0 correction** | design-system/generation-ia.md |
+| `designspace.edit` | **spécifié, non implémenté** — édition par l'IA du JSON de calques : intention d'édition bornée (ancre/facteur, jamais de coordonnée), `applyEdit` respectant les verrous `M`, `LOCK_VIOLATION`/`EMPTY_REGION`, même validateur, multi-tours ; agent: aucune ; online-required ; **mesuré : 3/3 éditions conformes par le modèle** | design-system/edition-ia.md |
 | `focus.dpc` (v1.8 candidate) | private deployment: device owner + `setPackagesSuspended` (API 29+) + provisioning procedure + boot-receiver restore; OQ-17 = **NEEDS_DECISION/PLATFORM_DEPENDENT** (blocking for freezing Focus); consumer fallback = 04 §4.1 | focus-mode/spec.md §0/§9 |
 
 ## Catalog integrity rules (mission §0)

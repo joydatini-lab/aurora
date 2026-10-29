@@ -213,15 +213,18 @@ minification. Le scan est désormais explicite (`source(none)` + `@source`).
 1. **Brancher un modèle.** `HttpDesignAi` n'attend qu'une URL, une clé et un nom
    de modèle (`VITE_AURORA_AI_URL/_KEY/_MODEL`). Le contrat est déjà celui que
    consomment les écrans : aucune vue à modifier.
-2. **Premier appel réel à Agnes.** Le mode `live` est écrit mais n'a jamais
-   tourné : aucune clé, aucun accès sortant depuis cet environnement. C'est la
-   première chose à faire côté poste de développement.
+2. ~~**Premier appel réel à Agnes.**~~ **Fait le 2026-10-29.** Le mode `live` a
+   été exercé : 4/4 briefs conformes du premier coup, plan complet en 58 s,
+   affiche score 9,7 / 0 violation. Mesures : `edition-ia.md` §11. Le délai du
+   service doit passer à 240 s — un plan réel dépasse les 60 s.
 3. **Lettrage vectoriel.** Convertir `<text>` en chemins : c'est la seule façon
    de supprimer l'estimation d'avance et de garantir un export identique sur
    toute machine.
-4. **Édition directe.** Déplacer/redimensionner un calque dans l'aperçu en
-   écrivant `a_geo`, en respectant les verrous. Le modèle est prêt ; c'est
-   l'interaction qui manque.
+4. **Édition par l'IA.** Déplacer/redimensionner ou réécrire un calque *par la
+   demande* (« raccourcis l'accroche », « déplace le logo »), en respectant les
+   verrous. **Spécifié** dans [`edition-ia.md`](edition-ia.md) — contrat
+   d'intention, `applyEdit`, `LOCK_VIOLATION`/`EMPTY_REGION`, lot L0→L6. Le
+   modèle sait déjà éditer (3/3 mesuré) ; le contrat et l'écran manquent.
 5. **Versions.** Une nouvelle version ne doit jamais écraser une version
    approuvée (§12.2). Non implémenté : il n'y a pour l'instant qu'une
    composition en mémoire.
