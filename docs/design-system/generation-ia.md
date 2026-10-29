@@ -6,6 +6,12 @@ Ce document décrit le chemin complet entre une demande en langage naturel et un
 affiche validée. Il dit aussi, explicitement, ce qui a été **exécuté** et ce qui
 ne l'a pas été.
 
+![Affiche produite en mode simulé](rendus/affiche-generee.png)
+
+*Affiche obtenue en écrivant « Une affiche sobre et affirmée : l'accroche doit se
+lire à trois mètres. » puis en cliquant **Générer l'affiche**. Mode simulé —
+aucune clé. Rendue depuis l'export SVG.*
+
 ---
 
 ## 1. Le principe : le modèle propose, le moteur dispose
