@@ -15,6 +15,7 @@ const SECTIONS = [
   { path: '/espacement', link: 'Espacement & formes', heading: /Espacement/i },
   { path: '/mouvement', link: 'Mouvement', heading: /^Mouvement$/i },
   { path: '/composants', link: 'Galerie', heading: /^Galerie$/i },
+  { path: '/apparence', link: 'Apparence', heading: /^Apparence$/i },
 ];
 
 test('chaque section est atteignable depuis le rail', async ({ page, isMobile }) => {

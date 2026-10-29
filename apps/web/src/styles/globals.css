@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./gradients.css";
 
 /* =============================================================================
    AURORA — « Encre & Lumière »
@@ -58,6 +59,12 @@
   --info: oklch(0.6 0.13 240);
   --info-foreground: oklch(0.99 0 0);
 
+  /* --- Voile dynamique ----------------------------------------------------
+     `--tint` est alimenté par la palette extraite de l'image de fond.
+     À zéro d'opacité tant qu'aucune image n'est chargée : le voile ne doit
+     jamais teinter une interface qui n'a pas de fond. */
+  --tint: oklch(0.2 0.015 265 / 0);
+
   /* --- Marque (dégradés uniquement) -------------------------------------- */
   --aurora-from: oklch(0.55 0.22 300);
   --aurora-via: oklch(0.6 0.19 330);
@@ -103,6 +110,8 @@
   --info: oklch(0.68 0.12 240);
   --info-foreground: oklch(0.16 0.03 240);
 
+  --tint: oklch(0.96 0.004 95 / 0);
+
   --aurora-from: oklch(0.66 0.2 300);
   --aurora-via: oklch(0.68 0.17 330);
   --aurora-to: oklch(0.78 0.12 195);
@@ -139,6 +148,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-ring: var(--ring);
+  --color-tint: var(--tint);
 
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
@@ -269,3 +279,134 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* =============================================================================
+   PERSONNALISATION — @property, fondu de thème, fond et cartes en verre
+   -----------------------------------------------------------------------------
+   Une propriété personnalisée non enregistrée est une CHAÎNE : changer
+   `--primary` de `oklch(0.48 …)` à `oklch(0.72 …)` remplace le texte d'un coup,
+   sans interpolation possible. `@property` déclare le type ; le navigateur sait
+   alors qu'il manipule une couleur et peut interpoler entre deux valeurs.
+   C'est la seule manière d'obtenir un fondu de 0,8 s sur des variables CSS.
+   ========================================================================== */
+
+@property --background { syntax: '<color>'; inherits: true; initial-value: oklch(0.985 0.003 95); }
+@property --foreground { syntax: '<color>'; inherits: true; initial-value: oklch(0.2 0.015 265); }
+@property --card { syntax: '<color>'; inherits: true; initial-value: oklch(1 0 0); }
+@property --card-foreground { syntax: '<color>'; inherits: true; initial-value: oklch(0.2 0.015 265); }
+@property --popover { syntax: '<color>'; inherits: true; initial-value: oklch(0.995 0.002 95); }
+@property --popover-foreground { syntax: '<color>'; inherits: true; initial-value: oklch(0.2 0.015 265); }
+@property --muted { syntax: '<color>'; inherits: true; initial-value: oklch(0.955 0.005 95); }
+@property --muted-foreground { syntax: '<color>'; inherits: true; initial-value: oklch(0.5 0.012 265); }
+@property --border { syntax: '<color>'; inherits: true; initial-value: oklch(0.9 0.006 95); }
+@property --input { syntax: '<color>'; inherits: true; initial-value: oklch(0.9 0.006 95); }
+@property --primary { syntax: '<color>'; inherits: true; initial-value: oklch(0.48 0.2 295); }
+@property --primary-foreground { syntax: '<color>'; inherits: true; initial-value: oklch(0.99 0 0); }
+@property --secondary { syntax: '<color>'; inherits: true; initial-value: oklch(0.955 0.008 95); }
+@property --secondary-foreground { syntax: '<color>'; inherits: true; initial-value: oklch(0.25 0.015 265); }
+@property --accent { syntax: '<color>'; inherits: true; initial-value: oklch(0.94 0.022 295); }
+@property --accent-foreground { syntax: '<color>'; inherits: true; initial-value: oklch(0.36 0.15 295); }
+@property --ring { syntax: '<color>'; inherits: true; initial-value: oklch(0.55 0.19 295); }
+@property --destructive { syntax: '<color>'; inherits: true; initial-value: oklch(0.55 0.21 25); }
+@property --tint { syntax: '<color>'; inherits: true; initial-value: oklch(0.2 0.015 265 / 0); }
+
+@layer base {
+  /* Le fondu. 0,8 s : assez long pour être perçu comme une transition, assez
+     court pour ne pas retarder la lecture. La courbe vient du système. */
+  html {
+    transition:
+      --background 0.8s var(--ease-out-quint),
+      --foreground 0.8s var(--ease-out-quint),
+      --card 0.8s var(--ease-out-quint),
+      --card-foreground 0.8s var(--ease-out-quint),
+      --popover 0.8s var(--ease-out-quint),
+      --popover-foreground 0.8s var(--ease-out-quint),
+      --muted 0.8s var(--ease-out-quint),
+      --muted-foreground 0.8s var(--ease-out-quint),
+      --border 0.8s var(--ease-out-quint),
+      --input 0.8s var(--ease-out-quint),
+      --primary 0.8s var(--ease-out-quint),
+      --primary-foreground 0.8s var(--ease-out-quint),
+      --secondary 0.8s var(--ease-out-quint),
+      --secondary-foreground 0.8s var(--ease-out-quint),
+      --accent 0.8s var(--ease-out-quint),
+      --accent-foreground 0.8s var(--ease-out-quint),
+      --ring 0.8s var(--ease-out-quint),
+      --destructive 0.8s var(--ease-out-quint),
+      --tint 0.8s var(--ease-out-quint);
+  }
+
+  /* Le mouvement réduit coupe AUSSI le fondu de thème : une transition de
+     couleur plein écran est exactement ce qui gêne certaines personnes. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      transition: none !important;
+    }
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Fond personnalisé
+   -------------------------------------------------------------------------- */
+
+/* Couche de fond fixe, derrière toute l'interface. */
+.aurora-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+html[data-backdrop='gradient'] .aurora-backdrop {
+  background-image: var(--backdrop-gradient);
+}
+
+html[data-backdrop='image'] .aurora-backdrop {
+  background-image: var(--backdrop-image);
+}
+
+/* La coquille porte le fond de page. Elle a sa propre classe pour que la
+   variante « avec fond » puisse la rendre translucide sans toucher aux
+   composants. */
+.aurora-shell {
+  background-color: var(--background);
+}
+
+/* Avec un fond, la coquille s'allège pour laisser voir l'image : sinon elle
+   reste opaque et le fond ne sert à rien. */
+html[data-backdrop] .aurora-shell {
+  background-color: color-mix(in srgb, var(--background) 45%, transparent);
+}
+
+/* -----------------------------------------------------------------------------
+   Cartes en verre
+   -----------------------------------------------------------------------------
+   `bg-card/40 backdrop-blur-2xl` + voile teinté. Le voile est posé en
+   `background-image` plutôt qu'en pseudo-élément : une seule couche à
+   composer, pas de z-index à gérer, et la couleur du texte reste inchangée.
+   -------------------------------------------------------------------------- */
+
+html[data-backdrop] [data-slot='card'],
+html[data-backdrop] [data-slot='sheet'],
+html[data-backdrop] [data-slot='sidebar'] {
+  background-color: color-mix(in srgb, var(--card) 40%, transparent);
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--tint) 22%, transparent),
+    color-mix(in srgb, var(--tint) 22%, transparent)
+  );
+  border-color: color-mix(in srgb, var(--border) 60%, transparent);
+  backdrop-filter: blur(40px) saturate(140%);
+  -webkit-backdrop-filter: blur(40px) saturate(140%);
+}
+
+/* Un navigateur sans backdrop-filter doit rester lisible : on remonte
+   l'opacité du fond au lieu de laisser du texte sur une image. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-backdrop] [data-slot='card'],
+  html[data-backdrop] [data-slot='sidebar'] {
+    background-color: color-mix(in srgb, var(--card) 92%, transparent);
+  }
+}
+

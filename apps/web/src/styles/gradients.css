@@ -1,0 +1,84 @@
+/*
+ * Dégradés — COPIE CONFORME.
+ *
+ * Source : paquet npm `tailwindcss-webgradients@1.0.2` (licence MIT), qui
+ * reprend la bibliothèque de https://webgradients.com. Les 12 dégradés
+ * ci-dessous sont recopiés caractère par caractère depuis `src/gradients.js`
+ * : couleurs, angles et arrêts sont strictement inchangés.
+ *
+ * Pourquoi le paquet et pas le site : webgradients.com n'est pas joignable
+ * depuis cet environnement. Le paquet embarque les 179 dégradés du site ;
+ * 12 sont extraits ici, choisis pour couvrir chaud, froid, sombre et pastel.
+ *
+ * Chaque dégradé existe sous DEUX formes : une variable `--gradient-*` (pour
+ * les affectations dynamiques, ex. fond d'application) et une classe
+ * `.bg-webgradient-*` (pour l'usage direct en markup).
+ *
+ * Ce sont des règles CSS statiques : Tailwind ne les génère pas, donc il ne
+ * peut pas les purger par erreur.
+ */
+
+:root {
+  --gradient-warm-flame: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+  --gradient-night-fade: linear-gradient(to bottom, #a18cd1 0%, #fbc2eb 100%);
+  --gradient-young-passion: linear-gradient(to left, #ff8177 0%, #ff867a 0%, #ff8c7f 21%, #f99185 52%, #cf556c 78%, #b12a5b 100%);
+  --gradient-sunny-morning: linear-gradient(120deg, #f6d365 0%, #fda085 100%);
+  --gradient-winter-neva: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+  --gradient-ripe-malinka: linear-gradient(120deg, #f093fb 0%, #f5576c 100%);
+  --gradient-malibu-beach: linear-gradient(to left, #4facfe 0%, #00f2fe 100%);
+  --gradient-new-life: linear-gradient(to left, #43e97b 0%, #38f9d7 100%);
+  --gradient-true-sunset: linear-gradient(to left, #fa709a 0%, #fee140 100%);
+  --gradient-plum-plate: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-aqua-splash: linear-gradient(15deg, #13547a 0%, #80d0c7 100%);
+  --gradient-midnight-bloom: linear-gradient(-20deg, #2b5876 0%, #4e4376 100%);
+}
+
+@layer utilities {
+  .bg-webgradient-warm-flame {
+    background-image: var(--gradient-warm-flame);
+  }
+
+  .bg-webgradient-night-fade {
+    background-image: var(--gradient-night-fade);
+  }
+
+  .bg-webgradient-young-passion {
+    background-image: var(--gradient-young-passion);
+  }
+
+  .bg-webgradient-sunny-morning {
+    background-image: var(--gradient-sunny-morning);
+  }
+
+  .bg-webgradient-winter-neva {
+    background-image: var(--gradient-winter-neva);
+  }
+
+  .bg-webgradient-ripe-malinka {
+    background-image: var(--gradient-ripe-malinka);
+  }
+
+  .bg-webgradient-malibu-beach {
+    background-image: var(--gradient-malibu-beach);
+  }
+
+  .bg-webgradient-new-life {
+    background-image: var(--gradient-new-life);
+  }
+
+  .bg-webgradient-true-sunset {
+    background-image: var(--gradient-true-sunset);
+  }
+
+  .bg-webgradient-plum-plate {
+    background-image: var(--gradient-plum-plate);
+  }
+
+  .bg-webgradient-aqua-splash {
+    background-image: var(--gradient-aqua-splash);
+  }
+
+  .bg-webgradient-midnight-bloom {
+    background-image: var(--gradient-midnight-bloom);
+  }
+}

@@ -28,6 +28,11 @@ export default defineConfig({
     host: true,
     port: 5173,
     allowedHosts: true,
+    watch: {
+      // Les tests ne sont pas servis par Vite : les surveiller provoque des
+      // rechargements de page à chaque exécution de `pnpm test`.
+      ignored: ['**/test/**', '**/e2e/**', '**/playwright-report/**', '**/test-results/**'],
+    },
   },
   preview: {
     host: true,

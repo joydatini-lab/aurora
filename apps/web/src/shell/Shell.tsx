@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Moon, Sun, Menu, X, Layers, Type, Palette, Ruler, Wand2, Component } from 'lucide-react';
+import { Moon, Sun, Menu, X, Layers, Type, Palette, Ruler, Wand2, Component, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui';
 import { useTheme } from './theme';
@@ -33,10 +33,14 @@ const SECTIONS: NavSection[] = [
     title: 'Composants',
     items: [{ to: '/composants', label: 'Galerie', icon: Component }],
   },
+  {
+    title: 'Personnalisation',
+    items: [{ to: '/apparence', label: 'Apparence', icon: Sparkles }],
+  },
 ];
 
 export function Shell() {
-  const { theme, toggle } = useTheme();
+  const { mode, toggleMode } = useTheme();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   // Toute navigation ferme le panneau mobile : sinon le contenu reste masqué
@@ -44,7 +48,10 @@ export function Shell() {
   const closeOnNavigate = () => setMobileOpen(false);
 
   return (
-    <div className="min-h-dvh bg-background text-foreground">
+    <div className="aurora-shell min-h-dvh text-foreground">
+      {/* Couche de fond : image ou dégradé, choisie par l'utilisateur.
+          `z-index: -1` la place derrière tout, sans avoir à ordonner le reste. */}
+      <div className="aurora-backdrop" aria-hidden />
       <a
         href="#contenu"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
@@ -56,7 +63,7 @@ export function Shell() {
       <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b border-border bg-background/85 px-4 backdrop-blur-md lg:hidden">
         <Brand />
         <div className="flex items-center gap-1">
-          <ThemeToggle theme={theme} onToggle={toggle} />
+          <ThemeToggle mode={mode} onToggle={toggleMode} />
           <Button
             variant="ghost"
             size="icon"
@@ -72,6 +79,7 @@ export function Shell() {
       <div className="lg:grid lg:grid-cols-[264px_1fr]">
         {/* Rail latéral */}
         <aside
+          data-slot="sidebar"
           className={cn(
             'z-30 border-border bg-background lg:sticky lg:top-0 lg:h-dvh lg:border-r',
             mobileOpen
@@ -81,7 +89,7 @@ export function Shell() {
         >
           <div className="hidden h-14 items-center justify-between border-b border-border px-5 lg:flex">
             <Brand />
-            <ThemeToggle theme={theme} onToggle={toggle} />
+            <ThemeToggle mode={mode} onToggle={toggleMode} />
           </div>
 
           <nav aria-label="Sections du design system" className="p-3">
@@ -170,17 +178,17 @@ function Brand() {
  * l'état ; `data-testid` fournit aux tests un point d'ancrage stable qui, lui,
  * ne dépend pas du thème courant.
  */
-function ThemeToggle({ theme, onToggle }: { theme: string; onToggle: () => void }) {
+function ThemeToggle({ mode, onToggle }: { mode: 'light' | 'dark'; onToggle: () => void }) {
   return (
     <Button
       variant="ghost"
       size="icon"
       onClick={onToggle}
-      aria-label={theme === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'}
-      title={theme === 'dark' ? 'Thème clair' : 'Thème sombre'}
+      aria-label={mode === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'}
+      title={mode === 'dark' ? 'Thème clair' : 'Thème sombre'}
       data-testid="theme-toggle"
     >
-      {theme === 'dark' ? <Sun /> : <Moon />}
+      {mode === 'dark' ? <Sun /> : <Moon />}
     </Button>
   );
 }

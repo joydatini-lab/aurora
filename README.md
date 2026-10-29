@@ -57,13 +57,38 @@ Règle de dépendance : les composants consomment les **tokens sémantiques**
 (`bg-primary`, `text-muted-foreground`), jamais une couleur en dur ni une primitive. C'est ce qui
 rend le thème sombre gratuit.
 
+### Personnalisation
+
+Le design system fournit le squelette ; l'apparence appartient à chaque équipe.
+
+- **11 thèmes** : « Encre & Lumière » + 10 presets tweakcn (neutres, sombres,
+  colorés, radical), couleurs recopiées sans retouche depuis le paquet npm
+  `@mahmood-khalil57/uno-tweakcn` (MIT).
+- **12 dégradés** webgradients, copie conforme via `tailwindcss-webgradients`
+  (MIT), utilisables en classe `.bg-webgradient-*` ou en variable
+  `--gradient-*`.
+- **Accent dynamique** : une image de fond est analysée sur un canvas 48×48 ;
+  trois teintes deviennent `--primary`, `--accent` et `--tint`, et la couleur
+  du texte des boutons est choisie par calcul de contraste WCAG.
+- **Fondu de 0,8 s** entre deux thèmes, via `@property` (indispensable pour
+  interpoler des couleurs) — désactivé en `prefers-reduced-motion`.
+- **Cartes en verre** dès qu'un fond est actif : `bg-card/40`,
+  `backdrop-blur-2xl` et voile `color-mix(in srgb, var(--tint) 22%, transparent)`.
+
+Détail des sources, des blocages réseau et des mesures de contraste :
+[docs/design-system/personalisation.md](docs/design-system/personalisation.md).
+
 ### Fondations de code
 
 | Fichier | Rôle |
 |---|---|
 | `src/components/ui/*` | Les primitives, point d'entrée unique `@/components/ui` |
 | `src/shell/Shell.tsx` | Navigation du design space (rail desktop, panneau mobile) |
-| `src/shell/theme.tsx` | Thème : préférence enregistrée > système > clair. Persiste le choix explicite |
+| `src/shell/theme.tsx` | Le provider unique : mode + preset + accent + fond. Préférence enregistrée > système > clair |
+| `src/theme/color.ts` | Conversions OKLCH/sRGB et contraste WCAG — fonctions pures, testées |
+| `src/theme/extract.ts` | Quantification d'image en 3 teintes (canvas 48×48) |
+| `src/theme/apply.ts` | Écriture des variables CSS sur `<html>` |
+| `src/theme/presets.ts` | Données des 10 presets — **générées, non retouchées** |
 | `src/boot/fatal.ts` | Filets d'amorçage : `error`, `unhandledrejection`, chien de garde |
 | `src/components/design/page.tsx` | Primitives de **documentation** (Section, Swatch, Rule…). Hors du système produit |
 
@@ -81,6 +106,7 @@ suit ne s'exécute — pas même le code censé afficher l'erreur. D'où l'ordre
 
 ```bash
 pnpm dev                # design space (Vite)
+pnpm -F @aurora/web test # tests unitaires (node:test, sans navigateur)
 pnpm build              # build de production
 pnpm typecheck          # tsc --noEmit (apps/web)
 pnpm lint               # eslint --max-warnings 0

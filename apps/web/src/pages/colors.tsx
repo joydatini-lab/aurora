@@ -86,7 +86,7 @@ export function ColorsPage() {
         description="Deux couches : des primitives et des tokens sémantiques. Le système tient parce que les composants ne connaissent QUE la seconde."
       >
         <Badge variant="outline">OKLCH</Badge>
-        <Badge variant="success">AA vérifié</Badge>
+        <Badge variant="success">AA vérifié · thème maison</Badge>
         <Badge variant="outline">2 thèmes</Badge>
       </PageHeader>
 
@@ -207,7 +207,10 @@ export function ColorsPage() {
         </div>
       </Section>
 
-      <Section title="Test de contraste sur les surfaces réelles">
+      <Section
+        title="Test de contraste sur les surfaces réelles"
+        note="Ce contrôle porte sur le thème maison. Les presets importés dans Apparence ont leurs propres paires : leur contraste est mesuré et affiché là-bas, pas supposé ici."
+      >
         <Demo className="flex-col items-stretch gap-4">
           <div className="rounded-lg bg-card p-4 shadow-xs">
             <p className="text-sm text-foreground">Texte principal sur une carte</p>
