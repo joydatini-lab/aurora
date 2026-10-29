@@ -8,6 +8,7 @@ import { SpacingPage } from '@/pages/spacing';
 import { MotionPage } from '@/pages/motion';
 import { ComponentsPage } from '@/pages/components';
 import { AppearancePage } from '@/pages/appearance';
+import { StudioPage } from '@/pages/studio';
 import { NotFoundPage } from '@/pages/not-found';
 
 /**
@@ -30,6 +31,7 @@ export const routes = createBrowserRouter(
         { path: 'mouvement', element: <MotionPage /> },
         { path: 'composants', element: <ComponentsPage /> },
         { path: 'apparence', element: <AppearancePage /> },
+        { path: 'studio', element: <StudioPage /> },
         // Anciens chemins `/design/*` : conservés en redirection pour que les
         // liens déjà partagés ne tombent pas en 404.
         { path: 'design', element: <Navigate to="/" replace /> },

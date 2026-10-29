@@ -1,4 +1,17 @@
-@import "tailwindcss";
+/*
+ * Détection de contenu EXPLICITE (`source(none)` + `@source`).
+ *
+ * Par défaut, Tailwind v4 scanne tout le projet. Il a ainsi ramassé le
+ * sélecteur Playwright `[data-testid="theme-toggle"]:visible` dans `e2e/` et
+ * produit une règle invalide (`:is()` vide), qui faisait échouer la
+ * minification CSS. Un fichier de test n'est pas une source de styles.
+ *
+ * En prime, la surface scannée devient vérifiable : seuls `index.html` et les
+ * sources de l'application peuvent créer une classe.
+ */
+@import "tailwindcss" source(none);
+@source "../../index.html";
+@source "../**/*.{ts,tsx}";
 @import "./gradients.css";
 
 /* =============================================================================
@@ -410,3 +423,26 @@ html[data-backdrop] [data-slot='sidebar'] {
   }
 }
 
+
+/* ------------------------------------------------------------------------- */
+/* Design Space — aperçu d'affiche                                            */
+/* ------------------------------------------------------------------------- */
+
+/*
+ * `container-type: inline-size` est ce qui rend l'aperçu vraiment fidèle : les
+ * tailles de police du JSON sont des FRACTIONS du canevas, pas des pixels. On
+ * les exprime en `cqw` (1 % de la largeur du cadre) pour que l'affiche se
+ * redimensionne sans jamais mentir sur ses proportions.
+ */
+.poster-frame {
+  container-type: inline-size;
+  /* Le rendu de l'affiche est indépendant du thème de l'application : ce sont
+     les couleurs de la charte qui décident, pas le mode sombre. */
+  color-scheme: light;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poster-frame * {
+    transition: none !important;
+  }
+}

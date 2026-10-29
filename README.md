@@ -14,12 +14,18 @@ pnpm dev          # http://localhost:5173
 
 | Chemin | Rôle |
 |---|---|
-| `apps/web` | Coquille web : React 18 + Vite 5 + Tailwind v4 + primitives Radix. Contient le **design space** et les composants du design system |
+| `apps/web` | Coquille web : React 18 + Vite 5 + Tailwind v4 + primitives Radix. Contient le **design space**, le **studio** (`src/design/`) et les composants du design system |
 | `packages/domain` | Types du domaine, purs. Aucune dépendance, aucun rendu |
 | `packages/data` | Accès données : Supabase + PowerSync. **Conservé**, mais pas encore importé par `apps/web` |
 
 Le design space se visite à l'écran : `/` (principes) · `/couleurs` · `/typographie` · `/espacement`
-· `/mouvement` · `/composants`.
+· `/mouvement` · `/composants` · `/apparence` · **`/studio`**.
+
+`/studio` est **Design Space Pro** : un brief devient trois directions de marque, une affiche
+générée en calques, un logo vectoriel, et un **rapport de validation chiffré** (neuf codes de
+violation typés, huit indicateurs, score sur 10). Le moteur est déterministe ; la couche IA est
+une interface prête mais non branchée — aucun modèle n'est joignable depuis cet environnement.
+Détail exact, écarts et limites : [`docs/design-system/design-space.md`](docs/design-system/design-space.md).
 
 ## Ce qui a été supprimé, et pourquoi
 

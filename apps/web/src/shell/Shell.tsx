@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Moon, Sun, Menu, X, Layers, Type, Palette, Ruler, Wand2, Component, Sparkles } from 'lucide-react';
+import {
+  Moon, Sun, Menu, X, Layers, Type, Palette, Ruler, Wand2, Component, Sparkles, PenTool,
+} from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui';
 import { useTheme } from './theme';
@@ -32,6 +34,10 @@ const SECTIONS: NavSection[] = [
   {
     title: 'Composants',
     items: [{ to: '/composants', label: 'Galerie', icon: Component }],
+  },
+  {
+    title: 'Design Space Pro',
+    items: [{ to: '/studio', label: 'Studio', icon: PenTool }],
   },
   {
     title: 'Personnalisation',
