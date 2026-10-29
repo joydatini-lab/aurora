@@ -15,6 +15,7 @@ import {
 import { PageHeader, Section, Rule } from '@/components/design/page';
 import { cn } from '@/lib/cn';
 import { selectProvider } from '@/design/ai/provider';
+import { fetchServiceStatus, generatePoster, type GenerateResult, type ServiceStatus } from '@/design/ai/remote';
 import { buildLogo, toDataUrl, toSvg, type LogoArtifact } from '@/design/logo';
 import {
   buildPoster,
@@ -26,7 +27,7 @@ import {
 import { posterToSvg } from '@/design/render';
 import { refine } from '@/design/pipeline';
 import { validateLayout } from '@/design/validate';
-import type { BrandDNA, Brief, Layout, ValidationReport } from '@/design/types';
+import type { BrandDNA, Brief, Layout, PosterCopy, ValidationReport } from '@/design/types';
 
 /**
  * Studio — le premier écran de Design Space Pro.
@@ -58,6 +59,26 @@ export function StudioPage() {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  /** Demande libre : c'est elle que le modèle doit transformer en affiche. */
+  const [request, setRequest] = React.useState(
+    'Une affiche sobre et affirmée : l’accroche doit se lire à trois mètres.',
+  );
+  const [aiBusy, setAiBusy] = React.useState(false);
+  const [aiResult, setAiResult] = React.useState<GenerateResult | null>(null);
+  const [service, setService] = React.useState<ServiceStatus | null>(null);
+  /** Copy produit par le modèle : il prime sur le texte déduit du brief. */
+  const [copy, setCopy] = React.useState<PosterCopy | null>(null);
+
+  React.useEffect(() => {
+    let alive = true;
+    void fetchServiceStatus().then((status) => {
+      if (alive) setService(status);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   async function propose() {
     setBusy(true);
     setError(null);
@@ -74,16 +95,42 @@ export function StudioPage() {
 
   const work = React.useMemo(() => {
     if (!accepted) return null;
-    const initial = buildPoster(accepted, format);
+    const initial = buildPoster(accepted, format, copy ?? undefined);
     const outcome = applyFixes ? refine(initial, accepted) : null;
     const layout = outcome ? outcome.layout : initial;
     const report = outcome ? outcome.report : validateLayout(initial, accepted);
     return { initial, layout, report, outcome };
-  }, [accepted, format, applyFixes]);
+  }, [accepted, format, applyFixes, copy]);
 
   const logo = React.useMemo(() => (accepted ? buildLogo(accepted) : null), [accepted]);
 
+  /**
+   * Demande une affiche au modèle.
+   *
+   * Aucun repli silencieux : si le service échoue, l'erreur reste affichée et
+   * aucune affiche n'est produite. Une composition de secours présenterait une
+   * panne comme un résultat.
+   */
+  async function generate() {
+    setAiBusy(true);
+    setAiResult(null);
+    setCopy(null);
+    try {
+      const result = await generatePoster(brief, request, { format });
+      setAiResult(result);
+      if (result.ok) {
+        setDirections([result.dna]);
+        setAccepted(result.dna);
+        setCopy(result.copy);
+      }
+    } finally {
+      setAiBusy(false);
+      void fetchServiceStatus().then(setService);
+    }
+  }
+
   const canPropose = brief.name.trim().length > 1 && brief.sector.trim().length > 1;
+  const canGenerate = canPropose && request.trim().length > 8 && !aiBusy;
 
   return (
     <div>
@@ -93,9 +140,40 @@ export function StudioPage() {
         description="D'un brief à une identité éditable : le moteur propose, vous acceptez, le validateur vérifie. Aucune étape ne prétend à une qualité qu'elle n'a pas mesurée."
       >
         <Badge variant="outline">{provider.label}</Badge>
-        <Badge variant="warning">Aucun modèle distant branché</Badge>
+        <ServiceBadge service={service} />
         <Badge variant="success">Validateur déterministe</Badge>
       </PageHeader>
+
+      {/* ---------------------------------------------------------------- */}
+      <Section
+        title="Décrire l’affiche"
+        note="Écrivez ce que vous voulez. Le modèle interprète et propose ; la composition, les contrastes et le score restent calculés ici."
+      >
+        <Card className="p-5">
+          <Label htmlFor="design-request">Votre demande</Label>
+          <Textarea
+            id="design-request"
+            rows={3}
+            className="mt-1.5"
+            value={request}
+            onChange={(event) => setRequest(event.target.value)}
+            placeholder="Ex. : une affiche pour un festival de jazz, très contrastée, lisible de loin."
+          />
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Button onClick={() => void generate()} disabled={!canGenerate}>
+              <Sparkles /> {aiBusy ? 'Génération…' : 'Générer l’affiche'}
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {service?.reachable
+                ? `${service.mode === 'live' ? 'Modèle réel' : 'Modèle simulé'} · ${service.model}`
+                : 'Service non démarré'}
+            </span>
+          </div>
+
+          <AiOutcome result={aiResult} service={service} />
+        </Card>
+      </Section>
 
       {/* ---------------------------------------------------------------- */}
       <Section title="1 · Brief" note="Tout ce qui n'est pas fourni ici sera marqué « proposé » ou « inconnu » — jamais présenté comme un fait.">
@@ -334,6 +412,110 @@ export function StudioPage() {
             </div>
           </Section>
         </>
+      ) : null}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* État de la génération                                                       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Badge d'état du service.
+ *
+ * Il distingue trois situations réelles — service absent, service simulé,
+ * service relayé à un vrai modèle — parce que la valeur d'une affiche produite
+ * n'est pas la même. Un badge « IA » unique serait un mensonge commode.
+ */
+function ServiceBadge({ service }: { service: ServiceStatus | null }) {
+  if (!service) return <Badge variant="outline">Vérification du service…</Badge>;
+  if (!service.reachable) return <Badge variant="destructive">Service de génération arrêté</Badge>;
+  if (service.mode === 'mock') return <Badge variant="warning">Modèle simulé — aucune clé</Badge>;
+  return <Badge variant="success">Modèle réel · {service.model}</Badge>;
+}
+
+function AiOutcome({
+  result,
+  service,
+}: {
+  result: GenerateResult | null;
+  service: ServiceStatus | null;
+}) {
+  if (!result) {
+    return service && !service.reachable ? (
+      <p className="mt-3 flex items-start gap-2 rounded-lg border border-warning/35 bg-warning/10 px-3 py-2 text-xs">
+        <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-warning" />
+        <span>
+          Le service de génération n’est pas lancé. Démarrez-le avec{' '}
+          <code className="font-mono">pnpm design-api</code>, ou utilisez le moteur de règles plus bas —
+          il fonctionne sans service.
+        </span>
+      </p>
+    ) : null;
+  }
+
+  if (!result.ok) {
+    return (
+      <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/8 px-3 py-2" role="alert">
+        <p className="flex items-center gap-2 text-sm text-destructive">
+          <TriangleAlert className="size-4 shrink-0" />
+          {result.message}
+        </p>
+        <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+          étape : {result.stage} · {result.ms} ms
+        </p>
+        {result.detail ? (
+          <details className="mt-1">
+            <summary className="cursor-pointer text-[11px] text-muted-foreground">
+              Voir la réponse brute
+            </summary>
+            <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-[10px] whitespace-pre-wrap">
+              {result.detail}
+            </pre>
+          </details>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 space-y-2">
+      <p className="flex flex-wrap items-center gap-2 text-xs">
+        <Badge variant={result.simulated ? 'warning' : 'success'}>
+          {result.simulated ? 'Réponse simulée' : 'Réponse du modèle'}
+        </Badge>
+        <span className="font-mono text-muted-foreground">
+          {result.meta.model} · {result.meta.ms} ms
+          {result.meta.usage?.total ? ` · ${result.meta.usage.total} jetons` : ''}
+        </span>
+      </p>
+
+      {result.understanding ? (
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Compréhension : </span>
+          {result.understanding}
+        </p>
+      ) : null}
+
+      {result.corrections.length > 0 ? (
+        <details className="rounded-lg border border-warning/30 bg-warning/8 px-3 py-2">
+          <summary className="cursor-pointer text-xs font-medium">
+            {result.corrections.length} correction(s) appliquée(s) à la réponse du modèle
+          </summary>
+          <ul className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
+            {result.corrections.map((correction, index) => (
+              <li key={index}>· {correction}</li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+
+      {result.unknowns.length > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Non fourni : </span>
+          {result.unknowns.join(' · ')}
+        </p>
       ) : null}
     </div>
   );

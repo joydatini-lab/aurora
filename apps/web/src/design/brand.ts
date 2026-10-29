@@ -137,17 +137,11 @@ function buildDna(
   version: number,
 ): BrandDNA {
   const palette = buildPalette(baseHue, direction.template, direction.orientation);
-  const font = FONT_BY_STYLE[style];
-  const grid = GRID_BY_STYLE[style];
-
-  const title: TypographyRole = { font, weight: weightFor(style), sizeScale: 1 };
-  const typography: Typography = {
-    titre: title,
-    sousTitre: { font, weight: 600, sizeScale: 0.62 },
-    corps: { font, weight: 400, sizeScale: 0.4 },
-    note: { font, weight: 400, sizeScale: 0.3 },
-  };
-
+  // Une seule source pour la typographie et la grille : les règles et l'IA
+  // doivent produire des chartes comparables, sinon on ne peut pas les juger
+  // sur le même validateur.
+  const typography = typographyFor(style);
+  const grid = gridFor(style);
   const strategy = buildStrategy(brief, style);
 
   return {
@@ -169,7 +163,7 @@ function buildDna(
  * ce qui manque reste inconnu. Aucune phrase de marché n'est inventée comme un
  * fait (Référence produit §6.2, dernier paragraphe).
  */
-function buildStrategy(brief: Brief, style: StyleCategory): BrandStrategy {
+export function buildStrategy(brief: Brief, style: StyleCategory): BrandStrategy {
   const hasOffer = brief.offer.trim().length > 0;
   const hasAudience = brief.audience.trim().length > 0;
   const hasSector = brief.sector.trim().length > 0;
@@ -193,7 +187,22 @@ function buildStrategy(brief: Brief, style: StyleCategory): BrandStrategy {
   };
 }
 
-function weightFor(style: StyleCategory): TypographyRole['weight'] {
+/** Polices et grille d'une catégorie : partagées par les règles et par l'IA. */
+export function typographyFor(style: StyleCategory): Typography {
+  const font = FONT_BY_STYLE[style];
+  return {
+    titre: { font, weight: weightFor(style), sizeScale: 1 },
+    sousTitre: { font, weight: 600, sizeScale: 0.62 },
+    corps: { font, weight: 400, sizeScale: 0.4 },
+    note: { font, weight: 400, sizeScale: 0.3 },
+  };
+}
+
+export function gridFor(style: StyleCategory): Grid {
+  return GRID_BY_STYLE[style];
+}
+
+export function weightFor(style: StyleCategory): TypographyRole['weight'] {
   switch (style) {
     case 'Bold':
       return 900;

@@ -28,6 +28,25 @@ export default defineConfig({
     host: true,
     port: 5173,
     allowedHosts: true,
+    /*
+     * Le service de génération vit sur un autre port, mais le navigateur ne
+     * l'appelle jamais directement : `/api` est relayé ici. Cela supprime le
+     * CORS et, surtout, garde la clé du fournisseur hors du bundle. Le
+     * navigateur ne sait même pas qu'un autre serveur existe.
+     */
+    proxy: {
+      '/api': {
+        target: process.env.DESIGN_API_URL ?? 'http://127.0.0.1:8787',
+        changeOrigin: false,
+        // Un service absent doit produire une ERREUR VISIBLE côté client, pas
+        // un 200 vide : on ne masque pas les pannes.
+        configure: (proxy) => {
+          proxy.on('error', (error) => {
+            console.error('[proxy /api] service injoignable :', error.message);
+          });
+        },
+      },
+    },
     watch: {
       // Les tests ne sont pas servis par Vite : les surveiller provoque des
       // rechargements de page à chaque exécution de `pnpm test`.

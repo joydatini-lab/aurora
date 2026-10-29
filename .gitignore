@@ -102,3 +102,8 @@ playwright/.cache/
 playwright-report/
 test-results/
 blob-report/
+
+# Service de génération : la clé du fournisseur ne sort jamais du poste.
+# Seul `.env.example` est versionné.
+tools/design-api/.env.local
+.env.local

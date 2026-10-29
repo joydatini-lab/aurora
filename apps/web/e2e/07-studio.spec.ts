@@ -50,9 +50,9 @@ test.describe('studio', () => {
 
     const frame = page.locator('.poster-frame');
     await expect(frame).toBeVisible();
-    // 8 calques : fond, bandeau, sous-couche, titre, sous-titre, corps,
-    // pastille, logo.
-    await expect(frame.locator(':scope > *')).toHaveCount(8);
+    // 10 calques : fond, pied, filet, bandeau, sous-couche, titre,
+    // sous-titre, corps, logo, mention.
+    await expect(frame.locator(':scope > *')).toHaveCount(10);
 
     await expect(page.getByText(/rapport de validation/i)).toBeVisible();
     await expect(page.getByText(/\d+(?:[.,]\d+)?\/10/)).toBeVisible();
@@ -139,8 +139,8 @@ test.describe('studio', () => {
     const parsed = JSON.parse(Buffer.concat(chunks).toString('utf8')) as {
       calques: Array<{ id: string; o: number }>;
     };
-    expect(parsed.calques.length).toBe(8);
-    expect(new Set(parsed.calques.map((c) => c.o)).size).toBe(8);
+    expect(parsed.calques.length).toBe(10);
+    expect(new Set(parsed.calques.map((c) => c.o)).size).toBe(10);
   });
 
   test('une provenance est affichée pour chaque champ de stratégie', async ({ page }) => {
@@ -151,6 +151,25 @@ test.describe('studio', () => {
     await expect(page.getByText('fourni', { exact: true }).first()).toBeVisible();
     // Le style est déduit par une règle : il doit dire « proposé ».
     await expect(page.getByText('proposé', { exact: true }).first()).toBeVisible();
+  });
+
+  test('générer une affiche sur demande produit un rapport chiffré', async ({ page }) => {
+    // Ce parcours dépend du service `tools/design-api`. Sans lui, l'écran doit
+    // l'annoncer et ne rien produire — c'est justement ce qu'on vérifie ici.
+    await expect(page.getByLabel(/votre demande/i)).toBeVisible();
+    await page.getByRole('button', { name: /générer l’affiche/i }).click();
+
+    const failed = page.getByText(/service de génération n’est pas lancé|injoignable/i);
+    const produced = page.locator('.poster-frame');
+
+    // L'un des deux doit arriver : une affiche, ou une explication. Jamais un
+    // écran inchangé et muet.
+    await expect(produced.or(failed).first()).toBeVisible({ timeout: 20_000 });
+
+    if (await produced.isVisible()) {
+      await expect(page.getByText(/rapport de validation/i)).toBeVisible();
+      await expect(page.getByText(/réponse simulée|réponse du modèle/i)).toBeVisible();
+    }
   });
 
   test('le parcours complet ne provoque aucune erreur console', async ({ page }) => {

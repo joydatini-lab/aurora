@@ -153,6 +153,44 @@ test('aucune ligne ne déborde de la largeur disponible', () => {
   }
 });
 
+test('une accroche ne dépasse jamais trois lignes', () => {
+  // Une accroche longue se réduit au lieu de remplir la boîte : sinon le titre
+  // devient un pavé de cinq lignes qui écrase le reste de la composition.
+  const long = 'Accompagner les PME industrielles vers un modèle bas carbone mesurable';
+  const fitted = fitText({
+    text: long,
+    boxW: 0.86,
+    boxH: 0.5,
+    ratio: 297 / 210,
+    fontWeight: 800,
+    lineHeight: 1.1,
+    maxLines: 3,
+  });
+  assert.ok(fitted.lines.length <= 3, `titre sur ${fitted.lines.length} lignes`);
+});
+
+test('le groupe de texte reste au-dessus du bandeau de pied', () => {
+  const { layout } = clean();
+  const footer = layout.calques.find((l) => l.id === 'l-pied')!;
+  for (const layer of layout.calques.filter((l) => l.a_sem.type === 'text')) {
+    if (layer.id === 'l-mention') continue; // posée DANS le bandeau, c'est son rôle
+    assert.ok(
+      layer.a_geo.y + layer.a_geo.h <= footer.a_geo.y + 1e-9,
+      `${layer.id} chevauche le bandeau de pied`,
+    );
+  }
+});
+
+test('le corps suit le sous-titre au lieu de flotter en bas', () => {
+  const { layout } = clean();
+  const sub = layout.calques.find((l) => l.id === 'l-soustitre')!;
+  const body = layout.calques.find((l) => l.id === 'l-corps')!;
+  const gap = body.a_geo.y - (sub.a_geo.y + sub.a_geo.h);
+  // Un vide de plusieurs dizaines de pour cent donnait une affiche évidée au
+  // milieu, sans qu'aucune règle du validateur ne s'en plaigne.
+  assert.ok(gap >= 0 && gap < 0.06, `écart sous-titre → corps : ${(gap * 100).toFixed(1)} %`);
+});
+
 test('aucun mot n’est coupé par la césure', () => {
   const mot = 'Anticonstitutionnellement';
   const size = 0.08;

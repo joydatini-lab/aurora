@@ -1,6 +1,6 @@
 import { parseColor, pickForeground } from '../theme/color.ts';
 import { slug } from './brand.ts';
-import type { BrandDNA, Layer, Layout } from './types.ts';
+import type { BrandDNA, Layer, Layout, PosterCopy } from './types.ts';
 
 /**
  * Génération d'une affiche sous forme de CALQUES.
@@ -153,6 +153,15 @@ export function fitText(args: {
   min?: number;
   /** Plafond, pour tenir une échelle typographique. */
   max?: number;
+  /**
+   * Nombre de lignes maximal.
+   *
+   * Sans cette borne, l'ajustement remplit la boîte : une accroche longue
+   * devient un pavé de cinq lignes au corps maximal, qui écrase tout le reste.
+   * Une accroche d'affiche se lit en deux ou trois lignes — au-delà, c'est un
+   * texte de corps, et le réduire est la seule issue honnête.
+   */
+  maxLines?: number;
 }): FittedText {
   const { text, boxW, boxH, ratio } = args;
   const lineHeight = args.lineHeight ?? 1.15;
@@ -160,12 +169,16 @@ export function fitText(args: {
   const min = args.min ?? 0.008;
   const words = splitWords(text);
 
+  const maxLines = args.maxLines ?? Number.POSITIVE_INFINITY;
+
   const fitsAt = (size: number): { ok: boolean; lines: string[] } => {
     const sizeInWidthUnits = size * ratio;
     const lines = greedyLines(words, boxW, sizeInWidthUnits, advance);
     const usedHeight = lines.length * sizeInWidthUnits * lineHeight;
     const ok =
-      linesFit(lines, boxW, sizeInWidthUnits, advance) && usedHeight <= boxH * ratio + 1e-9;
+      lines.length <= maxLines &&
+      linesFit(lines, boxW, sizeInWidthUnits, advance) &&
+      usedHeight <= boxH * ratio + 1e-9;
     return { ok, lines };
   };
 
@@ -173,6 +186,16 @@ export function fitText(args: {
   let low = min;
   let high = Math.max(min, Math.min(boxH, args.max ?? boxH));
   let best: FittedText = { fontSize: min, lines: fitsAt(min).lines };
+
+  /*
+   * Si même le corps minimal dépasse la limite de lignes (cas d'un texte très
+   * long), la dichotomie ne trouvera jamais de solution : on rend le corps
+   * minimal et le VALIDATEUR signalera un débordement. Rétrécir indéfiniment
+   * pour « faire tenir » produirait un texte illisible présenté comme valide.
+   */
+  if (!fitsAt(min).ok && !fitsAt(high).ok) {
+    return { fontSize: min, lines: fitsAt(min).lines };
+  }
 
   for (let i = 0; i < 28; i += 1) {
     const size = (low + high) / 2;
@@ -236,7 +259,27 @@ function baseText(args: {
  * RENDU (`o`) en découle, mais reste explicite : c'est lui qui fait foi, jamais
  * la position dans le tableau.
  */
-export function buildPoster(dna: BrandDNA, format: PosterFormat = POSTER_FORMATS[0]!): Layout {
+/**
+ * Copy de repli, dérivé du brief. Il sert quand aucun texte n'est fourni — et
+ * c'est exactement ce que produisent les règles quand aucun modèle n'est
+ * branché.
+ */
+export function copyFromBrief(dna: BrandDNA): PosterCopy {
+  return {
+    headline: dna.brief.name.trim() || 'Sans titre',
+    subhead: dna.strategy.promise.value ?? dna.brief.offer ?? 'Direction à préciser',
+    body: dna.brief.audience.trim()
+      ? `Pour ${dna.brief.audience.trim()}.`
+      : 'Public à préciser dans le brief.',
+    footer: dna.brief.sector.trim() || 'Marque',
+  };
+}
+
+export function buildPoster(
+  dna: BrandDNA,
+  format: PosterFormat = POSTER_FORMATS[0]!,
+  copy?: Partial<PosterCopy>,
+): Layout {
   const [dominante, accent, clair, profond] = dna.palette.colors;
   const R = format.ratio;
 
@@ -250,17 +293,27 @@ export function buildPoster(dna: BrandDNA, format: PosterFormat = POSTER_FORMATS
   const innerW = 1 - margin * 2;
   const onDeep = pickForeground(parseColor(profond)).color;
 
-  const title = dna.brief.name.trim() || 'Sans titre';
-  const subtitle = dna.strategy.promise.value ?? dna.brief.offer ?? 'Direction à préciser';
-  const body = dna.brief.audience.trim()
-    ? `Pour ${dna.brief.audience.trim()}.`
-    : 'Public à préciser dans le brief.';
+  /*
+   * Le copy fourni PRIME sur le brief, champ par champ : un modèle qui réécrit
+   * l'accroche ne doit pas effacer une mention de pied encore valable pour
+   * cause de champ manquant.
+   */
+  const fallback = copyFromBrief(dna);
+  const text = {
+    headline: usable(copy?.headline) ?? fallback.headline,
+    subhead: usable(copy?.subhead) ?? fallback.subhead,
+    body: usable(copy?.body) ?? fallback.body,
+    footer: usable(copy?.footer) ?? fallback.footer,
+  };
+  const title = text.headline;
+  const subtitle = text.subhead;
+  const body = text.body;
 
   /* --- rythme vertical, en % de largeur converti en hauteur --------------- */
   const bandH = 0.17 * u; // hauteur du bandeau de pied
   const bandY = 1 - bandH;
-  const titleY = marginV + 0.1 * u;
-  const titleBudget = bandY - titleY - 0.32 * u;
+  const blockTop = marginV + 0.09 * u;
+  const titleBudget = bandY - blockTop - 0.32 * u;
   const titleFit = fitText({
     text: title,
     boxW: innerW,
@@ -268,6 +321,7 @@ export function buildPoster(dna: BrandDNA, format: PosterFormat = POSTER_FORMATS
     ratio: R,
     fontWeight: dna.typography.titre.weight,
     lineHeight: 1.1,
+    maxLines: 3,
   });
   /*
    * Échelle typographique explicite : le sous-titre ne dépasse jamais 52 % du
@@ -279,11 +333,10 @@ export function buildPoster(dna: BrandDNA, format: PosterFormat = POSTER_FORMATS
   const titleH = titleFit.lines.length * titleFit.fontSize * 1.1;
   const pad = 0.022 * u;
 
-  const subtitleY = titleY + titleH + pad + 0.03 * u;
   const subtitleFit = fitText({
     text: subtitle,
     boxW: innerW,
-    boxH: bandY - subtitleY - 0.16 * u,
+    boxH: Math.max(0.06 * u, bandY - blockTop - titleH - 0.3 * u),
     ratio: R,
     fontWeight: dna.typography.sousTitre.weight,
     lineHeight: 1.25,
@@ -294,16 +347,33 @@ export function buildPoster(dna: BrandDNA, format: PosterFormat = POSTER_FORMATS
   const bodyFit = fitText({
     text: body,
     boxW: innerW * 0.7,
-    boxH: Math.max(0.05 * u, bandY - subtitleY - subtitleH - 0.22 * u),
+    boxH: Math.max(0.05 * u, bandY - blockTop - titleH - subtitleH - 0.4 * u),
     ratio: R,
     fontWeight: dna.typography.corps.weight,
     lineHeight: 1.4,
     max: MAX_BODY,
   });
   const bodyH = bodyFit.lines.length * bodyFit.fontSize * 1.4;
-  // Le corps est ancré AU-DESSUS du bandeau : le vide se place entre le
-  // sous-titre et lui, et se lit comme une respiration, pas comme un oubli.
-  const bodyY = bandY - 0.05 * u - bodyH;
+
+  /*
+   * Placement du GROUPE de texte.
+   *
+   * Le titre, le sous-titre et le corps forment un seul bloc : ils se lisent
+   * ensemble ou pas du tout. Coller le bloc à la marge haute laissait un trou
+   * de 40 % de la hauteur sous le dernier paragraphe — la rastérisation l'a
+   * montré, le validateur ne le voyait pas, parce qu'un vide n'est pas une
+   * violation.
+   *
+   * On répartit donc l'espace libre restant : un peu au-dessus, davantage
+   * en dessous. C'est la composition éditoriale classique, et elle s'adapte
+   * automatiquement à la longueur réelle du texte.
+   */
+  const blockHeight = titleH + pad * 2 + 0.03 * u + subtitleH + 0.06 * u + bodyH;
+  const free = Math.max(0, bandY - 0.1 * u - blockTop - blockHeight);
+  const titleY = blockTop + free * 0.3;
+
+  const subtitleY = titleY + titleH + pad + 0.03 * u;
+  const bodyY = subtitleY + subtitleH + 0.06 * u;
 
   /** Largeur du logo, en fraction de largeur. */
   const LOGO_W = 0.11;
@@ -459,7 +529,7 @@ export function buildPoster(dna: BrandDNA, format: PosterFormat = POSTER_FORMATS
     {
       ...baseText({
         id: 'l-mention',
-        text: dna.brief.sector.trim() || 'Marque',
+        text: text.footer,
         role: 'corps',
         x: margin,
         y: bandY + bandH / 2 - 0.02 * u,
@@ -470,7 +540,7 @@ export function buildPoster(dna: BrandDNA, format: PosterFormat = POSTER_FORMATS
       a_sty: {
         fontFamily: dna.typography.corps.font,
         fontSize: fitText({
-          text: dna.brief.sector.trim() || 'Marque',
+          text: text.footer,
           boxW: innerW - LOGO_W - 0.06 * u,
           boxH: 0.04 * u,
           ratio: R,
@@ -479,8 +549,10 @@ export function buildPoster(dna: BrandDNA, format: PosterFormat = POSTER_FORMATS
           max: titleFit.fontSize * 0.16,
         }).fontSize,
         fontWeight: dna.typography.corps.weight,
-        fill: clair,
-        opacity: 0.85,
+        // Posé sur le bandeau (dominante) : le texte doit être calculé pour CE
+        // fond, pas reprendre la couleur claire de la palette.
+        fill: pickForeground(parseColor(dominante)).color,
+        opacity: 0.92,
         align: 'left',
         lineHeight: 1.3,
       },
@@ -491,6 +563,12 @@ export function buildPoster(dna: BrandDNA, format: PosterFormat = POSTER_FORMATS
     canvas: { w: 1, h: 1, ratio: R, bg: profond },
     calques,
   };
+}
+
+/** Une chaîne vide ou blanche n'est pas un texte : on retombe sur le brief. */
+function usable(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
 }
 
 /** Tri par ordre de rendu explicite — jamais par position dans le tableau. */

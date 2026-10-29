@@ -29,28 +29,40 @@ derrière (`apps/web/src/design/`).
    par champ.
 6. **Exports.** Logo SVG, affiche SVG, layout JSON — trois fichiers réels.
 
-Aucun appel réseau : tout est calculé dans le navigateur.
+Ou **« Générer l'affiche »** : on écrit une demande en français, un modèle
+propose une direction et un texte, le moteur compose et valide. Sans clé, le
+service répond en mode simulé — et le dit.
 
 ---
 
-## 2. Le moteur est déterministe, et c'est un choix
+## 2. Deux producteurs, un seul validateur
 
-**Aucun modèle de langage ou de vision n'est joignable depuis cet
-environnement** (sortie réseau limitée aux registres de paquets et à GitHub).
-La couture est posée côté code (`src/design/ai/provider.ts`) :
+L'écran propose **deux chemins**, et ils ne sont pas équivalents :
 
-| Provider | État | Comportement |
-| --- | --- | --- |
-| `RuleBasedDesignAi` | **actif, testé** | harmonie + grille + typographie par règles |
-| `HttpDesignAi` | **branché, jamais appelé** | lève `AiUnavailableError` si non configuré |
+| Chemin | Entrée | Producteur | État |
+| --- | --- | --- | --- |
+| Règles | brief structuré | `RuleBasedDesignAi` (`src/design/ai/provider.ts`) | actif, testé |
+| Modèle | demande en langage naturel | service local → Agnes 3.0 Flash | branché, **jamais appelé en réel** |
+
+Les deux traversent ensuite le **même** `buildPoster`, `refine` et
+`validateLayout`. Une affiche venue d'un modèle n'est pas jugée plus
+indulgemment : c'est ce qui rend les deux chemins comparables.
+
+Détail complet du chemin IA, clé comprise : [`generation-ia.md`](generation-ia.md).
 
 `selectProvider()` retombe sur les règles quand aucun modèle n'est configuré :
 aucun écran ne dépend d'un service absent pour s'afficher.
 
-Conséquence assumée : le même brief produit toujours les mêmes directions. C'est
-ce qui rend la comparaison et le test possibles — et c'est la limite : **le
-moteur ne comprend pas le brief**, il applique des règles. Sur un secteur
-inconnu, la proposition sera générique, pas fausse.
+Conséquence assumée pour le chemin par règles : le même brief produit toujours
+les mêmes directions. C'est ce qui rend la comparaison et le test possibles — et
+c'est la limite : **le moteur ne comprend pas le brief**, il applique des règles.
+Sur un secteur inconnu, la proposition sera générique, pas fausse.
+
+Le chemin par modèle lève cette limite, mais aucune clé n'est joignable depuis
+cet environnement. Le service local démarre donc en **mode simulé** : il répond
+avec un modèle factice, de la même forme qu'un vrai, et l'écran l'annonce en
+clair (« Modèle simulé — aucune clé »). Renseigner `AGNES_API_KEY` dans
+`tools/design-api/.env.local` bascule le mode sans rien changer au code.
 
 ---
 
@@ -201,13 +213,16 @@ minification. Le scan est désormais explicite (`source(none)` + `@source`).
 1. **Brancher un modèle.** `HttpDesignAi` n'attend qu'une URL, une clé et un nom
    de modèle (`VITE_AURORA_AI_URL/_KEY/_MODEL`). Le contrat est déjà celui que
    consomment les écrans : aucune vue à modifier.
-2. **Lettrage vectoriel.** Convertir `<text>` en chemins : c'est la seule façon
+2. **Premier appel réel à Agnes.** Le mode `live` est écrit mais n'a jamais
+   tourné : aucune clé, aucun accès sortant depuis cet environnement. C'est la
+   première chose à faire côté poste de développement.
+3. **Lettrage vectoriel.** Convertir `<text>` en chemins : c'est la seule façon
    de supprimer l'estimation d'avance et de garantir un export identique sur
    toute machine.
-3. **Édition directe.** Déplacer/redimensionner un calque dans l'aperçu en
+4. **Édition directe.** Déplacer/redimensionner un calque dans l'aperçu en
    écrivant `a_geo`, en respectant les verrous. Le modèle est prêt ; c'est
    l'interaction qui manque.
-4. **Versions.** Une nouvelle version ne doit jamais écraser une version
+5. **Versions.** Une nouvelle version ne doit jamais écraser une version
    approuvée (§12.2). Non implémenté : il n'y a pour l'instant qu'une
    composition en mémoire.
-5. **Formats d'impression.** PDF avec fond perdu, contrôle des marges réelles.
+6. **Formats d'impression.** PDF avec fond perdu, contrôle des marges réelles.

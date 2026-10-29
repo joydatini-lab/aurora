@@ -135,6 +135,21 @@ export interface BrandStrategy {
   styleCategory: Field<StyleCategory>;
 }
 
+/**
+ * Les textes de l'affiche.
+ *
+ * Ils sont séparés du `Brief` : le brief décrit la MARQUE, le copy décrit la
+ * PIÈCE. Un modèle peut réécrire l'accroche d'une affiche sans toucher à
+ * l'identité, et une même marque peut produire dix affiches différentes.
+ */
+export interface PosterCopy {
+  headline: string;
+  subhead: string;
+  body: string;
+  /** Mention de pied : secteur, date, lieu, appel à l'action. */
+  footer: string;
+}
+
 export interface BrandDNA {
   id: string;
   /** Version sémantique : `1`, `2`, … Une version approuvée n'est jamais écrasée. */

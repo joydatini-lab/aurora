@@ -10,6 +10,8 @@
   },
   "scripts": {
     "dev": "pnpm -F @aurora/web dev",
+    "design-api": "node tools/design-api/server.mjs",
+    "dev:full": "node tools/design-api/server.mjs & pnpm -F @aurora/web dev",
     "build": "pnpm -F @aurora/web build",
     "preview": "pnpm -F @aurora/web preview",
     "typecheck": "pnpm -r typecheck",

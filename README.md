@@ -6,6 +6,11 @@ le seul écran livré est la documentation vivante du design system : le **desig
 ```bash
 pnpm install
 pnpm dev          # http://localhost:5173
+
+# pour générer une affiche sur demande (service de génération) :
+pnpm design-api   # terminal séparé · http://localhost:8787
+# ou les deux d'un coup :
+pnpm dev:full
 ```
 
 ---
@@ -15,17 +20,28 @@ pnpm dev          # http://localhost:5173
 | Chemin | Rôle |
 |---|---|
 | `apps/web` | Coquille web : React 18 + Vite 5 + Tailwind v4 + primitives Radix. Contient le **design space**, le **studio** (`src/design/`) et les composants du design system |
+| `tools/design-api` | Service de génération : détient la clé du fournisseur et relaie les appels. Démarre en mode simulé sans clé. Aucune dépendance |
 | `packages/domain` | Types du domaine, purs. Aucune dépendance, aucun rendu |
 | `packages/data` | Accès données : Supabase + PowerSync. **Conservé**, mais pas encore importé par `apps/web` |
 
 Le design space se visite à l'écran : `/` (principes) · `/couleurs` · `/typographie` · `/espacement`
 · `/mouvement` · `/composants` · `/apparence` · **`/studio`**.
 
-`/studio` est **Design Space Pro** : un brief devient trois directions de marque, une affiche
-générée en calques, un logo vectoriel, et un **rapport de validation chiffré** (neuf codes de
-violation typés, huit indicateurs, score sur 10). Le moteur est déterministe ; la couche IA est
-une interface prête mais non branchée — aucun modèle n'est joignable depuis cet environnement.
-Détail exact, écarts et limites : [`docs/design-system/design-space.md`](docs/design-system/design-space.md).
+`/studio` est **Design Space Pro**. Deux façons d'y arriver :
+
+- **par règles** — un brief structuré produit trois directions de marque, sans réseau ;
+- **sur demande** — on écrit ce qu'on veut en français, un modèle (Agnes 3.0 Flash) propose une
+  direction et un texte, le moteur compose.
+
+Dans les deux cas : affiche de 10 calques, logo vectoriel, **rapport de validation chiffré**
+(onze codes de violation typés, huit indicateurs, score sur 10), exports SVG et JSON.
+
+Le modèle ne produit jamais de calques : il renvoie une *intention* (marque, harmonie, style,
+texte) que le moteur traduit et vérifie. Sans clé, le service de génération démarre en **mode
+simulé** et l'écran l'affiche — il ne fait jamais passer une démonstration pour un résultat.
+
+- [`docs/design-system/design-space.md`](docs/design-system/design-space.md) — le studio, écarts et limites
+- [`docs/design-system/generation-ia.md`](docs/design-system/generation-ia.md) — le chemin IA, la clé, ce qui a été testé
 
 ## Ce qui a été supprimé, et pourquoi
 
