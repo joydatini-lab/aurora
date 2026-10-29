@@ -1,46 +1,28 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "noEmit": true,
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
-    "lib": [
-      "ES2023",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "types": [
-      "vite/client",
-      "node"
-    ],
+    "noEmit": true,
+    "types": ["vite/client", "node"],
     "baseUrl": ".",
     "paths": {
-      "@app/*": [
-        "../mobile/src/*"
-      ],
-      "@aurora/ui": [
-        "../../packages/ui/src/index.ts"
-      ],
-      "src/*": [
-        "../../packages/ui/src/*"
-      ]
-    },
-    "composite": false,
-    "declaration": false,
-    "declarationMap": false,
-    "incremental": false
+      "@/*": ["./src/*"]
+    }
   },
-  "include": [
-    "src",
-    "vite.config.ts",
-    "playwright.config.ts",
-    "e2e"
-  ],
-  "exclude": [
-    "dist",
-    "playwright-report",
-    "test-results"
-  ]
+  "include": ["src", "e2e", "vite.config.ts", "playwright.config.ts"],
+  "exclude": ["dist", "node_modules"]
 }

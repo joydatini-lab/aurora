@@ -1,99 +1,71 @@
+import { expect, test } from '@playwright/test';
+
 /**
- * Parcours 2 — naviguer entre les 5 destinations par le chrome de la coquille.
+ * Parcours 2 — la navigation.
  *
- * Ce parcours verifie le contrat du `WebShell` : 5 destinations maximum
- * (02 S6.1), un etat actif expose par `data-active`, et un changement de route
- * qui n'exige AUCUN rechargement (sinon l'offline-first perd son interet).
- *
- * Note : on n'assert pas le contenu metier des ecrans (il depend d'une session
- * et d'un mirror local) — seulement que la route s'installe et que la coquille
- * survit. Une page qui jetterait au rendu demonterait la navigation : le test
- * echoue alors, a raison.
+ * Trois propriétés :
+ *   - chaque section du rail mène à un titre h1 distinct ;
+ *   - le lien actif est marqué (`aria-current="page"`) ;
+ *   - une URL profonde survit à un rechargement (fallback SPA du serveur).
  */
-import { test, expect, type Page } from '@playwright/test';
 
-/** Les 5 destinations declarees dans WebShell (NAV), plus les Reglages. */
-const DESTINATIONS = [
-  { label: 'Accueil', path: '/home' },
-  { label: 'Tâches', path: '/tasks' },
-  { label: 'Apprendre', path: '/learn' },
-  { label: 'Progrès', path: '/progress' },
-  { label: 'Agent', path: '/agent' },
-] as const;
+const SECTIONS = [
+  { path: '/couleurs', link: 'Couleurs', heading: /^Couleurs$/i },
+  { path: '/typographie', link: 'Typographie', heading: /^Typographie$/i },
+  { path: '/espacement', link: 'Espacement & formes', heading: /Espacement/i },
+  { path: '/mouvement', link: 'Mouvement', heading: /^Mouvement$/i },
+  { path: '/composants', link: 'Galerie', heading: /^Galerie$/i },
+];
 
-const navOf = (page: Page) => page.getByRole('navigation', { name: 'Navigation principale' });
+test('chaque section est atteignable depuis le rail', async ({ page, isMobile }) => {
+  await page.goto('/');
 
-test.describe('P2 — navigation', () => {
-  test('les 5 destinations principales sont presentes, une fois chacune', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
-    const nav = navOf(page);
-    await expect(nav).toBeVisible();
-
-    for (const { label } of DESTINATIONS) {
-      await expect(nav.getByRole('button', { name: label, exact: true })).toHaveCount(1);
+  for (const section of SECTIONS) {
+    // Sur mobile, le rail est escamoté derrière un bouton : on l'ouvre à
+    // chaque itération plutôt que de simuler un viewport desktop.
+    if (isMobile) {
+      await page.getByRole('button', { name: /ouvrir la navigation/i }).click();
+      await expect(page.getByRole('navigation', { name: /sections/i })).toBeVisible();
     }
-    await expect(nav.getByRole('button', { name: 'Réglages', exact: true })).toHaveCount(1);
 
-    // 5 onglets max est un budget produit, pas une preference : la 6e
-    // destination doit passer par un autre chemin (Reglages, ici hors liste).
-    await expect(nav.getByRole('button')).toHaveCount(DESTINATIONS.length + 1);
-  });
+    await page
+      .getByRole('navigation', { name: /sections du design system/i })
+      .getByRole('link', { name: section.link, exact: true })
+      .first()
+      .click();
 
-  test('chaque destination s\'installe sans rechargement et marque son etat actif', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(new RegExp(`${section.path.replace('/', '\\/')}$`));
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(section.heading);
 
-    // Repere de survie : si une page jette au rendu, React demonte l'arbre et
-    // ce marqueur disparait -> on echoue avec un message lisible.
-    await page.evaluate(() => {
-      (window as unknown as { __auroraShellSurvivedNav?: boolean }).__auroraShellSurvivedNav = true;
-    });
-
-    // `/agent` est EXCLU de la boucle : sur cette destination le chrome
-    // s'efface (WebShell rend la nav seulement si !isAgent, l'ecran agent gere
-    // son propre menu). Le contrat est verifie separement juste apres.
-    for (const { label, path } of DESTINATIONS.filter((d) => d.path !== '/agent')) {
-      const nav = navOf(page);
-      await nav.getByRole('button', { name: label, exact: true }).click();
-
-      // Navigation CLIENT : l'URL change...
-      await expect(page).toHaveURL(new RegExp(`${path}$`));
-      // ...et le contexte JS survit (aucun document reload).
-      expect(
-        await page.evaluate(
-          () => (window as unknown as { __auroraShellSurvivedNav?: boolean }).__auroraShellSurvivedNav,
-        ),
-        `un rechargement complet a eu lieu en allant vers ${path} — la navigation doit rester cliente`,
-      ).toBe(true);
-
-      // ...et l'etat actif suit.
-      await expect(nav.getByRole('button', { name: label, exact: true })).toHaveAttribute(
-        'data-active',
-        'true',
-      );
-      const others = DESTINATIONS.filter((d) => d.path !== path && d.path !== '/agent');
-      for (const other of others) {
-        await expect(
-          nav.getByRole('button', { name: other.label, exact: true }),
-        ).toHaveAttribute('data-active', 'false');
-      }
+    if (isMobile) {
+      // Le panneau doit se refermer après navigation, sinon le contenu reste
+      // masqué derrière un menu ouvert.
+      await expect(page.getByRole('navigation', { name: /sections/i })).toBeHidden();
     }
-  });
+  }
+});
 
-  test("sur /agent le chrome s'efface (l'ecran gere son propre menu)", async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await navOf(page).getByRole('button', { name: 'Agent', exact: true }).click();
+test('le lien actif porte aria-current', async ({ page }) => {
+  await page.goto('/couleurs');
+  const active = page
+    .getByRole('navigation', { name: /sections du design system/i })
+    .locator('a[aria-current="page"]');
 
-    await expect(page).toHaveURL(/\/agent$/);
-    // Contrat explicite du shell : pas de nav sur l'assistant.
-    await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toHaveCount(0);
-    await expect(page.locator('.web-shell')).toHaveAttribute('data-agent', 'true');
-    await expect(page.locator('main.web-main')).not.toBeEmpty();
-  });
+  await expect(active).toHaveCount(1);
+  await expect(active).toHaveText(/Couleurs/);
+});
 
-  test('Reglages est accessible depuis la coquille', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await navOf(page).getByRole('button', { name: 'Réglages', exact: true }).click();
-    await expect(page).toHaveURL(/\/settings$/);
-    await expect(page.locator('main.web-main')).not.toBeEmpty();
-  });
+test('une URL profonde survit au rechargement direct', async ({ page }) => {
+  // Navigation serveur (pas cliente) : c'est le fallback SPA qui est testé.
+  const response = await page.goto('/composants');
+  expect(response?.status()).toBe(200);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/Galerie/i);
+});
+
+test('une route inconnue affiche la 404 applicative', async ({ page }) => {
+  await page.goto('/cette-route-nexiste-pas');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(/n'existe pas/i);
+  // On ne renvoie pas l'utilisateur vers l'accueil en silence : il doit pouvoir
+  // lire ce qui s'est passé et repartir d'un clic.
+  await expect(page.getByRole('link', { name: /vue d'ensemble/i })).toBeVisible();
 });

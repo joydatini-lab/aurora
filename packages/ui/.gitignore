@@ -1,8 +1,0 @@
-# Storybook static build output
-storybook-static/
-
-# Assistant-ui registry caches (local tooling, non-synchronisable)
-aui-batch-final.txt
-aui-registry.json
-aui-slug-check.txt
-aui-utils.json

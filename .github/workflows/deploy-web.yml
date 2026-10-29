@@ -34,14 +34,12 @@ on:
     branches: [main]
     paths:
       - 'apps/web/**'
-      - 'apps/mobile/src/**' # ecrans partages via l'alias @app
       - 'packages/**'
       - 'scripts/check-web-bundle-budget.mjs'
       - '.github/workflows/deploy-web.yml'
   pull_request:
     paths:
       - 'apps/web/**'
-      - 'apps/mobile/src/**'
       - 'packages/**'
       - 'scripts/check-web-bundle-budget.mjs'
       - '.github/workflows/deploy-web.yml'

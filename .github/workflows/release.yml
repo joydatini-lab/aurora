@@ -59,36 +59,16 @@ jobs:
         run: pnpm install
 
       - name: Typecheck
-        run: pnpm -r exec tsc --noEmit
+        run: pnpm typecheck
 
-      - name: Lint
-        run: pnpm -r exec eslint . --max-warnings 0
+      - name: Lint (--max-warnings 0)
+        run: pnpm lint
 
-      - name: Boundary greps (G1-G4)
+      - name: Gardes d'architecture (G1-G3)
         run: sh scripts/check-boundaries.sh
 
-      # Wave 5-7 gates (E2E device + Focus DPC S13 + perf + modes)
-      # — the zero-device deterministic gate (the device-observed
-      # suite runs on the target, not here).
-      - name: "E2E device gate (OQ-08, consumer fallback)"
-        run: node --experimental-strip-types --no-warnings --test apps/mobile/test/e2e-device.test.ts apps/mobile/test/focus-dpc.test.ts
-
-      - name: "Perf gate (30fps / TTI / JS budget, 02 S9.1)"
-        run: node --experimental-strip-types --no-warnings --test apps/mobile/test/perf-budget.test.ts
-
-      - name: "Product modes + command palette (feature-registry S7/S4)"
-        run: node --experimental-strip-types --no-warnings --test apps/mobile/test/product-modes.test.ts
-
-      # Lot déploiement (plan 2026-10-14, Phase 7) : le test de wiring
-      # sync-config (le SSoT des 11 streams PowerSync, le guard de
-      # dérive du lot B story A3) — le release ne peut pas tourner si le
-      # device boot ne couvre pas les 11 streams.
-      - name: "Sync-config wiring gate (le SSoT SYNC_STREAMS + les 2 boot sites, AD-7/AD-15)"
-        run: |
-          cd apps/mobile
-          node --experimental-strip-types --no-warnings \
-            --import ./test/register-resolve-hook.mjs \
-            --test test/sync-config-wiring.test.ts
+      - name: Tests
+        run: pnpm test
 
   # ------------------------------------------------------------------
   # 2. Build (web) + notes + release

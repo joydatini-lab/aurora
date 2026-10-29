@@ -1,257 +1,61 @@
 #!/bin/sh
-# check-boundaries.sh — 4 boundary greps (SPEC "gate de boundaries", AD-16c)
+# Aurora — gardes d'architecture (surface réduite au socle, 2026-10-28).
 #
-# Usage:
-#   sh scripts/check-boundaries.sh [G1|G2|G3|G4|all]
-#     G1 = vendor names hors des 5 adapters        (AD-1)
-#     G2 = secrets en clair dans le code            (AD-3)
-#     G3 = user hardcode (ex "Horeb")               (règle produit)
-#     G4 = DOM access dans packages/agent            (AD-12/F-09)
-#     all = G1+G2+G3+G4 (defaut)
+# Trois greps, exécutés en CI ET en local. Chaque garde protège contre une
+# erreur RÉELLEMENT commise dans ce dépôt, pas contre une faute théorique.
 #
-# Exit: 0 clean, 1 echec (avec la ligne violante). Idempotent (lecture seule).
-# Scope: git-tracked files uniquement (pas .env.local, ni node_modules,
-# ni docs/, ni prompts/, ni set-secrets.ps1, ni .github/workflows — qui
-# contient le mot "concurrency" et les noms de secrets, jamais de valeur).
+#   G1  secret dans le code           → identifiants dev en dur (incident 28/10)
+#   G2  process.env côté client       → ReferenceError au démarrage (28/10)
+#   G3  identité en dur               → un nom de personne dans le code produit
+#
+# Usage : sh scripts/check-boundaries.sh     (exit 0 = tout est vert)
 
-set -u
+set -eu
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+FAIL=0
+fail() { echo "  ✗ $1"; FAIL=1; }
 
-# Resoudre la racine du repo: usage standard = sh scripts/check-boundaries.sh
-# depuis la racine du repo. Si PWD contient deja les scripts/, on reste;
-# sinon on remonte depuis $0 (cas ou le script est copie ailleurs).
-if [ -d "scripts" ] || [ -d "packages" ] || [ -d "supabase" ]; then
-  REPO_ROOT="$(pwd)"
-else
-  REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+echo "[G1] secrets en clair (clés, mots de passe, tokens)..."
+
+# Préfixes de clés : ≥ 20 caractères après le préfixe, sinon on attrape des
+# identifiants d'exemple (`sk-progress`) qui sont du faux positif.
+if grep -rnE "(sk-[A-Za-z0-9]{20,}|sbp_[A-Za-z0-9]{20,}|eyJ[A-Za-z0-9_-]{30,}\.[A-Za-z0-9_-]{20,})" \
+     "$ROOT/apps" "$ROOT/packages" \
+     --include="*.ts" --include="*.tsx" --include="*.js" --include="*.mjs" 2>/dev/null \
+     | grep -vE "(\.test\.|\.spec\.|node_modules|/dist/)"; then
+  fail "clé d'API en clair dans le code"
 fi
-cd "$REPO_ROOT" || { echo "[check-boundaries] echec: cd \$REPO_ROOT." >&2; exit 1; }
 
-if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "[check-boundaries] echec: pas dans un repo git — git init d'abord." >&2
-  exit 1
+# Forme `'email@…': 'motdepasse'` — c'est exactement le bloc qui avait fuité.
+if grep -rnE "'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'\s*:\s*'[^']{6,}'" \
+     "$ROOT/apps" "$ROOT/packages" \
+     --include="*.ts" --include="*.tsx" 2>/dev/null \
+     | grep -vE "(\.test\.|\.spec\.|node_modules|/dist/)"; then
+  fail "couple email/mot de passe en dur"
 fi
 
-# Fichiers source (code) a scanner — git tracked, extensions code.
-code_files() {
-  git ls-files \
-    | grep -E '\.(ts|tsx|js|jsx|mjs|cjs|json|sql)$' \
-    | grep -v '^\.env\.local' \
-    || true
-}
+echo "[G2] process.env dans le code client..."
 
-# ---------------------------------------------------------------------------
-# G1 — Vendor names hors des 5 adapters
-# Refs: SPEC wave 0 (gate de boundaries, AD-1/AD-3), dependency-matrix S10
-#      ("Learning imports supabase table directly" = anti-pattern).
-# Les SDK de fournisseur vivent que dans:
-#   packages/data, packages/platform, packages/integrations,
-#   packages/scientific-engine, apps/server
-# Les patterns sont specifiques au vendor (pas de mot nu "Agnes" qui
-# matcherait des mentions de docs) pour eviter les faux positifs.
-# ---------------------------------------------------------------------------
-g1() {
-  echo "[G1] vendor names hors des 5 adapters (AD-1)..."
-  # Pattern d'IMPORT (from 'x' / require('x')), pas de mention textuelle :
-  # les configs (eslint.config.js) et schemas (powersync/schema.json) qui
-  # nomment des vendors ne sont PAS des imports de code (la regle ESLint
-  # no-restricted-imports porte le verrou, ce grep est la 2e couche).
-  local vendor_re="from '@(cloudflare|supabase|onesignal|powersync|groq|cerebras|openrouter|composio)/|require(['\''\x60]@(cloudflare|supabase|onesignal|powersync|groq|cerebras|openrouter|composio)/|from ['\''\x60]@(cloudflare|supabase|onesignal|powersync|groq|cerebras|openrouter|composio)/"
-  local hits=""
-  for f in $(code_files); do
-    case "$f" in
-      packages/data/*|packages/platform/*|packages/integrations/*|packages/scientific-engine/*|apps/server/*)
-        continue ;;
-    esac
-    # Fichier pas encore dans git (workspace pas cree) = rien a scanner.
-    [ -f "$f" ] || continue
-    if grep -nE "$vendor_re" "$f" >/dev/null 2>&1; then
-      hits="$hits
-$f: $(grep -nE "$vendor_re" "$f" | head -5)"
-    fi
-  done
-  if [ -n "$hits" ]; then
-    echo "[G1] FAIL — vendor references hors adapters:"
-    echo "$hits"
-    return 1
-  fi
-  echo "[G1] OK — aucun vendor hors des 5 adapters."
-  return 0
-}
-
-# ---------------------------------------------------------------------------
-# G2 — Secrets en clair
-# Refs: secrets-checklist.md (valeurs = jamais en clair), AD-3.
-# Exclure: .env.local (git-ignored), docs/, prompts/, set-secrets.ps1
-# (noms de vars OK, valeurs NON), .github/workflows (ne porte que les
-# noms de secrets, pas les valeurs).
-# Exception sanctionnee (SPEC wave 0, 04-mobile S7.2e): OneSignal appKey
-# dans capacitor.config.ts uniquement.
-# ---------------------------------------------------------------------------
-g2() {
-  echo "[G2] secrets en clair dans le code (AD-3)..."
-  # Prefixes de valeurs (jamais de nom de var, que des prefixes de valeur):
-  #   sk-   (OpenAI/Agnes/OpenRouter keys),
-  #   gsk_  (Groq keys),
-  #   cfut_ (Cloudflare user tokens),
-  #   Bearer <value>,
-  #   <KEY_NAME>=<value> dans du code (pas dans .env ou .ps1).
-  # REECRIT le 2026-10-28 (analysis §5.3) : l'ancienne regex etait a la fois
-  # BRUYANTE (elle matchait `sk-capacite-portante` dans des fixtures et
-  # `sk-progress` dans des className CSS -> gate rouge en permanence, donc
-  # personne ne le lisait) et AVEUGLE (elle ne voyait ni les mots de passe
-  # litteraux, ni l'URL Supabase de prod codee en dur, ni les UUID live).
-  #
-  # Regle : un prefixe de cle fait >= 20 caracteres alphanumeriques.
-  # `sk-progress` / `sk-capacite-portante` (tirets, mots) ne matchent plus.
-  local secret_re='(^|[^A-Za-z0-9_])(sk-[A-Za-z0-9]{20,}|sk-proj-[A-Za-z0-9_-]{20,}|sk-ant-[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9_-]{20,}|cfut_[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16})|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}|(^|[^A-Za-z0-9_])(API_KEY|SERVICE_ROLE_KEY|SUPABASE_DB_URL|POWERSYNC_SECRET|ONESIGNAL_REST_API_KEY|Sentry_DSN|SENTRY_DSN|POSTHOG_API_KEY)=.{8,}'
-
-  # Mot de passe litteral dans du code (le trou exact du §5.2 :
-  # `'dev.aurora@…': 'Aurora-Dev1!'` n'etait detecte par aucune regle).
-  # On exclut les affectations de variable (`password: password`, `password: pw`),
-  # les placeholders et les champs de formulaire.
-  # (a) affectation nommee : password: 'xxx'
-  # (b) MAP email -> secret, SANS le mot "password" : c'est EXACTEMENT la
-  #     forme de la fuite §5.2 (`'dev.aurora@joynagassi.dev': '<secret>'`) —
-  #     la forme (a) seule ne l'aurait pas attrapee (verifie par sonde).
-  local password_re="(password|passwd|pwd)[[:space:]]*[:=][[:space:]]*['\"][^'\"]{6,}['\"]|['\"][A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}['\"][[:space:]]*:[[:space:]]*['\"][^'\"]{6,}['\"]"
-  # Un projet Supabase de PROD code en dur dans du code client (le §5.1 :
-  # l'URL de fn-dev-auth etait dans apps/mobile/src/pages/login/index.tsx).
-  local supabase_url_re='https://[a-z0-9]{20}\.supabase\.co'
-  local hits=""
-  for f in $(code_files); do
-    case "$f" in
-      *.env.local*|docs/*|prompts/*|set-secrets.ps1|.github/*)
-        continue ;;
-      # Exception sanctionnee: le contenu de SKILL.md troisiemes parties (seed 0021,
-      # docs Anthropic avec exemples curl/Bearer ACCESS_TOKEN, Zoom SDK, etc.)
-      # n'est PAS du code Aurora, ne contient aucune valeur de secret reelle.
-      # Restrict: le lot 0021 uniquement (les autres migrations SQL restent
-      # scannees normalement — une valeur de secret s'y reintroduit = FAIL).
-      supabase/migrations/0021_lots/*|supabase/migrations/0021_*)
-        continue ;;
-      # Exception sanctionnee: appKey OneSignal dans capacitor.config.ts.
-      */capacitor.config.ts)
-        # Scanner le fichier mais ignorer les lignes "appKey" OneSignal.
-        local hits_one
-        hits_one=$(grep -nE "$secret_re" "$f" 2>/dev/null \
-          | grep -v "appKey" || true)
-        if [ -n "$hits_one" ]; then
-          hits="$hits
-$f: $(echo "$hits_one" | head -5)"
-        fi
-        ;;
-      *)
-        local found
-        found=$(grep -nE "$secret_re" "$f" 2>/dev/null || true)
-        # Code CLIENT uniquement (apps/ + packages/) : un mot de passe
-        # litteral ou une URL de prod n'a rien a y faire. Les tests, stories
-        # et fixtures sont exclus (donnees synthetiques, pas des secrets).
-        case "$f" in
-          *.test.ts|*.test.tsx|*.spec.ts|*.stories.tsx) : ;;
-          apps/*|packages/*)
-            local sensitive
-            sensitive=$(grep -nE "$password_re|$supabase_url_re" "$f" 2>/dev/null || true)
-            if [ -n "$sensitive" ]; then
-              found="${found}${found:+"
-"}${sensitive}"
-            fi
-            ;;
-        esac
-        if [ -n "$found" ]; then
-          hits="$hits
-$f: $(echo "$found" | head -5)"
-        fi
-        ;;
-    esac
-  done
-  if [ -n "$hits" ]; then
-    echo "[G2] FAIL — valeur de secret en clair:"
-    echo "$hits"
-    echo "      (exception sanctionnee: appKey OneSignal dans capacitor.config.ts uniquement)"
-    return 1
-  fi
-  echo "[G2] OK — aucune valeur de secret en clair."
-  return 0
-}
-
-# ---------------------------------------------------------------------------
-# G3 — User hardcode (ex "if user === Horeb")
-# Refs: dependency-matrix S11 (exemple "Horeb"), règle produit.
-# Pas de hardcode d'utilisateur: l'identite passe par auth.uid() / user_id.
-# ---------------------------------------------------------------------------
-g3() {
-  echo "[G3] user hardcode (ex 'Horeb')..."
-  local user_re='[Ii]f[[:space:]]+\(?[[:space:]]*user[[:space:]]*(===?|==)?[[:space:]]*[Hh]oreb|user[[:space:]]*(===?)?[[:space:]]*["'\'']Horeb'
-  local hits=""
-  for f in $(code_files); do
-    case "$f" in
-      docs/*|prompts/*|.github/*)
-        continue ;;
-    esac
-    [ -f "$f" ] || continue
-    if grep -nE "$user_re" "$f" >/dev/null 2>&1; then
-      hits="$hits
-$f: $(grep -nE "$user_re" "$f" | head -5)"
-    fi
-  done
-  if [ -n "$hits" ]; then
-    echo "[G3] FAIL — user hardcode detecte:"
-    echo "$hits"
-    return 1
-  fi
-  echo "[G3] OK — aucun user hardcode."
-  return 0
-}
-
-# ---------------------------------------------------------------------------
-# G4 — DOM access dans packages/agent (AD-12/F-09)
-# Refs: AD-12/F-09 (kernel serveur, le device ne fait que lire l'UI state),
-#      dependency-matrix S10 ("Agent kernel calls ... in a loop" = N+1).
-# document.querySelector est un access DOM direct — interdit dans
-# packages/agent (le kernel est serveur, le device consomme AgentRunState).
-# ---------------------------------------------------------------------------
-g4() {
-  echo "[G4] DOM access dans packages/agent (AD-12/F-09)..."
-  if [ ! -d packages/agent ]; then
-    echo "[G4] SKIP — packages/agent n'existe pas encore (workspace wave 0)."
-    return 0
-  fi
-  local hits
-  hits=$(grep -rn "document\.querySelector" packages/agent --include='*.ts' --include='*.tsx' 2>/dev/null || true)
-  if [ -n "$hits" ]; then
-    echo "[G4] FAIL — document.querySelector dans packages/agent:"
-    echo "$hits"
-    return 1
-  fi
-  echo "[G4] OK — pas de DOM access dans packages/agent."
-  return 0
-}
-
-# ---------------------------------------------------------------------------
-# Dispatch
-# ---------------------------------------------------------------------------
-target="${1:-all}"
-rc=0
-case "$target" in
-  G1) g1 || rc=1 ;;
-  G2) g2 || rc=1 ;;
-  G3) g3 || rc=1 ;;
-  G4) g4 || rc=1 ;;
-  all|'')
-    g1 || rc=1
-    g2 || rc=1
-    g3 || rc=1
-    g4 || rc=1
-    ;;
-  *)
-    echo "usage: $0 [G1|G2|G3|G4|all]" >&2
-    exit 2
-    ;;
-esac
-
-if [ "$rc" -eq 0 ]; then
-  echo "[check-boundaries] All boundary checks passed (target: $target)."
-else
-  echo "[check-boundaries] FAILED (target: $target)."
+# `process` n'existe pas dans un navigateur : la lecture lève au chargement du
+# module, avant que React ne puisse se monter. Le bug du 2026-10-28 a coûté une
+# coquille entièrement blanche. NODE_ENV est exempté (remplacé par Vite).
+if grep -rnE "process\.env\." "$ROOT/apps/web/src" \
+     --include="*.ts" --include="*.tsx" 2>/dev/null \
+     | grep -v "process\.env\.NODE_ENV"; then
+  fail "process.env dans apps/web/src — utiliser import.meta.env (VITE_*)"
 fi
-exit "$rc"
+
+echo "[G3] identité en dur dans le code produit..."
+
+if grep -rniE "(joy|horeb|joynagassi)[a-z]*@" "$ROOT/apps/web/src" \
+     --include="*.ts" --include="*.tsx" 2>/dev/null; then
+  fail "adresse identitaire en dur"
+fi
+
+if [ "$FAIL" -eq 0 ]; then
+  echo "[check-boundaries] OK — G1-G3 verts."
+  exit 0
+fi
+
+echo "[check-boundaries] ÉCHEC — voir les lignes ci-dessus."
+exit 1

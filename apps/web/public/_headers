@@ -1,30 +1,20 @@
-# Aurora WEB — en-têtes d'hébergement (Netlify / Cloudflare Pages : `_headers`).
+# En-têtes de la coquille web.
 #
-# 1) CROSS-ORIGIN ISOLATION (obligatoire, B4) — `@powersync/web` tourne sur
-#    WASQLite, qui a besoin de `SharedArrayBuffer`. Le navigateur ne l'expose
-#    QUE sur une page cross-origin isolated. SANS ces deux en-têtes :
-#    pas de SQLite local, donc PAS d'offline-first (AD-7) — l'app retombe en
-#    mode mémoire et perd son état au reload.
-#
-# 2) SPA FALLBACK — `createBrowserRouter` sert des routes profondes
-#    (/goals/:id). L'hôte doit renvoyer index.html pour tout chemin inconnu :
-#    voir `_redirects` (Netlify/CF Pages) ou `vercel.json` (Vercel).
+# Le design space ne stocke aucune donnée sensible, mais la CSP est posée dès
+# le premier jour : la rajouter après coup oblige à auditer chaque écran.
 
 /*
-  Cross-Origin-Opener-Policy: same-origin
-  Cross-Origin-Embedder-Policy: require-corp
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'self'; base-uri 'self'; form-action 'self'
 
-# Les assets sont fingerprintés → cache immuable.
+# Les assets sont immuables (nom haché par Vite).
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
-# La coquille ne doit JAMAIS être mise en cache longue : sinon un déploiement
-# ne se propage pas (l'utilisateur reste sur l'ancien index.html).
+# L'index doit toujours être revalidé : sinon un déploiement reste invisible
+# pendant des heures chez les visiteurs ayant l'ancienne version en cache.
 /index.html
-  Cache-Control: public, max-age=0, must-revalidate
-
-/sw.js
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-cache

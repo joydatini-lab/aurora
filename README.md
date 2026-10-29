@@ -1,41 +1,100 @@
-# Aurora — pnpm monorepo (Phase 1, release-candidate v0.1.0)
+# Aurora — design system & coquille web
 
-19 packages + 2 apps + `supabase/` + `powersync/`. **Status: waves 0→7 delivered, v0.1.0 RC.** The full project map + decision index live in [AI_RULES.md](AI_RULES.md); the live release history in [docs/release/changelog.md](docs/release/changelog.md).
+**État au 2026-10-29 : le dépôt a été purgé puis reconstruit.** Il ne reste que trois paquets, et
+le seul écran livré est la documentation vivante du design system : le **design space**.
 
-| Package | Role |
+```bash
+pnpm install
+pnpm dev          # http://localhost:5173
+```
+
+---
+
+## Ce qui existe
+
+| Chemin | Rôle |
 |---|---|
-| `packages/domain` | SSoT of frozen domain types (AD-15): envelopes, CRDT, 40+ entities, 9 events, 14 ports, AI-pipeline + 7 registries. Imports nothing |
-| `packages/data` | PowerSync/SQLite repos + sync engine, migrations, views/scopes, Model Registry (AD-16b), React-Query bridge |
-| `packages/ui` | Design System, tokens, components, AD-10 renderers (engines live only here), themes JSON SSoT (AD-17) |
-| `packages/platform` | Capacitor adapters behind interfaces (04 S3.2); the only native surface (AD-16c) |
-| `packages/agent` | Agent Kernel + capabilities (AD-12) + the Vercel AI SDK layer; device sees only AgentRunState (F-09) |
-| `packages/productivity` `learning` `goal-engine` `progress` `discovery` `focus` | Vertical feature domains — tasks·habits·focus · FSRS·QCM·mirror · dynamic goals · progress (F-07 sole producer) · discovery feed · Focus DPC port SSoT |
-| `packages/ascent` | Slide-Ascent pedagogical trajectory engine (W3-E2) |
-| `packages/workflows` | The 23 composite workflows + AD-9 event-flow + error recovery + self-improvement |
-| `packages/scientific-engine` | Generic math/units engine + LaTeX behind the ScientificEngine port (AD-10) |
-| `packages/engineering-{core,solvers,adapters,registry}` | Internal decomposition of scientific-engine (IR/units, solvers, swappable adapters, catalog); types SSoT stay in domain (AD-15) |
-| `packages/integrations` | Composio (IntegrationProvider), notification adapters |
-| `apps/mobile` | Ionic React + Capacitor shell + all screens (Phase 1, Android-only) |
-| `apps/server` | Supabase Edge Functions + Cloudflare Workers (server-side kernel/AI, jobs) |
+| `apps/web` | Coquille web : React 18 + Vite 5 + Tailwind v4 + primitives Radix. Contient le **design space** et les composants du design system |
+| `packages/domain` | Types du domaine, purs. Aucune dépendance, aucun rendu |
+| `packages/data` | Accès données : Supabase + PowerSync. **Conservé**, mais pas encore importé par `apps/web` |
 
-## Commands
+Le design space se visite à l'écran : `/` (principes) · `/couleurs` · `/typographie` · `/espacement`
+· `/mouvement` · `/composants`.
+
+## Ce qui a été supprimé, et pourquoi
+
+La purge du 2026-10-28 a retiré **1 141 fichiers** : `apps/mobile`, `apps/desktop`, `apps/server`,
+le dossier `tests/` et **16 packages** (`ui`, `agent`, `ascent`, `discovery`, `engineering-*`,
+`focus`, `goal-engine`, `integrations`, `learning`, `platform`, `productivity`, `progress`,
+`scientific-engine`, `workflows`).
+
+Deux défauts motivaient cette décision :
+
+1. **L'ancien moteur de thème** produisait un rendu qui ne correspondait à aucune des décisions
+   de DA voulues — et il était plus coûteux à contourner qu'à remplacer.
+2. **Un couplage invisible** : un constructeur lisait `process.env` au chargement d'un module,
+   ce qui levait un `ReferenceError` en ESM navigateur et **empêchait le montage de
+   l'application**. Résultat : une page blanche, sans message.
+
+Le second point a laissé une règle permanente : **une page blanche est un défaut**. Toute panne
+d'amorçage doit s'afficher. C'est le rôle de `apps/web/src/boot/fatal.ts` (voir plus bas).
+
+## Design system « Encre & Lumière »
+
+Les tokens vivent dans **un seul fichier** : `apps/web/src/styles/globals.css`.
+
+- **OKLCH** partout — deux teintes de même palier ont la même luminosité perçue, ce que HSL ne
+  garantit pas.
+- **Un accent unique** : violet `oklch(0.48 0.2 295)`. Le cyan n'existe que dans le dégradé de
+  marque, jamais dans la sémantique.
+- **Quatre statuts, pas cinq** : `success`, `warning`, `info`, `destructive`.
+- **Deux thèmes réglés à la main** (clair et sombre). Le sombre n'est pas une inversion.
+- **Échelle typographique** 1.25, tracking négatif au-delà de 30 px.
+- **Espacement sur une base de 4 px**, quatre élévations, une courbe (`ease-out-quint`),
+  trois durées.
+
+Règle de dépendance : les composants consomment les **tokens sémantiques**
+(`bg-primary`, `text-muted-foreground`), jamais une couleur en dur ni une primitive. C'est ce qui
+rend le thème sombre gratuit.
+
+### Fondations de code
+
+| Fichier | Rôle |
+|---|---|
+| `src/components/ui/*` | Les primitives, point d'entrée unique `@/components/ui` |
+| `src/shell/Shell.tsx` | Navigation du design space (rail desktop, panneau mobile) |
+| `src/shell/theme.tsx` | Thème : préférence enregistrée > système > clair. Persiste le choix explicite |
+| `src/boot/fatal.ts` | Filets d'amorçage : `error`, `unhandledrejection`, chien de garde |
+| `src/components/design/page.tsx` | Primitives de **documentation** (Section, Swatch, Rule…). Hors du système produit |
+
+## Amorçage : pourquoi `main.tsx` importe dynamiquement
+
+Un `import` statique est évalué **avant** le corps du module. Si l'un d'eux lève, rien de ce qui
+suit ne s'exécute — pas même le code censé afficher l'erreur. D'où l'ordre :
+
+1. `installFatalHandlers()` — filets posés en premier, dans un module sans dépendance ;
+2. `import()` dynamique de `./app` — une panne ici devient un `catch` affichable ;
+3. chien de garde de 12 s : si aucun nœud `[data-aurora-app]` n'existe, l'écran de diagnostic
+   s'affiche au lieu d'une page vide.
+
+## Commandes
 
 ```bash
-pnpm install      # install all workspace deps
-pnpm typecheck    # tsc -b (project references, strict, noUncheckedIndexedAccess)
-pnpm lint         # eslint (boundary rules added in wave0/achilles commit 3)
+pnpm dev                # design space (Vite)
+pnpm build              # build de production
+pnpm typecheck          # tsc --noEmit (apps/web)
+pnpm lint               # eslint --max-warnings 0
+pnpm check:boundaries   # secrets, process.env côté client, identités en dur
+pnpm -F @aurora/web e2e # 5 parcours Playwright (desktop + mobile)
 ```
 
-## CI gate
+Les cinq parcours E2E couvrent : le montage et l'absence de panneau fatal, la navigation et le
+fallback SPA, le thème (bascule + persistance + préférence système), l'accessibilité de base
+(repères, lien d'évitement, focus visible, onglets au clavier), et l'absence d'erreur console ou
+de débordement horizontal.
 
-All three must pass from a clean checkout (wave 0 acceptance, CI-ready):
+## Ce qui n'est pas encore là
 
-```bash
-pnpm install     # 1. install workspace + ESLint tooling
-pnpm typecheck   # 2. tsc -b --noEmit across all 19 packages + 2 apps
-pnpm lint        # 3. eslint boundary rules (AD-1/AD-10/AD-15) on every package
-```
-
-The `main` gate also runs the boundary/RLS/view-join + spine greps + the node-native tests — the full, ordered command list is in [AI_RULES.md §9 "Run the gate"](AI_RULES.md#9-run-the-gate-how-to-verify-before-you-finish) and `docs/ci/gate.md`.
-
-Note: `allowBuilds` + `minimumReleaseAge` blocks in `pnpm-workspace.yaml` are pre-existing — do not break them.
+Les écrans métier. Ils reviendront composés **à partir** de ces briques, et non l'inverse. Un
+composant n'entre dans le système que lorsqu'un écran réel en a besoin : anticiper produit des
+abstractions que personne n'utilise et qu'il faut maintenir quand même.

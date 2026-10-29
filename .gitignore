@@ -97,3 +97,8 @@ playwright/.cache/
 .env.dev
 .env.dev.local
 
+
+# Playwright (rapports et traces régénérables)
+playwright-report/
+test-results/
+blob-report/

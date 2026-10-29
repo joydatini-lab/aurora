@@ -1,176 +1,170 @@
 /**
- * fatal.ts — rendre visible un démarrage raté.
+ * Filet de sécurité du démarrage.
  *
- * Problème résolu : une page blanche ne dit rien. Quand le module d'entrée
- * échoue (import cassé, exception au niveau module, Web API absente), React ne
- * monte jamais et `#root` reste vide — indistinguable, pour l'utilisateur, de
- * « l'app n'a pas d'interface ».
+ * Une page blanche est un défaut, pas un état : si le module d'entrée ne
+ * s'évalue pas (import cassé, erreur de syntaxe, `ReferenceError` dans un
+ * constructeur évalué au chargement), l'utilisateur doit voir POURQUOI. Un
+ * écran vide ne se diagnostique pas ; un panneau avec la pile d'appels, si.
  *
- * Ce module est importé EN PREMIER par `main.tsx` et n'importe RIEN : il doit
- * survivre à l'échec de tout le reste. Il installe trois filets :
- *
- *   1. `window.onerror`            → exception non capturée ;
- *   2. `unhandledrejection`        → promesse rejetée non gérée ;
- *   3. un chien de garde (12 s)    → rien n'a été peint, sans erreur signalée.
- *
- * Les trois se contentent d'ÉCRIRE DANS LE DOM (pas de React : il peut être la
- * cause du problème).
- *
- * Règle : seul un échec AVANT le premier rendu est fatal. Une fois la coquille
- * peinte, les erreurs repartent vers la console — l'application a ses propres
- * états d'erreur et un panneau plein écran serait une régression.
+ * Ce fichier n'importe RIEN : c'est le seul module qui doit survivre à une
+ * panne de tout le reste du graphe.
  */
 
-/** Étapes franchies par le boot — affichées dans le panneau de diagnostic. */
-const steps: string[] = [];
+const START = Date.now();
+const STEPS: Array<{ at: number; label: string }> = [];
 
-/** Vrai dès qu'un panneau a été rendu (évite les doublons). */
-let panelShown = false;
+let installed = false;
+let watchdogId: number | undefined;
 
-/** Vrai dès que React a peint quelque chose. */
-let painted = false;
-
-const el = (id: string) => document.getElementById(id);
-
-export function trace(step: string): void {
-  steps.push(step);
-  try {
-    (window as unknown as { __auroraBoot?: string[] }).__auroraBoot = steps;
-  } catch {
-    /* environnement exotique : la trace reste locale, ce n'est pas fatal */
-  }
+/** Trace une étape d'amorçage — affichée dans le panneau de diagnostic. */
+export function bootStep(label: string): void {
+  STEPS.push({ at: Date.now() - START, label });
 }
 
-export function markPainted(): void {
-  painted = true;
-  trace('peint');
-}
-
-/** État de l'environnement utile au diagnostic. */
-function environment(): string[] {
-  let isolated = 'inconnu';
-  try {
-    isolated = String(window.crossOriginIsolated);
-  } catch {
-    /* ignore */
-  }
-  const hasSab =
-    typeof SharedArrayBuffer !== 'undefined' ? 'oui' : 'NON (WASQLite indisponible)';
-  const root = el('root');
-  return [
-    `crossOriginIsolated : ${isolated}`,
-    `SharedArrayBuffer   : ${hasSab}`,
-    `#root               : ${root ? `${root.childElementCount} enfant(s)` : 'ABSENT'}`,
-    `url                 : ${location.href}`,
-  ];
+function describeEnvironment(): string[] {
+  const lines: string[] = [];
+  lines.push(`URL      ${location.href}`);
+  lines.push(`Agent    ${navigator.userAgent}`);
+  lines.push(`Viewport ${window.innerWidth}×${window.innerHeight}`);
+  lines.push(
+    `Capacités crossOriginIsolated=${String(window.crossOriginIsolated)} secure=${String(
+      window.isSecureContext,
+    )}`,
+  );
+  const root = document.getElementById('root');
+  lines.push(`#root    ${root ? `${root.childElementCount} enfant(s)` : 'ABSENT'}`);
+  return lines;
 }
 
 /**
- * Affiche le panneau de diagnostic. N'écrase jamais une interface déjà peinte.
+ * Affiche le panneau de diagnostic. Idempotent : plusieurs erreurs empilées
+ * ne doivent pas produire cinq panneaux.
  */
-export function fatal(where: string, error: unknown, hint?: string): void {
-  // Après le premier rendu, une erreur n'est plus « fatale » : la coquille est
-  // là, l'application gère. On laisse seulement une trace console.
-  if (painted || panelShown) {
-    console.error(`[Aurora] ${where}`, error);
-    return;
-  }
-  const root = el('root');
-  if (!root) return;
-  panelShown = true;
-
+export function showFatal(title: string, detail: unknown): void {
   const message =
-    error instanceof Error ? `${error.name}: ${error.message}` : String(error ?? 'erreur inconnue');
-  const stack = error instanceof Error && error.stack ? error.stack : '';
+    detail instanceof Error
+      ? `${detail.name}: ${detail.message}\n${detail.stack ?? '(pas de pile)'}`
+      : typeof detail === 'string'
+        ? detail
+        : safeJson(detail);
 
-  const lines = [
-    `ÉTAPE   ${where}`,
-    '',
-    message,
-    ...(stack ? ['', stack.split('\n').slice(0, 8).join('\n')] : []),
-    '',
-    '--- environnement ---',
-    ...environment(),
-    '',
-    '--- étapes franchies ---',
-    ...(steps.length > 0 ? steps : ['(aucune — l’échec est antérieur au boot)']),
-  ];
+  // Sur la console d'abord : c'est là qu'un développeur regarde.
+  console.error(`[aurora] ${title}`, detail);
 
-  // Construit sans innerHTML pour le message d'erreur : il peut contenir du
-  // HTML (message renvoyé par une API, par exemple).
-  root.textContent = '';
-  const wrap = document.createElement('div');
-  wrap.setAttribute('data-aurora-fatal', where);
-  wrap.style.cssText = [
-    'font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace',
-    'margin:0',
+  const host = document.getElementById('root') ?? document.body;
+  const existing = document.getElementById('aurora-fatal');
+  if (existing) return;
+
+  const panel = document.createElement('div');
+  panel.id = 'aurora-fatal';
+  panel.setAttribute('role', 'alert');
+  panel.setAttribute('aria-live', 'assertive');
+  panel.style.cssText = [
+    'position:fixed',
+    'inset:0',
+    'z-index:2147483647',
+    'overflow:auto',
+    'background:#16161c',
+    'color:#f2f0ec',
+    'font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace',
     'padding:24px',
-    'min-height:100vh',
-    'background:#fff',
-    'color:#111',
-    'box-sizing:border-box',
   ].join(';');
-
-  const title = document.createElement('h1');
-  title.textContent = 'Aurora n’a pas pu démarrer';
-  title.style.cssText = 'font:600 20px/1.3 system-ui,sans-serif;margin:0 0 4px';
-  wrap.appendChild(title);
-
-  const sub = document.createElement('p');
-  sub.textContent = 'Le détail ci-dessous remplace l’écran blanc : copie-le tel quel pour diagnostiquer.';
-  sub.style.cssText = 'margin:0 0 20px;color:#555;font-family:system-ui,sans-serif';
-  wrap.appendChild(sub);
 
   const pre = document.createElement('pre');
-  pre.textContent = lines.join('\n');
-  pre.style.cssText = [
-    'white-space:pre-wrap',
-    'word-break:break-word',
-    'background:#f6f8fa',
-    'border:1px solid #d8dee4',
+  pre.style.cssText =
+    'margin:0;white-space:pre-wrap;word-break:break-word;max-width:960px;margin-inline:auto';
+
+  const steps = STEPS.length
+    ? STEPS.map((s) => `  +${String(s.at).padStart(5)} ms  ${s.label}`).join('\n')
+    : '  (aucune étape enregistrée)';
+
+  pre.textContent = [
+    'AURORA — DÉMARRAGE INTERROMPU',
+    '',
+    title,
+    '',
+    message,
+    '',
+    'Étapes d’amorçage :',
+    steps,
+    '',
+    'Environnement :',
+    ...describeEnvironment().map((l) => `  ${l}`),
+    '',
+    'Cette page remplace l’écran blanc : elle s’affiche quand l’application',
+    'n’a pas pu se monter. Le détail ci-dessus suffit à identifier la cause.',
+  ].join('\n');
+
+  const retry = document.createElement('button');
+  retry.textContent = 'Recharger';
+  retry.style.cssText = [
+    'display:block',
+    'margin:24px auto 0',
+    'padding:8px 20px',
     'border-radius:8px',
-    'padding:16px',
-    'margin:0 0 16px',
-    'max-height:60vh',
-    'overflow:auto',
+    'border:1px solid #6b5ce7',
+    'background:#6b5ce7',
+    'color:#fff',
+    'font:inherit',
+    'cursor:pointer',
   ].join(';');
-  wrap.appendChild(pre);
+  retry.onclick = () => location.reload();
 
-  if (hint) {
-    const hintEl = document.createElement('p');
-    hintEl.textContent = hint;
-    hintEl.style.cssText =
-      'margin:0;padding:12px 16px;background:#fff8e6;border:1px solid #f0d68a;border-radius:8px;color:#5c4400;font-family:system-ui,sans-serif';
-    wrap.appendChild(hintEl);
-  }
-
-  root.appendChild(wrap);
-  console.error(`[Aurora] démarrage interrompu à « ${where} »`, error);
+  panel.append(pre, retry);
+  host.append(panel);
 }
 
-// --- filets globaux, posés à l'import (avant tout le reste) -----------------
-
-window.addEventListener('error', (event) => {
-  // Les erreurs de ressources (img/script 404) n'ont pas de `error` objet :
-  // on ne bloque pas le démarrage pour ça, on les journalise.
-  const error = (event as ErrorEvent).error ?? (event as ErrorEvent).message;
-  fatal('window.error', error);
-});
-
-window.addEventListener('unhandledrejection', (event) => {
-  fatal('unhandledrejection', (event as PromiseRejectionEvent).reason);
-});
+function safeJson(value: unknown): string {
+  try {
+    return JSON.stringify(value, null, 2) ?? String(value);
+  } catch {
+    return String(value);
+  }
+}
 
 /**
- * Chien de garde : si rien n'est peint au bout de 12 s et qu'aucune erreur
- * n'a été signalée, le boot est bloqué (promesse qui ne se résout pas).
- * 12 s > budget `connect()` (5 s) + marge de rendu.
+ * Installe les trois filets :
+ *   1. `error` — erreurs synchrones non rattrapées ;
+ *   2. `unhandledrejection` — promesses rejetées, la panne la plus silencieuse ;
+ *   3. un chien de garde — si `#root` est encore vide au bout du délai, c'est
+ *      que le module d'entrée n'a jamais été évalué.
+ *
+ * Le chien de garde est le point clé : sans lui, un échec d'IMPORT ne produit
+ * aucune exception visible dans la page.
  */
-window.setTimeout(() => {
-  if (painted || panelShown) return;
-  fatal(
-    'chien de garde (12 s)',
-    new Error('aucun rendu et aucune erreur : le boot est bloqué'),
-    'Si « étapes franchies » s’arrête à « connect:attente », le problème vient de la base locale (WASQLite / SharedArrayBuffer).',
-  );
-}, 12_000);
+export function installFatalHandlers(watchdogMs = 12_000): void {
+  if (installed) return;
+  installed = true;
+
+  window.addEventListener('error', (event) => {
+    // Les erreurs de chargement de ressource (img, script externe) remontent
+    // ici sans `error` : inutile d'afficher un panneau plein écran pour une
+    // favicon manquante.
+    if (!event.error && event.target !== window) return;
+    showFatal('Erreur non rattrapée', event.error ?? event.message);
+  });
+
+  window.addEventListener('unhandledrejection', (event) => {
+    showFatal('Promesse rejetée sans gestionnaire', event.reason);
+  });
+
+  watchdogId = window.setTimeout(() => {
+    const root = document.getElementById('root');
+    const mounted = root !== null && root.querySelector('[data-aurora-app]') !== null;
+    if (!mounted) {
+      showFatal(
+        'Le module d’entrée n’a pas monté l’application',
+        `#root ${root ? 'existe mais ne contient aucun nœud applicatif' : 'est introuvable'} ` +
+          `après ${watchdogMs} ms.`,
+      );
+    }
+  }, watchdogMs);
+}
+
+/** Annule le chien de garde une fois le montage confirmé. */
+export function clearWatchdog(): void {
+  if (watchdogId !== undefined) {
+    window.clearTimeout(watchdogId);
+    watchdogId = undefined;
+  }
+}

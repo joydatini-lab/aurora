@@ -1,71 +1,52 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" class="light">
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-    />
-    <meta name="theme-color" content="#ffffff" />
-    <!-- PWA (web pivot 2026-10-28, B4) : installable + standalone. -->
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#16161c" media="(prefers-color-scheme: dark)" />
     <meta
       name="description"
-      content="Aurora — productivité, apprentissage et orchestration agentique, local-first."
+      content="Aurora — design system et coquille web. Encre & Lumière."
     />
-    <title>Aurora</title>
+    <title>Aurora · Design System</title>
+    <!--
+      Amorce visible : React la remplace au premier rendu. Si elle RESTE
+      affichée, le module d'entrée n'a pas été évalué — l'écran blanc muet du
+      2026-10-28 ne peut plus se reproduire sans le dire.
+    -->
+    <style>
+      html,
+      body,
+      #root {
+        height: 100%;
+        margin: 0;
+      }
+      #aurora-boot {
+        display: grid;
+        place-content: center;
+        gap: 6px;
+        height: 100%;
+        font: 14px/1.6 ui-sans-serif, system-ui, sans-serif;
+        color: #4a4a55;
+        text-align: center;
+      }
+      #aurora-boot strong {
+        color: #16161c;
+        font-size: 15px;
+      }
+    </style>
   </head>
   <body>
-    <!--
-      Amorçage visible : React remplace ce bloc à son premier rendu. S'il
-      RESTE affiché, c'est que le module d'entrée n'a jamais été évalué — un
-      cas qu'un #root vide ne distingue pas d'une interface absente.
-      Styles en ligne : ils doivent survivre à l'échec des feuilles externes.
-    -->
     <div id="root">
-      <div
-        id="aurora-boot"
-        style="font:14px/1.6 system-ui,-apple-system,sans-serif;color:#333;padding:40px;max-width:60ch"
-      >
-        <p style="margin:0 0 8px;font-weight:600">Aurora démarre…</p>
-        <p style="margin:0;color:#666">
-          Ce message disparaît dès que l’interface est montée. S’il reste affiché, le
-          module d’entrée n’a pas pu être chargé.
-        </p>
+      <div id="aurora-boot">
+        <strong>Aurora</strong>
+        <span>Chargement du design system…</span>
       </div>
     </div>
     <noscript>Aurora nécessite JavaScript.</noscript>
-    <!--
-      Filet le plus externe : si le module d'entrée échoue AVANT d'avoir pu
-      poser ses propres gestionnaires (`./boot/fatal` n'est évalué que s'il est
-      atteint), cette erreur-ci est la seule trace exploitable.
-    -->
-    <script>
-      window.addEventListener(
-        'error',
-        function (event) {
-          var host = document.getElementById('aurora-boot');
-          if (!host) return;
-          host.textContent = '';
-          var title = document.createElement('p');
-          title.style.cssText =
-            'margin:0 0 8px;font:600 14px/1.6 system-ui,sans-serif;color:#b00020';
-          title.textContent = 'Aurora n’a pas pu charger son module d’entrée';
-          var detail = document.createElement('pre');
-          detail.style.cssText =
-            'white-space:pre-wrap;word-break:break-word;margin:0;padding:12px;background:#f6f8fa;border:1px solid #d8dee4;border-radius:8px;font:12px/1.5 ui-monospace,monospace;color:#111';
-          detail.textContent =
-            (event && event.message) || (event && event.target && event.target.src) || 'erreur inconnue';
-          host.appendChild(title);
-          host.appendChild(detail);
-        },
-        true,
-      );
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

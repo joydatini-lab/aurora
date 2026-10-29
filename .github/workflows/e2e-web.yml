@@ -23,13 +23,11 @@ on:
     branches: [main]
     paths:
       - 'apps/web/**'
-      - 'apps/mobile/src/**'
       - 'packages/**'
       - '.github/workflows/e2e-web.yml'
   pull_request:
     paths:
       - 'apps/web/**'
-      - 'apps/mobile/src/**'
       - 'packages/**'
       - '.github/workflows/e2e-web.yml'
   workflow_dispatch:

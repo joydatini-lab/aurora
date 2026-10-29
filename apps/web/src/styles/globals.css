@@ -1,0 +1,271 @@
+@import "tailwindcss";
+
+/* =============================================================================
+   AURORA — « Encre & Lumière »
+   -----------------------------------------------------------------------------
+   Un design system se juge sur ce qu'il REFUSE. Ici :
+
+   - Un seul accent (violet profond). Un secondaire (cyan) réservé aux dégradés
+     de marque, jamais à la sémantique.
+   - Quatre couleurs de statut, et aucune autre : success, warning, info,
+     destructive. Pas de « orange-ish » improvisé dans un écran.
+   - Toutes les couleurs sont en OKLCH : la perception d'un même palier reste
+     stable quand la teinte change, ce que HSL ne garantit pas.
+   - Aucune couleur en dur dans les composants. Ils consomment les variables
+     sémantiques, ce qui rend le thème sombre et un futur thème alternatif
+     gratuits.
+
+   Le mode sombre n'est pas une inversion : c'est un jeu de tokens réglé à la
+   main (un gris inversé donne des contrastes faux et des accents criards).
+   ========================================================================== */
+
+/* Le mode sombre est piloté par une classe sur <html> (pas uniquement par
+   `prefers-color-scheme`) : le design space expose un sélecteur explicite. */
+@custom-variant dark (&:is(.dark *));
+
+:root,
+.light {
+  /* --- Surfaces ---------------------------------------------------------- */
+  --background: oklch(0.985 0.003 95); /* papier chaud                          */
+  --foreground: oklch(0.2 0.015 265); /* encre                                 */
+  --card: oklch(1 0 0); /* élévation : blanc pur sur papier      */
+  --card-foreground: oklch(0.2 0.015 265);
+  --popover: oklch(0.995 0.002 95);
+  --popover-foreground: oklch(0.2 0.015 265);
+
+  /* --- Neutres ----------------------------------------------------------- */
+  --muted: oklch(0.955 0.005 95);
+  --muted-foreground: oklch(0.5 0.012 265);
+  --border: oklch(0.9 0.006 95);
+  --input: oklch(0.9 0.006 95);
+
+  /* --- Action ------------------------------------------------------------ */
+  --primary: oklch(0.48 0.2 295);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.955 0.008 95);
+  --secondary-foreground: oklch(0.25 0.015 265);
+  --accent: oklch(0.94 0.022 295);
+  --accent-foreground: oklch(0.36 0.15 295);
+  --ring: oklch(0.55 0.19 295);
+
+  /* --- Statuts (les quatre seuls autorisés) ------------------------------ */
+  --destructive: oklch(0.55 0.21 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.58 0.14 155);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.72 0.15 75);
+  --warning-foreground: oklch(0.24 0.05 75);
+  --info: oklch(0.6 0.13 240);
+  --info-foreground: oklch(0.99 0 0);
+
+  /* --- Marque (dégradés uniquement) -------------------------------------- */
+  --aurora-from: oklch(0.55 0.22 300);
+  --aurora-via: oklch(0.6 0.19 330);
+  --aurora-to: oklch(0.72 0.13 195);
+
+  /* --- Rayons ------------------------------------------------------------ */
+  --radius: 0.75rem;
+
+  /* --- Ombres : basses opacités, plusieurs couches ----------------------- */
+  --elevation-xs: 0 1px 2px 0 oklch(0.2 0.015 265 / 0.05);
+  --elevation-sm: 0 1px 2px 0 oklch(0.2 0.015 265 / 0.06), 0 1px 3px 0 oklch(0.2 0.015 265 / 0.08);
+  --elevation-md: 0 2px 4px -1px oklch(0.2 0.015 265 / 0.06), 0 6px 16px -4px oklch(0.2 0.015 265 / 0.1);
+  --elevation-lg: 0 4px 8px -2px oklch(0.2 0.015 265 / 0.06), 0 16px 40px -8px oklch(0.2 0.015 265 / 0.14);
+}
+
+.dark {
+  --background: oklch(0.17 0.012 265);
+  --foreground: oklch(0.96 0.004 95);
+  --card: oklch(0.215 0.014 265);
+  --card-foreground: oklch(0.96 0.004 95);
+  --popover: oklch(0.235 0.015 265);
+  --popover-foreground: oklch(0.96 0.004 95);
+
+  --muted: oklch(0.265 0.014 265);
+  --muted-foreground: oklch(0.71 0.012 265);
+  --border: oklch(0.3 0.014 265);
+  --input: oklch(0.33 0.014 265);
+
+  --primary: oklch(0.7 0.17 295);
+  --primary-foreground: oklch(0.17 0.03 295);
+  --secondary: oklch(0.27 0.014 265);
+  --secondary-foreground: oklch(0.94 0.005 95);
+  --accent: oklch(0.3 0.05 295);
+  --accent-foreground: oklch(0.88 0.06 295);
+  --ring: oklch(0.66 0.17 295);
+
+  --destructive: oklch(0.62 0.19 25);
+  --destructive-foreground: oklch(0.16 0.03 25);
+  --success: oklch(0.66 0.13 155);
+  --success-foreground: oklch(0.16 0.03 155);
+  --warning: oklch(0.78 0.14 75);
+  --warning-foreground: oklch(0.2 0.04 75);
+  --info: oklch(0.68 0.12 240);
+  --info-foreground: oklch(0.16 0.03 240);
+
+  --aurora-from: oklch(0.66 0.2 300);
+  --aurora-via: oklch(0.68 0.17 330);
+  --aurora-to: oklch(0.78 0.12 195);
+
+  --elevation-xs: 0 1px 2px 0 oklch(0 0 0 / 0.4);
+  --elevation-sm: 0 1px 2px 0 oklch(0 0 0 / 0.4), 0 2px 6px -1px oklch(0 0 0 / 0.45);
+  --elevation-md: 0 2px 6px -1px oklch(0 0 0 / 0.45), 0 8px 24px -6px oklch(0 0 0 / 0.55);
+  --elevation-lg: 0 6px 12px -2px oklch(0 0 0 / 0.5), 0 24px 60px -12px oklch(0 0 0 / 0.65);
+}
+
+/* =============================================================================
+   Exposition à Tailwind — `@theme inline` mappe les variables sémantiques sur
+   les utilitaires (`bg-background`, `text-muted-foreground`, `border-border`…).
+   `inline` est essentiel : sans lui, Tailwind figerait la valeur claire et le
+   mode sombre ne basculerait pas.
+   ========================================================================== */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  --color-aurora-from: var(--aurora-from);
+  --color-aurora-via: var(--aurora-via);
+  --color-aurora-to: var(--aurora-to);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+
+  --shadow-xs: var(--elevation-xs);
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-lg);
+
+  /* Échelle typographique — ratio 1.25, resserrée en haut de gamme.
+     Le tracking négatif n'est pas décoratif : à 40px+, l'interlettrage par
+     défaut des polices système paraît lâche. */
+  --text-display-1: 3.25rem;
+  --text-display-1--line-height: 1.05;
+  --text-display-1--letter-spacing: -0.035em;
+  --text-display-2: 2.5rem;
+  --text-display-2--line-height: 1.1;
+  --text-display-2--letter-spacing: -0.03em;
+  --text-display-3: 1.875rem;
+  --text-display-3--line-height: 1.15;
+  --text-display-3--letter-spacing: -0.025em;
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "Noto Sans", sans-serif;
+  --font-mono:
+    ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Durées et courbes : trois durées, une seule courbe. */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* =============================================================================
+   Base
+   ========================================================================== */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Focus visible UNIQUEMENT au clavier : la souris n'a pas besoin d'anneau. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+
+  /* Barre de défilement discrète, mais toujours visible (accessibilité). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+}
+
+/* =============================================================================
+   Utilitaires de marque
+   ========================================================================== */
+@utility aurora-gradient {
+  background-image: linear-gradient(
+    115deg,
+    var(--aurora-from) 0%,
+    var(--aurora-via) 45%,
+    var(--aurora-to) 100%
+  );
+}
+
+@utility aurora-text {
+  background-image: linear-gradient(
+    115deg,
+    var(--aurora-from) 0%,
+    var(--aurora-via) 45%,
+    var(--aurora-to) 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* Trame de fond du design space : grille discrète, purement décorative. */
+@utility aurora-grid {
+  background-image:
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
